@@ -24,9 +24,7 @@ class KakaoProvider {
       if (await kakao.isKakaoTalkInstalled()) {
         token = await kakao.UserApi.instance.loginWithKakaoTalk();
       } else {
-        token = await kakao.UserApi.instance.loginWithKakaoAccount(
-          scopes: config.allScopes,
-        );
+        token = await kakao.UserApi.instance.loginWithKakaoAccount();
       }
 
       // 사용자 정보 조회

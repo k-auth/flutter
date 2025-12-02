@@ -18,7 +18,9 @@ class NaverProvider {
       if (result.status == NaverLoginStatus.error) {
         return AuthResult.failure(
           provider: AuthProvider.naver,
-          errorMessage: result.errorMessage ?? '네이버 로그인 실패',
+          errorMessage: result.errorMessage.isNotEmpty
+              ? result.errorMessage
+              : '네이버 로그인 실패',
           errorCode: ErrorCodes.loginFailed,
         );
       }
@@ -34,6 +36,12 @@ class NaverProvider {
       // 토큰 정보 조회
       final token = await FlutterNaverLogin.currentAccessToken;
 
+      // expiresAt 파싱 (String -> DateTime)
+      DateTime? expiresAt;
+      if (token.expiresAt.isNotEmpty) {
+        expiresAt = DateTime.tryParse(token.expiresAt);
+      }
+
       return AuthResult.success(
         provider: AuthProvider.naver,
         userId: result.account.id,
@@ -41,7 +49,7 @@ class NaverProvider {
         name: result.account.name,
         profileImageUrl: result.account.profileImage,
         accessToken: token.accessToken,
-        expiresAt: token.expiresAt,
+        expiresAt: expiresAt,
         rawData: {
           'id': result.account.id,
           'email': result.account.email,

@@ -21,7 +21,6 @@
 ///   print('로그인 성공: ${result.name}');
 /// }
 /// ```
-library k_auth;
 
 // Models
 export 'models/auth_result.dart';
