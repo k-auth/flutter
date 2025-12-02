@@ -4,6 +4,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
+import '../models/k_auth_user.dart';
 import '../errors/k_auth_error.dart';
 
 /// 애플 로그인 Provider
@@ -25,63 +26,74 @@ class AppleProvider {
     try {
       // 플랫폼 지원 확인
       if (!await isAvailable()) {
+        final error = KAuthError.fromCode(ErrorCodes.appleNotSupported);
         return AuthResult.failure(
           provider: AuthProvider.apple,
-          errorMessage: ErrorMessages.getMessage(ErrorCodes.platformNotSupported),
-          errorCode: ErrorCodes.platformNotSupported,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorHint: error.hint,
         );
       }
 
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
+          if (config.collect.email) AppleIDAuthorizationScopes.email,
+          if (config.collect.fullName) AppleIDAuthorizationScopes.fullName,
         ],
       );
 
-      // 이름 조합
-      String? fullName;
-      if (credential.givenName != null || credential.familyName != null) {
-        fullName = [credential.familyName, credential.givenName]
-            .where((s) => s != null && s.isNotEmpty)
-            .join(' ');
-        if (fullName.isEmpty) fullName = null;
-      }
+      // 원본 데이터 구성
+      final rawData = <String, dynamic>{
+        'userIdentifier': credential.userIdentifier,
+        'email': credential.email,
+        'givenName': credential.givenName,
+        'familyName': credential.familyName,
+        'authorizationCode': credential.authorizationCode,
+        'identityToken': credential.identityToken,
+        'state': credential.state,
+      };
+
+      // KAuthUser 생성
+      final user = KAuthUser.fromApple(rawData);
 
       return AuthResult.success(
         provider: AuthProvider.apple,
-        userId: credential.userIdentifier ?? '',
-        email: credential.email,
-        name: fullName,
+        user: user,
         accessToken: credential.authorizationCode,
-        rawData: {
-          'userIdentifier': credential.userIdentifier,
-          'email': credential.email,
-          'givenName': credential.givenName,
-          'familyName': credential.familyName,
-          'authorizationCode': credential.authorizationCode,
-          'identityToken': credential.identityToken,
-          'state': credential.state,
-        },
+        idToken: credential.identityToken,
+        rawData: rawData,
       );
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
+        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
         return AuthResult.failure(
           provider: AuthProvider.apple,
-          errorMessage: ErrorMessages.getMessage(ErrorCodes.userCancelled),
-          errorCode: ErrorCodes.userCancelled,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorHint: error.hint,
         );
       }
+      final error = KAuthError.fromCode(
+        ErrorCodes.appleSignInFailed,
+        details: {'appleError': e.message},
+        originalError: e,
+      );
       return AuthResult.failure(
         provider: AuthProvider.apple,
         errorMessage: '애플 로그인 실패: ${e.message}',
-        errorCode: ErrorCodes.loginFailed,
+        errorCode: error.code,
+        errorHint: error.hint,
       );
     } catch (e) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.appleSignInFailed,
+        originalError: e,
+      );
       return AuthResult.failure(
         provider: AuthProvider.apple,
         errorMessage: '애플 로그인 중 오류 발생: $e',
-        errorCode: ErrorCodes.loginFailed,
+        errorCode: error.code,
+        errorHint: error.hint,
       );
     }
   }

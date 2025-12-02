@@ -2,6 +2,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
+import '../models/k_auth_user.dart';
 import '../errors/k_auth_error.dart';
 
 /// 구글 로그인 Provider
@@ -13,7 +14,8 @@ class GoogleProvider {
     _googleSignIn = GoogleSignIn(
       clientId: config.iosClientId,
       serverClientId: config.serverClientId,
-      scopes: config.scopes ?? ['email', 'profile'],
+      scopes: config.allScopes,
+      forceCodeForRefreshToken: config.forceConsent,
     );
   }
 
@@ -23,36 +25,47 @@ class GoogleProvider {
       final account = await _googleSignIn.signIn();
 
       if (account == null) {
+        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
         return AuthResult.failure(
           provider: AuthProvider.google,
-          errorMessage: ErrorMessages.getMessage(ErrorCodes.userCancelled),
-          errorCode: ErrorCodes.userCancelled,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorHint: error.hint,
         );
       }
 
       final auth = await account.authentication;
 
+      // 원본 데이터 구성
+      final rawData = <String, dynamic>{
+        'id': account.id,
+        'email': account.email,
+        'displayName': account.displayName,
+        'photoUrl': account.photoUrl,
+        'serverAuthCode': account.serverAuthCode,
+        'idToken': auth.idToken,
+      };
+
+      // KAuthUser 생성
+      final user = KAuthUser.fromGoogle(rawData);
+
       return AuthResult.success(
         provider: AuthProvider.google,
-        userId: account.id,
-        email: account.email,
-        name: account.displayName,
-        profileImageUrl: account.photoUrl,
+        user: user,
         accessToken: auth.accessToken,
-        rawData: {
-          'id': account.id,
-          'email': account.email,
-          'displayName': account.displayName,
-          'photoUrl': account.photoUrl,
-          'serverAuthCode': account.serverAuthCode,
-          'idToken': auth.idToken,
-        },
+        idToken: auth.idToken,
+        rawData: rawData,
       );
     } catch (e) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.googleSignInFailed,
+        originalError: e,
+      );
       return AuthResult.failure(
         provider: AuthProvider.google,
         errorMessage: '구글 로그인 중 오류 발생: $e',
-        errorCode: ErrorCodes.loginFailed,
+        errorCode: error.code,
+        errorHint: error.hint,
       );
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter_naver_login/flutter_naver_login.dart';
 
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
+import '../models/k_auth_user.dart';
 import '../errors/k_auth_error.dart';
 
 /// 네이버 로그인 Provider
@@ -16,20 +17,27 @@ class NaverProvider {
       final result = await FlutterNaverLogin.logIn();
 
       if (result.status == NaverLoginStatus.error) {
+        final error = KAuthError.fromCode(
+          ErrorCodes.loginFailed,
+          details: {'naverError': result.errorMessage},
+        );
         return AuthResult.failure(
           provider: AuthProvider.naver,
           errorMessage: result.errorMessage.isNotEmpty
               ? result.errorMessage
               : '네이버 로그인 실패',
-          errorCode: ErrorCodes.loginFailed,
+          errorCode: error.code,
+          errorHint: error.hint,
         );
       }
 
       if (result.status == NaverLoginStatus.cancelledByUser) {
+        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
         return AuthResult.failure(
           provider: AuthProvider.naver,
-          errorMessage: ErrorMessages.getMessage(ErrorCodes.userCancelled),
-          errorCode: ErrorCodes.userCancelled,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorHint: error.hint,
         );
       }
 
@@ -42,32 +50,42 @@ class NaverProvider {
         expiresAt = DateTime.tryParse(token.expiresAt);
       }
 
-      return AuthResult.success(
-        provider: AuthProvider.naver,
-        userId: result.account.id,
-        email: result.account.email,
-        name: result.account.name,
-        profileImageUrl: result.account.profileImage,
-        accessToken: token.accessToken,
-        expiresAt: expiresAt,
-        rawData: {
+      // 원본 데이터 구성
+      final rawData = <String, dynamic>{
+        'response': {
           'id': result.account.id,
           'email': result.account.email,
           'name': result.account.name,
           'nickname': result.account.nickname,
-          'profileImage': result.account.profileImage,
+          'profile_image': result.account.profileImage,
           'gender': result.account.gender,
           'age': result.account.age,
           'birthday': result.account.birthday,
           'birthyear': result.account.birthyear,
           'mobile': result.account.mobile,
         },
+      };
+
+      // KAuthUser 생성
+      final user = KAuthUser.fromNaver(rawData);
+
+      return AuthResult.success(
+        provider: AuthProvider.naver,
+        user: user,
+        accessToken: token.accessToken,
+        expiresAt: expiresAt,
+        rawData: rawData,
       );
     } catch (e) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.loginFailed,
+        originalError: e,
+      );
       return AuthResult.failure(
         provider: AuthProvider.naver,
         errorMessage: '네이버 로그인 중 오류 발생: $e',
-        errorCode: ErrorCodes.loginFailed,
+        errorCode: error.code,
+        errorHint: error.hint,
       );
     }
   }
