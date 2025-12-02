@@ -2,7 +2,7 @@
 
 한국형 소셜 로그인 Flutter 라이브러리. 카카오/네이버/구글/애플 OAuth를 Flutter에서 쉽게 구현할 수 있습니다.
 
-> Next.js 버전: [k-auth](https://github.com/relkimm/k-auth)
+> Next.js 버전: [k-auth](https://github.com/k-auth/next) (예정)
 
 ## 설치
 

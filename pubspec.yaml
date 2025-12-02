@@ -1,9 +1,9 @@
 name: k_auth
 description: 한국형 소셜 로그인 Flutter 라이브러리. 카카오/네이버/구글/애플 OAuth를 Flutter에서 쉽게 구현.
 version: 0.0.1
-homepage: https://github.com/relkimm/k-auth-flutter
-repository: https://github.com/relkimm/k-auth-flutter
-issue_tracker: https://github.com/relkimm/k-auth-flutter/issues
+homepage: https://github.com/k-auth/flutter
+repository: https://github.com/k-auth/flutter
+issue_tracker: https://github.com/k-auth/flutter/issues
 
 environment:
   sdk: ^3.0.0
