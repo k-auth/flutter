@@ -612,6 +612,11 @@ void main() {
       expect(user.age, currentYear - 2000);
     });
 
+    test('age가 birthyear가 없으면 null이다', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+      expect(user.age, isNull);
+    });
+
     test('JSON 직렬화가 동작한다', () {
       final user = KAuthUser(
         id: '12345',
@@ -626,6 +631,334 @@ void main() {
       expect(restored.id, '12345');
       expect(restored.name, '홍길동');
       expect(restored.email, 'test@example.com');
+    });
+
+    test('fromKakao가 카카오 응답을 파싱한다', () {
+      final kakaoData = {
+        'id': 12345678,
+        'kakao_account': {
+          'email': 'test@kakao.com',
+          'profile': {
+            'nickname': '카카오유저',
+            'profile_image_url': 'https://kakao.com/profile.jpg',
+          },
+          'phone_number': '+82 10-1234-5678',
+          'birthday': '0101',
+          'birthyear': '1990',
+          'gender': 'male',
+          'age_range': '30~39',
+        },
+      };
+
+      final user = KAuthUser.fromKakao(kakaoData);
+
+      expect(user.id, '12345678');
+      expect(user.provider, 'kakao');
+      expect(user.name, '카카오유저');
+      expect(user.email, 'test@kakao.com');
+      expect(user.image, 'https://kakao.com/profile.jpg');
+      expect(user.phone, '+82 10-1234-5678');
+      expect(user.birthday, '0101');
+      expect(user.birthyear, '1990');
+      expect(user.gender, 'male');
+      expect(user.ageRange, '30~39');
+    });
+
+    test('fromKakao가 빈 kakao_account를 처리한다', () {
+      final kakaoData = {'id': 99999};
+
+      final user = KAuthUser.fromKakao(kakaoData);
+
+      expect(user.id, '99999');
+      expect(user.provider, 'kakao');
+      expect(user.name, isNull);
+      expect(user.email, isNull);
+    });
+
+    test('fromNaver가 네이버 응답을 파싱한다', () {
+      final naverData = {
+        'response': {
+          'id': 'naver_user_id',
+          'email': 'test@naver.com',
+          'name': '네이버유저',
+          'nickname': '닉네임',
+          'profile_image': 'https://naver.com/profile.jpg',
+          'mobile': '010-1234-5678',
+          'birthday': '01-01',
+          'birthyear': '1995',
+          'gender': 'F',
+          'age': '25-29',
+        },
+      };
+
+      final user = KAuthUser.fromNaver(naverData);
+
+      expect(user.id, 'naver_user_id');
+      expect(user.provider, 'naver');
+      expect(user.name, '네이버유저');
+      expect(user.email, 'test@naver.com');
+      expect(user.image, 'https://naver.com/profile.jpg');
+      expect(user.phone, '010-1234-5678');
+      expect(user.gender, 'female');
+      expect(user.ageRange, '25-29');
+    });
+
+    test('fromNaver가 nickname을 fallback으로 사용한다', () {
+      final naverData = {
+        'response': {
+          'id': 'id123',
+          'nickname': '닉네임만',
+        },
+      };
+
+      final user = KAuthUser.fromNaver(naverData);
+      expect(user.name, '닉네임만');
+    });
+
+    test('fromGoogle이 구글 응답을 파싱한다', () {
+      final googleData = {
+        'id': 'google_user_id',
+        'email': 'test@gmail.com',
+        'name': '구글유저',
+        'picture': 'https://google.com/profile.jpg',
+      };
+
+      final user = KAuthUser.fromGoogle(googleData);
+
+      expect(user.id, 'google_user_id');
+      expect(user.provider, 'google');
+      expect(user.name, '구글유저');
+      expect(user.email, 'test@gmail.com');
+      expect(user.image, 'https://google.com/profile.jpg');
+    });
+
+    test('fromGoogle이 sub을 id로 fallback한다', () {
+      final googleData = {
+        'sub': 'sub_id_123',
+        'email': 'test@gmail.com',
+      };
+
+      final user = KAuthUser.fromGoogle(googleData);
+      expect(user.id, 'sub_id_123');
+    });
+
+    test('fromGoogle이 displayName을 name으로 fallback한다', () {
+      final googleData = {
+        'id': 'id123',
+        'displayName': '표시이름',
+      };
+
+      final user = KAuthUser.fromGoogle(googleData);
+      expect(user.name, '표시이름');
+    });
+
+    test('fromApple이 애플 응답을 파싱한다', () {
+      final appleData = {
+        'userIdentifier': 'apple_user_id',
+        'email': 'test@privaterelay.appleid.com',
+        'givenName': '길동',
+        'familyName': '홍',
+      };
+
+      final user = KAuthUser.fromApple(appleData);
+
+      expect(user.id, 'apple_user_id');
+      expect(user.provider, 'apple');
+      expect(user.name, '홍 길동');
+      expect(user.email, 'test@privaterelay.appleid.com');
+    });
+
+    test('fromApple이 이름 없이도 동작한다', () {
+      final appleData = {
+        'userIdentifier': 'apple_id',
+        'email': 'test@apple.com',
+      };
+
+      final user = KAuthUser.fromApple(appleData);
+
+      expect(user.id, 'apple_id');
+      expect(user.name, isNull);
+    });
+
+    test('fromApple이 sub을 id로 fallback한다', () {
+      final appleData = {
+        'sub': 'sub_apple_id',
+      };
+
+      final user = KAuthUser.fromApple(appleData);
+      expect(user.id, 'sub_apple_id');
+    });
+
+    test('copyWith가 올바르게 동작한다', () {
+      final user = KAuthUser(
+        id: '1',
+        name: '원래이름',
+        email: 'original@test.com',
+        provider: 'kakao',
+      );
+
+      final copied = user.copyWith(name: '새이름');
+
+      expect(copied.id, '1');
+      expect(copied.name, '새이름');
+      expect(copied.email, 'original@test.com');
+      expect(copied.provider, 'kakao');
+    });
+
+    test('equality가 id와 provider로 판단된다', () {
+      final user1 = KAuthUser(id: '123', name: '유저1', provider: 'kakao');
+      final user2 = KAuthUser(id: '123', name: '유저2', provider: 'kakao');
+      final user3 = KAuthUser(id: '123', name: '유저1', provider: 'naver');
+
+      expect(user1 == user2, true);
+      expect(user1 == user3, false);
+    });
+
+    test('hashCode가 id와 provider 기반이다', () {
+      final user1 = KAuthUser(id: '123', provider: 'kakao');
+      final user2 = KAuthUser(id: '123', provider: 'kakao');
+
+      expect(user1.hashCode, user2.hashCode);
+    });
+
+    test('toString이 올바른 형식을 반환한다', () {
+      final user = KAuthUser(
+        id: '123',
+        name: '홍길동',
+        email: 'test@test.com',
+        provider: 'kakao',
+      );
+
+      expect(
+        user.toString(),
+        'KAuthUser(id: 123, provider: kakao, name: 홍길동, email: test@test.com)',
+      );
+    });
+  });
+
+  group('KAuthLogger', () {
+    setUp(() {
+      KAuthLogger.level = KAuthLogLevel.none;
+      KAuthLogger.onLog = null;
+    });
+
+    test('기본 로그 레벨은 none이다', () {
+      expect(KAuthLogger.level, KAuthLogLevel.none);
+    });
+
+    test('로그 레벨을 변경할 수 있다', () {
+      KAuthLogger.level = KAuthLogLevel.debug;
+      expect(KAuthLogger.level, KAuthLogLevel.debug);
+
+      KAuthLogger.level = KAuthLogLevel.none;
+    });
+
+    test('커스텀 로거를 설정할 수 있다', () {
+      final logs = <KAuthLogEvent>[];
+
+      KAuthLogger.level = KAuthLogLevel.debug;
+      KAuthLogger.onLog = (event) => logs.add(event);
+
+      KAuthLogger.info('테스트 메시지');
+
+      expect(logs.length, 1);
+      expect(logs.first.message, '테스트 메시지');
+      expect(logs.first.level, KAuthLogLevel.info);
+    });
+
+    test('로그 레벨이 none이면 로그가 기록되지 않는다', () {
+      final logs = <KAuthLogEvent>[];
+
+      KAuthLogger.level = KAuthLogLevel.none;
+      KAuthLogger.onLog = (event) => logs.add(event);
+
+      KAuthLogger.error('에러 메시지');
+
+      expect(logs, isEmpty);
+    });
+
+    test('provider 정보가 로그에 포함된다', () {
+      final logs = <KAuthLogEvent>[];
+
+      KAuthLogger.level = KAuthLogLevel.debug;
+      KAuthLogger.onLog = (event) => logs.add(event);
+
+      KAuthLogger.info('로그인', provider: 'kakao');
+
+      expect(logs.first.provider, 'kakao');
+    });
+
+    test('data가 로그에 포함된다', () {
+      final logs = <KAuthLogEvent>[];
+
+      KAuthLogger.level = KAuthLogLevel.debug;
+      KAuthLogger.onLog = (event) => logs.add(event);
+
+      KAuthLogger.debug('디버그', data: {'key': 'value'});
+
+      expect(logs.first.data, {'key': 'value'});
+    });
+
+    test('error 로그에 에러와 스택트레이스가 포함된다', () {
+      final logs = <KAuthLogEvent>[];
+      final testError = Exception('테스트 에러');
+      final testStack = StackTrace.current;
+
+      KAuthLogger.level = KAuthLogLevel.error;
+      KAuthLogger.onLog = (event) => logs.add(event);
+
+      KAuthLogger.error(
+        '에러 발생',
+        error: testError,
+        stackTrace: testStack,
+      );
+
+      expect(logs.first.error, testError);
+      expect(logs.first.stackTrace, testStack);
+    });
+
+    test('로그 레벨 필터링이 동작한다', () {
+      final logs = <KAuthLogEvent>[];
+
+      KAuthLogger.level = KAuthLogLevel.warning;
+      KAuthLogger.onLog = (event) => logs.add(event);
+
+      KAuthLogger.debug('디버그'); // 무시됨
+      KAuthLogger.info('정보'); // 무시됨
+      KAuthLogger.warning('경고'); // 기록됨
+      KAuthLogger.error('에러'); // 기록됨
+
+      expect(logs.length, 2);
+      expect(logs[0].level, KAuthLogLevel.warning);
+      expect(logs[1].level, KAuthLogLevel.error);
+    });
+  });
+
+  group('KAuthLogEvent', () {
+    test('toString이 올바른 형식을 반환한다', () {
+      final event = KAuthLogEvent(
+        level: KAuthLogLevel.info,
+        message: '로그인 성공',
+        timestamp: DateTime.now(),
+        provider: 'kakao',
+      );
+
+      final str = event.toString();
+
+      expect(str, contains('[K-Auth]'));
+      expect(str, contains('[kakao]'));
+      expect(str, contains('로그인 성공'));
+    });
+
+    test('data가 toString에 포함된다', () {
+      final event = KAuthLogEvent(
+        level: KAuthLogLevel.debug,
+        message: '테스트',
+        timestamp: DateTime.now(),
+        data: {'userId': '123'},
+      );
+
+      expect(event.toString(), contains('userId'));
     });
   });
 }
