@@ -126,6 +126,70 @@ LoginButtonGroup(
 )
 ```
 
+### 6. 자동 로그인 (세션 복원)
+
+```dart
+// 1. SessionStorage 구현 (SecureStorage 권장)
+class SecureSessionStorage implements KAuthSessionStorage {
+  final _storage = FlutterSecureStorage();
+
+  @override
+  Future<void> save(String key, String value) =>
+    _storage.write(key: key, value: value);
+
+  @override
+  Future<String?> read(String key) =>
+    _storage.read(key: key);
+
+  @override
+  Future<void> delete(String key) =>
+    _storage.delete(key: key);
+
+  @override
+  Future<void> clear() =>
+    _storage.deleteAll();
+}
+
+// 2. KAuth에 storage 설정
+final kAuth = KAuth(
+  config: config,
+  storage: SecureSessionStorage(),
+);
+
+// 3. 초기화 시 자동 복원
+await kAuth.initialize(autoRestore: true);
+
+if (kAuth.isSignedIn) {
+  print('자동 로그인 성공: ${kAuth.currentUser?.displayName}');
+}
+```
+
+### 7. 백엔드 연동
+
+```dart
+final kAuth = KAuth(
+  config: config,
+  // 소셜 로그인 성공 후 자동 호출
+  onAuthenticated: (provider, tokens, user) async {
+    // 백엔드 서버에 토큰 전송
+    final response = await myApi.socialLogin(
+      provider: provider.name,
+      accessToken: tokens.accessToken,
+      idToken: tokens.idToken,  // Google/Apple OIDC
+    );
+
+    // 반환값은 serverToken에 저장됨
+    return response.jwt;
+  },
+);
+
+// 로그인 후 serverToken 사용
+final result = await kAuth.signIn(AuthProvider.kakao);
+if (result.success) {
+  print('서버 토큰: ${kAuth.serverToken}');
+}
+```
+
 ## 디버그 로깅
 
 개발 중 디버깅을 위해 로그를 활성화할 수 있습니다:

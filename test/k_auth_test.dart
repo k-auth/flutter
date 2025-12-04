@@ -1077,4 +1077,164 @@ void main() {
       expect(output, contains('모든 설정이 정상입니다'));
     });
   });
+
+  group('KAuthSession', () {
+    test('AuthResult에서 세션을 생성한다', () {
+      final user = KAuthUser(
+        id: '12345',
+        email: 'test@example.com',
+        name: '테스트',
+        provider: 'kakao',
+      );
+
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+        accessToken: 'access_token',
+        refreshToken: 'refresh_token',
+        expiresAt: DateTime(2025, 12, 31),
+      );
+
+      final session = KAuthSession.fromAuthResult(result, serverToken: 'jwt');
+
+      expect(session.provider, AuthProvider.kakao);
+      expect(session.user.id, '12345');
+      expect(session.accessToken, 'access_token');
+      expect(session.refreshToken, 'refresh_token');
+      expect(session.serverToken, 'jwt');
+      expect(session.expiresAt, DateTime(2025, 12, 31));
+    });
+
+    test('JSON으로 직렬화/역직렬화가 동작한다', () {
+      final user = KAuthUser(
+        id: '12345',
+        email: 'test@example.com',
+        name: '테스트',
+        provider: 'naver',
+      );
+
+      final original = KAuthSession(
+        provider: AuthProvider.naver,
+        user: user,
+        accessToken: 'access_token',
+        refreshToken: 'refresh_token',
+        serverToken: 'jwt',
+        savedAt: DateTime(2025, 1, 1),
+        expiresAt: DateTime(2025, 12, 31),
+      );
+
+      final encoded = original.encode();
+      final decoded = KAuthSession.decode(encoded);
+
+      expect(decoded.provider, original.provider);
+      expect(decoded.user.id, original.user.id);
+      expect(decoded.accessToken, original.accessToken);
+      expect(decoded.refreshToken, original.refreshToken);
+      expect(decoded.serverToken, original.serverToken);
+      expect(decoded.savedAt, original.savedAt);
+      expect(decoded.expiresAt, original.expiresAt);
+    });
+
+    test('만료 여부를 확인한다', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+
+      final expiredSession = KAuthSession(
+        provider: AuthProvider.kakao,
+        user: user,
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        savedAt: DateTime.now(),
+      );
+
+      final validSession = KAuthSession(
+        provider: AuthProvider.kakao,
+        user: user,
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        savedAt: DateTime.now(),
+      );
+
+      final noExpirySession = KAuthSession(
+        provider: AuthProvider.kakao,
+        user: user,
+        savedAt: DateTime.now(),
+      );
+
+      expect(expiredSession.isExpired, true);
+      expect(validSession.isExpired, false);
+      expect(noExpirySession.isExpired, false);
+    });
+
+    test('실패한 AuthResult에서 세션 생성 시 예외를 던진다', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '실패',
+        errorCode: 'error',
+      );
+
+      expect(
+        () => KAuthSession.fromAuthResult(result),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('toString이 올바르게 동작한다', () {
+      final user = KAuthUser(id: 'user123', provider: 'google');
+
+      final session = KAuthSession(
+        provider: AuthProvider.google,
+        user: user,
+        savedAt: DateTime.now(),
+      );
+
+      expect(session.toString(), contains('google'));
+      expect(session.toString(), contains('user123'));
+    });
+  });
+
+  group('KAuthSessionStorage', () {
+    test('InMemorySessionStorage가 올바르게 동작한다', () async {
+      final storage = InMemorySessionStorage();
+
+      // 저장
+      await storage.save('key1', 'value1');
+      await storage.save('key2', 'value2');
+
+      // 읽기
+      expect(await storage.read('key1'), 'value1');
+      expect(await storage.read('key2'), 'value2');
+      expect(await storage.read('key3'), isNull);
+
+      // 삭제
+      await storage.delete('key1');
+      expect(await storage.read('key1'), isNull);
+
+      // 전체 삭제
+      await storage.clear();
+      expect(await storage.read('key2'), isNull);
+    });
+  });
+}
+
+/// 테스트용 인메모리 세션 저장소
+class InMemorySessionStorage implements KAuthSessionStorage {
+  final Map<String, String> _data = {};
+
+  @override
+  Future<void> save(String key, String value) async {
+    _data[key] = value;
+  }
+
+  @override
+  Future<String?> read(String key) async {
+    return _data[key];
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    _data.remove(key);
+  }
+
+  @override
+  Future<void> clear() async {
+    _data.clear();
+  }
 }

@@ -68,6 +68,7 @@ export 'errors/k_auth_error.dart';
 // Utils
 export 'utils/logger.dart';
 export 'utils/diagnostic.dart';
+export 'utils/session_storage.dart';
 
 // Widgets
 export 'widgets/login_buttons.dart';
@@ -79,6 +80,7 @@ import 'models/auth_result.dart';
 import 'models/k_auth_user.dart';
 import 'errors/k_auth_error.dart';
 import 'utils/logger.dart';
+import 'utils/session_storage.dart';
 import 'providers/kakao_provider.dart';
 import 'providers/naver_provider.dart';
 import 'providers/google_provider.dart';
@@ -172,6 +174,33 @@ typedef OnAuthenticatedCallback = Future<String?> Function(
 ///   },
 /// );
 /// ```
+///
+/// ## 자동 로그인 (세션 복원)
+///
+/// ```dart
+/// // SecureStorage 구현
+/// class SecureSessionStorage implements KAuthSessionStorage {
+///   final storage = FlutterSecureStorage();
+///   Future<void> save(String key, String value) => storage.write(key: key, value: value);
+///   Future<String?> read(String key) => storage.read(key: key);
+///   Future<void> delete(String key) => storage.delete(key: key);
+///   Future<void> clear() => storage.deleteAll();
+/// }
+///
+/// // KAuth에 storage 설정
+/// final kAuth = KAuth(
+///   config: config,
+///   storage: SecureSessionStorage(),
+/// );
+///
+/// // 초기화 시 자동 복원
+/// await kAuth.initialize(autoRestore: true);
+///
+/// if (kAuth.isSignedIn) {
+///   // 이전 세션 복원됨!
+///   print('자동 로그인: ${kAuth.currentUser?.displayName}');
+/// }
+/// ```
 class KAuth {
   /// 설정
   final KAuthConfig config;
@@ -184,6 +213,14 @@ class KAuth {
   /// 소셜 로그인 성공 후 호출됩니다.
   /// 반환값은 [serverToken]에 저장됩니다.
   final OnAuthenticatedCallback? onAuthenticated;
+
+  /// 세션 저장소
+  ///
+  /// 자동 로그인을 위해 세션을 저장/복원합니다.
+  final KAuthSessionStorage? storage;
+
+  /// 세션 저장 키
+  static const String _sessionKey = 'k_auth_session';
 
   KakaoProvider? _kakaoProvider;
   NaverProvider? _naverProvider;
@@ -202,10 +239,12 @@ class KAuth {
   /// [config]: Provider별 설정
   /// [validateOnInitialize]: initialize() 시 설정 검증 여부 (기본: true)
   /// [onAuthenticated]: 백엔드 인증 콜백 (선택)
+  /// [storage]: 세션 저장소 (자동 로그인용, 선택)
   KAuth({
     required this.config,
     this.validateOnInitialize = true,
     this.onAuthenticated,
+    this.storage,
   });
 
   /// 초기화 여부
@@ -261,11 +300,18 @@ class KAuth {
   /// [validateOnInitialize]가 true이면 설정을 검증하고,
   /// 설정이 유효하지 않으면 [KAuthError]를 던집니다.
   ///
+  /// [autoRestore]가 true이면 저장된 세션을 자동으로 복원합니다.
+  /// [storage]가 설정되어 있어야 동작합니다.
+  ///
   /// ```dart
-  /// final kAuth = KAuth(config: config);
-  /// kAuth.initialize();
+  /// final kAuth = KAuth(config: config, storage: myStorage);
+  /// await kAuth.initialize(autoRestore: true);
+  ///
+  /// if (kAuth.isSignedIn) {
+  ///   print('자동 로그인 성공!');
+  /// }
   /// ```
-  void initialize() {
+  Future<void> initialize({bool autoRestore = false}) async {
     if (_initialized) {
       KAuthLogger.debug('이미 초기화되어 있습니다');
       return;
@@ -311,6 +357,98 @@ class KAuth {
 
     _initialized = true;
     KAuthLogger.info('K-Auth 초기화 완료');
+
+    // 자동 로그인 (세션 복원)
+    if (autoRestore && storage != null) {
+      await _restoreSession();
+    }
+  }
+
+  /// 세션 저장
+  ///
+  /// 로그인 성공 후 세션을 저장합니다.
+  /// [storage]가 설정되어 있을 때만 동작합니다.
+  Future<void> _saveSession(AuthResult result) async {
+    if (storage == null || !result.success || result.user == null) return;
+
+    try {
+      final session = KAuthSession.fromAuthResult(
+        result,
+        serverToken: _serverToken,
+      );
+      await storage!.save(_sessionKey, session.encode());
+      KAuthLogger.debug(
+        '세션 저장 완료',
+        provider: result.provider.name,
+      );
+    } catch (e) {
+      KAuthLogger.error('세션 저장 실패', error: e);
+    }
+  }
+
+  /// 세션 복원
+  ///
+  /// 저장된 세션을 복원합니다.
+  /// 만료된 세션은 자동으로 삭제됩니다.
+  Future<bool> _restoreSession() async {
+    if (storage == null) return false;
+
+    try {
+      final encoded = await storage!.read(_sessionKey);
+      if (encoded == null) {
+        KAuthLogger.debug('저장된 세션 없음');
+        return false;
+      }
+
+      final session = KAuthSession.decode(encoded);
+
+      // 만료된 세션 처리
+      if (session.isExpired) {
+        KAuthLogger.debug('세션 만료됨, 삭제');
+        await storage!.delete(_sessionKey);
+        return false;
+      }
+
+      // 세션 복원
+      _lastResult = AuthResult.success(
+        provider: session.provider,
+        user: session.user,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        idToken: session.idToken,
+        expiresAt: session.expiresAt,
+      );
+      _serverToken = session.serverToken;
+      _authStateController.add(session.user);
+
+      KAuthLogger.info(
+        '세션 복원 완료',
+        provider: session.provider.name,
+        data: {'userId': session.user.id},
+      );
+
+      return true;
+    } catch (e) {
+      KAuthLogger.error('세션 복원 실패', error: e);
+      // 손상된 세션 삭제
+      await storage!.delete(_sessionKey);
+      return false;
+    }
+  }
+
+  /// 세션 삭제
+  ///
+  /// 저장된 세션을 삭제합니다.
+  /// 로그아웃 시 자동으로 호출됩니다.
+  Future<void> clearSession() async {
+    if (storage == null) return;
+
+    try {
+      await storage!.delete(_sessionKey);
+      KAuthLogger.debug('세션 삭제 완료');
+    } catch (e) {
+      KAuthLogger.error('세션 삭제 실패', error: e);
+    }
   }
 
   /// 소셜 로그인 실행
@@ -387,6 +525,9 @@ class KAuth {
           );
         }
       }
+
+      // 세션 저장
+      await _saveSession(result);
 
       KAuthLogger.info(
         '로그인 성공',
@@ -481,6 +622,9 @@ class KAuth {
       _lastResult = null;
       _serverToken = null;
       _authStateController.add(null);
+
+      // 세션 삭제
+      await clearSession();
     }
 
     KAuthLogger.info('로그아웃 완료', provider: targetProvider.name);
@@ -500,6 +644,9 @@ class KAuth {
     _lastResult = null;
     _serverToken = null;
     _authStateController.add(null);
+
+    // 세션 삭제
+    await clearSession();
   }
 
   /// 연결 해제 (탈퇴)
