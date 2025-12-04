@@ -84,6 +84,50 @@ import 'providers/naver_provider.dart';
 import 'providers/google_provider.dart';
 import 'providers/apple_provider.dart';
 
+/// 인증 토큰 정보
+///
+/// 백엔드 연동 콜백에서 사용됩니다.
+class AuthTokens {
+  /// 액세스 토큰
+  final String? accessToken;
+
+  /// 리프레시 토큰
+  final String? refreshToken;
+
+  /// ID 토큰 (OIDC, 구글/애플)
+  final String? idToken;
+
+  /// 토큰 만료 시간
+  final DateTime? expiresAt;
+
+  const AuthTokens({
+    this.accessToken,
+    this.refreshToken,
+    this.idToken,
+    this.expiresAt,
+  });
+}
+
+/// 백엔드 인증 콜백 타입
+///
+/// 소셜 로그인 성공 후 호출됩니다.
+/// 백엔드 서버에 토큰을 전송하고 JWT 등을 받아올 수 있습니다.
+///
+/// ```dart
+/// onAuthenticated: (provider, tokens, user) async {
+///   final jwt = await myApi.socialLogin(
+///     provider: provider.name,
+///     accessToken: tokens.accessToken,
+///   );
+///   return jwt;  // 저장됨
+/// }
+/// ```
+typedef OnAuthenticatedCallback = Future<String?> Function(
+  AuthProvider provider,
+  AuthTokens tokens,
+  KAuthUser user,
+);
+
 /// K-Auth 메인 클래스
 ///
 /// 모든 소셜 로그인을 통합 관리합니다.
@@ -112,12 +156,34 @@ import 'providers/apple_provider.dart';
 ///   print('로그인 실패: ${result.errorMessage}');
 /// }
 /// ```
+///
+/// ## 백엔드 연동
+///
+/// ```dart
+/// final kAuth = KAuth(
+///   config: config,
+///   onAuthenticated: (provider, tokens, user) async {
+///     // 백엔드에 토큰 전송
+///     final jwt = await myApi.socialLogin(
+///       provider: provider.name,
+///       accessToken: tokens.accessToken,
+///     );
+///     return jwt;  // serverToken으로 저장됨
+///   },
+/// );
+/// ```
 class KAuth {
   /// 설정
   final KAuthConfig config;
 
   /// 설정 검증 여부
   final bool validateOnInitialize;
+
+  /// 백엔드 인증 콜백
+  ///
+  /// 소셜 로그인 성공 후 호출됩니다.
+  /// 반환값은 [serverToken]에 저장됩니다.
+  final OnAuthenticatedCallback? onAuthenticated;
 
   KakaoProvider? _kakaoProvider;
   NaverProvider? _naverProvider;
@@ -126,6 +192,7 @@ class KAuth {
 
   bool _initialized = false;
   AuthResult? _lastResult;
+  String? _serverToken;
 
   /// 인증 상태 변화 스트림 컨트롤러
   final _authStateController = StreamController<KAuthUser?>.broadcast();
@@ -134,9 +201,11 @@ class KAuth {
   ///
   /// [config]: Provider별 설정
   /// [validateOnInitialize]: initialize() 시 설정 검증 여부 (기본: true)
+  /// [onAuthenticated]: 백엔드 인증 콜백 (선택)
   KAuth({
     required this.config,
     this.validateOnInitialize = true,
+    this.onAuthenticated,
   });
 
   /// 초기화 여부
@@ -154,6 +223,11 @@ class KAuth {
   /// 현재 로그인된 Provider
   AuthProvider? get currentProvider =>
       isSignedIn ? _lastResult?.provider : null;
+
+  /// 서버 토큰 (백엔드에서 받은 JWT 등)
+  ///
+  /// [onAuthenticated] 콜백의 반환값이 저장됩니다.
+  String? get serverToken => _serverToken;
 
   /// 인증 상태 변화 스트림
   ///
@@ -284,9 +358,35 @@ class KAuth {
 
     stopwatch.stop();
 
-    if (result.success) {
+    if (result.success && result.user != null) {
       _lastResult = result;
       _authStateController.add(result.user);
+
+      // 백엔드 인증 콜백 호출
+      if (onAuthenticated != null) {
+        try {
+          final tokens = AuthTokens(
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+            idToken: result.idToken,
+            expiresAt: result.expiresAt,
+          );
+
+          _serverToken = await onAuthenticated!(provider, tokens, result.user!);
+
+          KAuthLogger.debug(
+            '백엔드 인증 완료',
+            provider: provider.name,
+            data: {'hasServerToken': _serverToken != null},
+          );
+        } catch (e) {
+          KAuthLogger.error(
+            '백엔드 인증 실패',
+            provider: provider.name,
+            error: e,
+          );
+        }
+      }
 
       KAuthLogger.info(
         '로그인 성공',
@@ -297,7 +397,7 @@ class KAuth {
           'duration': '${stopwatch.elapsedMilliseconds}ms',
         },
       );
-    } else {
+    } else if (!result.success) {
       KAuthLogger.warning(
         '로그인 실패',
         provider: provider.name,
@@ -379,6 +479,7 @@ class KAuth {
 
     if (_lastResult?.provider == targetProvider) {
       _lastResult = null;
+      _serverToken = null;
       _authStateController.add(null);
     }
 
@@ -397,6 +498,7 @@ class KAuth {
     ]);
 
     _lastResult = null;
+    _serverToken = null;
     _authStateController.add(null);
   }
 
