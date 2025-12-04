@@ -292,6 +292,8 @@ class KAuthDiagnostic {
 <array>
   <string>kakaokompassauth</string>
   <string>kakaolink</string>
+  <string>kakaoplus</string>
+  <string>kakaotalk</string>
 </array>''',
     ));
 
@@ -307,16 +309,18 @@ class KAuthDiagnostic {
       provider: AuthProvider.kakao,
       severity: DiagnosticSeverity.info,
       message: 'AndroidManifest.xml 설정을 확인하세요',
-      solution: '''<activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
-  android:exported="true">
-  <intent-filter>
-    <action android:name="android.intent.action.VIEW" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <category android:name="android.intent.category.BROWSABLE" />
-    <data android:host="oauth" android:scheme="kakao{YOUR_NATIVE_APP_KEY}" />
-  </intent-filter>
+      solution: '''<activity
+    android:name="com.kakao.sdk.flutter.AuthCodeCustomTabsActivity"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:host="oauth"
+              android:scheme="kakao{YOUR_NATIVE_APP_KEY}" />
+    </intent-filter>
 </activity>''',
-      docUrl: 'https://developers.kakao.com/docs/latest/ko/getting-started/sdk-android',
+      docUrl: 'https://developers.kakao.com/docs/latest/ko/flutter/getting-started',
     ));
 
     return issues;
@@ -363,13 +367,24 @@ class KAuthDiagnostic {
       ));
     }
 
-    // iOS URL Scheme 검증
+    // iOS 설정 검증
     if (platform == 'ios') {
       issues.add(const DiagnosticIssue(
         provider: AuthProvider.naver,
         severity: DiagnosticSeverity.info,
-        message: 'Info.plist에 URL Scheme 설정을 확인하세요',
-        solution: '''<key>CFBundleURLTypes</key>
+        message: 'Info.plist에 네이버 설정을 확인하세요',
+        solution: '''<!-- 네이버 SDK 필수 키 -->
+<key>NidClientID</key>
+<string>YOUR_CLIENT_ID</string>
+<key>NidClientSecret</key>
+<string>YOUR_CLIENT_SECRET</string>
+<key>NidAppName</key>
+<string>YOUR_APP_NAME</string>
+<key>NidUrlScheme</key>
+<string>your-app-url-scheme</string>
+
+<!-- URL Scheme -->
+<key>CFBundleURLTypes</key>
 <array>
   <dict>
     <key>CFBundleURLSchemes</key>
@@ -378,11 +393,41 @@ class KAuthDiagnostic {
     </array>
   </dict>
 </array>
+
+<!-- 앱 실행 허용 -->
 <key>LSApplicationQueriesSchemes</key>
 <array>
   <string>naversearchapp</string>
   <string>naversearchthirdlogin</string>
 </array>''',
+        docUrl: 'https://pub.dev/packages/flutter_naver_login',
+      ));
+    }
+
+    // Android 설정 검증
+    if (platform == 'android') {
+      issues.add(const DiagnosticIssue(
+        provider: AuthProvider.naver,
+        severity: DiagnosticSeverity.info,
+        message: 'Android 설정을 확인하세요',
+        solution: '''1. MainActivity가 FlutterFragmentActivity를 상속하는지 확인:
+   class MainActivity: FlutterFragmentActivity()
+
+2. AndroidManifest.xml에 메타데이터 추가:
+   <application>
+     <meta-data android:name="com.naver.sdk.clientId"
+                android:value="@string/client_id" />
+     <meta-data android:name="com.naver.sdk.clientSecret"
+                android:value="@string/client_secret" />
+     <meta-data android:name="com.naver.sdk.clientName"
+                android:value="@string/client_name" />
+   </application>
+
+3. res/values/strings.xml에 값 추가:
+   <string name="client_id">YOUR_CLIENT_ID</string>
+   <string name="client_secret">YOUR_CLIENT_SECRET</string>
+   <string name="client_name">YOUR_APP_NAME</string>''',
+        docUrl: 'https://pub.dev/packages/flutter_naver_login',
       ));
     }
 
@@ -423,19 +468,28 @@ class KAuthDiagnostic {
       issues.add(const DiagnosticIssue(
         provider: AuthProvider.google,
         severity: DiagnosticSeverity.info,
-        message: 'Info.plist에 URL Scheme 설정을 확인하세요',
-        solution: '''GoogleService-Info.plist의 REVERSED_CLIENT_ID를
-URL Scheme으로 등록해야 합니다.
+        message: 'Info.plist에 구글 로그인 설정을 확인하세요',
+        solution: '''<!-- 1. GIDClientID 추가 (GoogleService-Info.plist의 CLIENT_ID) -->
+<key>GIDClientID</key>
+<string>YOUR_IOS_CLIENT_ID.apps.googleusercontent.com</string>
 
+<!-- 2. (선택) 백엔드 연동 시 서버 클라이언트 ID -->
+<key>GIDServerClientID</key>
+<string>YOUR_SERVER_CLIENT_ID.apps.googleusercontent.com</string>
+
+<!-- 3. URL Scheme 등록 (REVERSED_CLIENT_ID) -->
 <key>CFBundleURLTypes</key>
 <array>
   <dict>
+    <key>CFBundleTypeRole</key>
+    <string>Editor</string>
     <key>CFBundleURLSchemes</key>
     <array>
       <string>com.googleusercontent.apps.YOUR_CLIENT_ID</string>
     </array>
   </dict>
 </array>''',
+        docUrl: 'https://pub.dev/packages/google_sign_in',
       ));
     }
 

@@ -323,6 +323,8 @@ for (final issue in result.errors) {
 
 ## 플랫폼 설정
 
+> 💡 설정이 잘 되었는지 확인하려면 `KAuthDiagnostic.run()`을 사용하세요!
+
 ### iOS (`ios/Runner/Info.plist`)
 
 ```xml
@@ -332,7 +334,7 @@ for (final issue in result.errors) {
   <dict>
     <key>CFBundleURLSchemes</key>
     <array>
-      <string>kakao{YOUR_APP_KEY}</string>
+      <string>kakao{YOUR_NATIVE_APP_KEY}</string>
     </array>
   </dict>
 </array>
@@ -340,25 +342,74 @@ for (final issue in result.errors) {
 <array>
   <string>kakaokompassauth</string>
   <string>kakaolink</string>
+  <string>kakaoplus</string>
+  <string>kakaotalk</string>
 </array>
 
-<!-- 애플: Signing & Capabilities에서 "Sign in with Apple" 추가 -->
+<!-- 구글 -->
+<key>GIDClientID</key>
+<string>{YOUR_IOS_CLIENT_ID}.apps.googleusercontent.com</string>
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>com.googleusercontent.apps.{YOUR_CLIENT_ID}</string>
+    </array>
+  </dict>
+</array>
+
+<!-- 네이버 -->
+<key>NidClientID</key>
+<string>{YOUR_CLIENT_ID}</string>
+<key>NidClientSecret</key>
+<string>{YOUR_CLIENT_SECRET}</string>
+<key>NidAppName</key>
+<string>{YOUR_APP_NAME}</string>
+<key>LSApplicationQueriesSchemes</key>
+<array>
+  <string>naversearchapp</string>
+  <string>naversearchthirdlogin</string>
+</array>
+
+<!-- 애플: Xcode > Signing & Capabilities > + > "Sign in with Apple" 추가 -->
 ```
 
-### Android (`android/app/src/main/AndroidManifest.xml`)
+### Android
 
+**카카오** (`android/app/src/main/AndroidManifest.xml`)
 ```xml
-<!-- 카카오 -->
-<activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+<activity
+    android:name="com.kakao.sdk.flutter.AuthCodeCustomTabsActivity"
     android:exported="true">
     <intent-filter>
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-        <data android:host="oauth" android:scheme="kakao{YOUR_APP_KEY}" />
+        <data android:host="oauth"
+              android:scheme="kakao{YOUR_NATIVE_APP_KEY}" />
     </intent-filter>
 </activity>
 ```
+
+**네이버** - `MainActivity`가 `FlutterFragmentActivity`를 상속해야 합니다:
+```kotlin
+// MainActivity.kt
+import io.flutter.embedding.android.FlutterFragmentActivity
+
+class MainActivity: FlutterFragmentActivity()
+```
+
+```xml
+<!-- AndroidManifest.xml -->
+<application>
+  <meta-data android:name="com.naver.sdk.clientId" android:value="@string/client_id" />
+  <meta-data android:name="com.naver.sdk.clientSecret" android:value="@string/client_secret" />
+  <meta-data android:name="com.naver.sdk.clientName" android:value="@string/client_name" />
+</application>
+```
+
+**구글** - `android/app/google-services.json` 파일 추가
 
 ## 마이그레이션
 
