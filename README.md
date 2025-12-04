@@ -285,6 +285,42 @@ result.when(
 | `GOOGLE_MISSING_IOS_CLIENT_ID` | iOS Client ID 미설정 |
 | `APPLE_NOT_SUPPORTED` | 애플 로그인 미지원 기기 |
 
+## 설정 진단
+
+네이티브 설정이 잘 되어있는지 확인할 수 있습니다:
+
+```dart
+// 진단 실행
+final result = await KAuthDiagnostic.run(kAuth.config);
+
+// 결과 확인
+if (result.hasErrors) {
+  print(result.prettyPrint());
+  // ═══════════════════════════════════════
+  //   K-Auth 진단 결과
+  // ═══════════════════════════════════════
+  // 플랫폼: ios
+  //
+  // 발견된 문제: 2개
+  //   - 에러: 1개
+  //   - 경고: 1개
+  //
+  // ❌ [카카오] URL Scheme이 Info.plist에 등록되지 않았습니다
+  //    💡 해결: Info.plist에 kakao{APP_KEY} URL Scheme 추가
+  //    📖 문서: https://developers.kakao.com/docs/...
+}
+
+// 개별 이슈 처리
+for (final issue in result.errors) {
+  print('${issue.provider}: ${issue.message}');
+  if (issue.solution != null) {
+    print('해결: ${issue.solution}');
+  }
+}
+```
+
+앱 개발 중 설정 문제로 로그인이 안 될 때 유용합니다!
+
 ## 플랫폼 설정
 
 ### iOS (`ios/Runner/Info.plist`)

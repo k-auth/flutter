@@ -961,4 +961,120 @@ void main() {
       expect(event.toString(), contains('userId'));
     });
   });
+
+  group('DiagnosticIssue', () {
+    test('toString이 올바른 형식을 반환한다', () {
+      const issue = DiagnosticIssue(
+        provider: AuthProvider.kakao,
+        severity: DiagnosticSeverity.error,
+        message: 'appKey가 비어있습니다',
+      );
+
+      expect(issue.toString(), contains('❌'));
+      expect(issue.toString(), contains('카카오'));
+      expect(issue.toString(), contains('appKey가 비어있습니다'));
+    });
+
+    test('warning은 경고 이모지를 표시한다', () {
+      const issue = DiagnosticIssue(
+        severity: DiagnosticSeverity.warning,
+        message: '경고 메시지',
+      );
+
+      expect(issue.toString(), contains('⚠️'));
+    });
+
+    test('info는 정보 이모지를 표시한다', () {
+      const issue = DiagnosticIssue(
+        severity: DiagnosticSeverity.info,
+        message: '정보 메시지',
+      );
+
+      expect(issue.toString(), contains('ℹ️'));
+    });
+  });
+
+  group('DiagnosticResult', () {
+    test('에러가 있으면 hasErrors가 true다', () {
+      final result = DiagnosticResult(
+        issues: const [
+          DiagnosticIssue(
+            severity: DiagnosticSeverity.error,
+            message: '에러',
+          ),
+        ],
+        timestamp: DateTime.now(),
+        platform: 'ios',
+      );
+
+      expect(result.hasErrors, true);
+      expect(result.isHealthy, false);
+    });
+
+    test('에러가 없으면 isHealthy가 true다', () {
+      final result = DiagnosticResult(
+        issues: const [
+          DiagnosticIssue(
+            severity: DiagnosticSeverity.warning,
+            message: '경고',
+          ),
+        ],
+        timestamp: DateTime.now(),
+        platform: 'ios',
+      );
+
+      expect(result.hasErrors, false);
+      expect(result.isHealthy, true);
+      expect(result.hasWarnings, true);
+    });
+
+    test('errors 필터링이 동작한다', () {
+      final result = DiagnosticResult(
+        issues: const [
+          DiagnosticIssue(severity: DiagnosticSeverity.error, message: '에러1'),
+          DiagnosticIssue(severity: DiagnosticSeverity.warning, message: '경고'),
+          DiagnosticIssue(severity: DiagnosticSeverity.error, message: '에러2'),
+        ],
+        timestamp: DateTime.now(),
+        platform: 'android',
+      );
+
+      expect(result.errors.length, 2);
+      expect(result.warnings.length, 1);
+    });
+
+    test('prettyPrint가 포맷된 문자열을 반환한다', () {
+      final result = DiagnosticResult(
+        issues: const [
+          DiagnosticIssue(
+            provider: AuthProvider.kakao,
+            severity: DiagnosticSeverity.error,
+            message: 'appKey가 비어있습니다',
+            solution: 'appKey를 설정하세요',
+          ),
+        ],
+        timestamp: DateTime.now(),
+        platform: 'ios',
+      );
+
+      final output = result.prettyPrint();
+
+      expect(output, contains('K-Auth 진단 결과'));
+      expect(output, contains('플랫폼: ios'));
+      expect(output, contains('발견된 문제'));
+      expect(output, contains('에러: 1개'));
+      expect(output, contains('💡 해결:'));
+    });
+
+    test('문제가 없으면 성공 메시지를 표시한다', () {
+      final result = DiagnosticResult(
+        issues: const [],
+        timestamp: DateTime.now(),
+        platform: 'ios',
+      );
+
+      final output = result.prettyPrint();
+      expect(output, contains('모든 설정이 정상입니다'));
+    });
+  });
 }

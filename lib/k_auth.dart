@@ -67,6 +67,7 @@ export 'errors/k_auth_error.dart';
 
 // Utils
 export 'utils/logger.dart';
+export 'utils/diagnostic.dart';
 
 // Widgets
 export 'widgets/login_buttons.dart';
