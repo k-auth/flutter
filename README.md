@@ -3,9 +3,16 @@
 한국 앱을 위한 소셜 로그인 SDK. 카카오, 네이버, 구글, 애플을 하나의 API로 구현하세요.
 
 [![pub package](https://img.shields.io/pub/v/k_auth.svg)](https://pub.dev/packages/k_auth)
+[![pub points](https://img.shields.io/pub/points/k_auth)](https://pub.dev/packages/k_auth/score)
+[![pub likes](https://img.shields.io/pub/likes/k_auth)](https://pub.dev/packages/k_auth)
+[![pub popularity](https://img.shields.io/pub/popularity/k_auth)](https://pub.dev/packages/k_auth)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Next.js 버전**: [k-auth/next](https://github.com/k-auth/next)
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/k-auth/flutter/main/.github/assets/demo.gif" width="300" alt="K-Auth Demo" />
+</p>
 
 ## 왜 K-Auth인가요?
 

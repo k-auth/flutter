@@ -2,6 +2,11 @@
 
 K-Auth에 기여해 주셔서 감사합니다!
 
+## 시작하기 전에
+
+- 기존 [이슈](https://github.com/k-auth/flutter/issues)를 확인해서 중복된 이슈가 있는지 확인해주세요
+- 큰 변경사항은 먼저 이슈를 생성해서 논의해주세요
+
 ## 개발 환경 설정
 
 ```bash
@@ -15,24 +20,45 @@ flutter pub get
 # 테스트 실행
 flutter test
 
-# 분석 실행
+# 정적 분석
 dart analyze
+
+# 포맷팅
+dart format .
 ```
+
+## 이슈 등록
+
+### 버그 리포트
+- 재현 가능한 최소한의 코드 예시를 포함해주세요
+- Flutter/Dart 버전, OS, Provider 종류를 명시해주세요
+- 에러 메시지 전체를 포함해주세요
+
+### 기능 제안
+- 왜 이 기능이 필요한지 설명해주세요
+- 가능하다면 API 디자인 예시를 포함해주세요
 
 ## Pull Request 가이드
 
-1. 이슈를 먼저 생성해 주세요
-2. `main` 브랜치에서 새 브랜치를 생성하세요
-3. 변경사항을 커밋하세요
-4. 테스트를 추가/수정하세요
-5. `flutter test`와 `dart analyze`가 통과하는지 확인하세요
-6. Pull Request를 생성하세요
+### 1. 브랜치 생성
 
-## 커밋 메시지
+```bash
+git checkout -b feat/your-feature
+# 또는
+git checkout -b fix/your-bugfix
+```
+
+### 2. 개발
+
+- 코드 스타일 가이드를 따라주세요
+- 테스트를 추가해주세요
+- dartdoc 주석을 작성해주세요
+
+### 3. 커밋
 
 [Conventional Commits](https://www.conventionalcommits.org/) 형식을 따릅니다:
 
-```
+```bash
 feat: 새 기능 추가
 fix: 버그 수정
 docs: 문서 수정
@@ -41,20 +67,87 @@ refactor: 리팩토링
 chore: 기타 변경
 ```
 
+예시:
+```bash
+git commit -m "feat: Apple 로그인에 nonce 지원 추가"
+git commit -m "fix: 카카오 로그인 취소 시 에러 처리"
+git commit -m "docs: README에 트러블슈팅 섹션 추가"
+```
+
+### 4. PR 생성 전 체크리스트
+
+- [ ] `flutter test` 통과
+- [ ] `dart analyze` 경고 없음
+- [ ] `dart format .` 적용
+- [ ] 새 public API에 dartdoc 주석 작성
+- [ ] CHANGELOG.md 업데이트 (필요한 경우)
+
+### 5. PR 생성
+
+- PR 템플릿을 따라 작성해주세요
+- 관련 이슈를 링크해주세요 (`Fixes #123`)
+- 스크린샷이나 GIF가 있으면 좋습니다
+
 ## 코드 스타일
 
+### Dart 스타일
+- [Effective Dart](https://dart.dev/guides/language/effective-dart) 가이드 준수
 - `dart format .`으로 포맷팅
 - `dart analyze`에서 경고 없어야 함
+
+### 주석
 - 모든 public API에 dartdoc 주석 필수
+- 한글 주석 사용 권장
 
-## 테스트
+```dart
+/// 카카오 로그인을 실행합니다.
+///
+/// [scopes]에 추가 scope를 지정할 수 있습니다.
+///
+/// ```dart
+/// final result = await kAuth.signInWithKakao();
+/// ```
+Future<AuthResult> signInWithKakao() async {
+  // ...
+}
+```
 
-새 기능 추가 시 테스트도 함께 추가해 주세요:
+### 네이밍
+- 클래스: `PascalCase`
+- 함수/변수: `camelCase`
+- 상수: `camelCase` (Dart 권장)
+- 파일: `snake_case.dart`
+
+## 테스트 작성
 
 ```bash
+# 전체 테스트
 flutter test
+
+# 특정 파일
+flutter test test/auth_result_test.dart
+
+# 커버리지
+flutter test --coverage
 ```
+
+테스트 파일은 `test/` 디렉토리에 위치하며, `_test.dart` 접미사를 사용합니다.
+
+## 문서 작성
+
+- README.md: 사용자를 위한 빠른 시작 가이드
+- dartdoc: API 레퍼런스 (코드 내 주석)
+- example/: 동작하는 예제 코드
+
+## Good First Issues
+
+처음 기여하시는 분은 [`good first issue`](https://github.com/k-auth/flutter/labels/good%20first%20issue) 라벨이 붙은 이슈를 확인해주세요.
 
 ## 질문
 
-질문이 있으시면 [이슈](https://github.com/k-auth/flutter/issues)를 등록해 주세요.
+- [GitHub Issues](https://github.com/k-auth/flutter/issues)에 질문을 남겨주세요
+- `question` 라벨을 사용해주세요
+
+## 라이선스
+
+기여하신 코드는 [MIT License](LICENSE)로 배포됩니다.
