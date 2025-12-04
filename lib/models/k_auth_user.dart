@@ -169,12 +169,12 @@ class KAuthUser {
   }
 
   /// 표시할 이름 (name이 없으면 email의 @ 앞부분 사용)
-  String get displayName {
+  String? get displayName {
     if (name != null && name!.isNotEmpty) return name!;
     if (email != null && email!.contains('@')) {
       return email!.split('@').first;
     }
-    return 'User';
+    return null;
   }
 
   /// 만 나이 계산 (birthyear가 있는 경우)

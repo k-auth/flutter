@@ -176,43 +176,16 @@ class KakaoConfig {
   /// 추가 scope (기본 scope 외 추가로 필요한 경우)
   final List<String>? additionalScopes;
 
-  /// 전화번호 수집 여부 (하위 호환성)
-  @Deprecated('Use collect.phone instead')
-  final bool collectPhone;
-
   const KakaoConfig({
     required this.appKey,
     this.collect = const KakaoCollectOptions(),
     this.additionalScopes,
-    @Deprecated('Use collect.phone instead') this.collectPhone = false,
   });
-
-  /// 기존 scopes 파라미터 호환 생성자
-  @Deprecated('Use collect parameter instead')
-  factory KakaoConfig.withScopes({
-    required String appKey,
-    List<String>? scopes,
-    bool collectPhone = false,
-  }) {
-    return KakaoConfig(
-      appKey: appKey,
-      additionalScopes: scopes,
-      // ignore: deprecated_member_use_from_same_package
-      collectPhone: collectPhone,
-    );
-  }
 
   /// 전체 scope 목록
   List<String> get allScopes {
     final scopes = collect.toScopes();
 
-    // 하위 호환성: collectPhone이 true면 phone 추가
-    // ignore: deprecated_member_use_from_same_package
-    if (collectPhone && !scopes.contains('phone_number')) {
-      scopes.add('phone_number');
-    }
-
-    // 추가 scope 병합
     if (additionalScopes != null) {
       scopes.addAll(additionalScopes!);
     }
@@ -393,20 +366,6 @@ class GoogleConfig {
     this.forceConsent = false,
   });
 
-  /// 기존 scopes 파라미터 호환 생성자
-  @Deprecated('Use collect parameter instead')
-  factory GoogleConfig.withScopes({
-    String? iosClientId,
-    String? serverClientId,
-    List<String>? scopes,
-  }) {
-    return GoogleConfig(
-      iosClientId: iosClientId,
-      serverClientId: serverClientId,
-      additionalScopes: scopes,
-    );
-  }
-
   /// 전체 scope 목록
   List<String> get allScopes {
     final scopes = collect.toScopes();
@@ -420,7 +379,6 @@ class GoogleConfig {
 
   /// 설정 검증
   List<KAuthError> validate() {
-    // Google은 기본 설정으로도 동작 가능
     return [];
   }
 }
@@ -453,18 +411,12 @@ class AppleConfig {
   /// 수집 옵션
   final AppleCollectOptions collect;
 
-  /// 추가 scope (기본: email, fullName)
-  @Deprecated('Use collect parameter instead')
-  final List<String>? scopes;
-
   const AppleConfig({
     this.collect = const AppleCollectOptions(),
-    @Deprecated('Use collect parameter instead') this.scopes,
   });
 
   /// 설정 검증
   List<KAuthError> validate() {
-    // Apple은 별도 키 설정 없이 Capability만 있으면 동작
     return [];
   }
 }

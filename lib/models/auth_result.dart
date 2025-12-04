@@ -1,28 +1,87 @@
 import 'k_auth_user.dart';
 
-/// 소셜 로그인 결과
+/// 소셜 로그인 결과를 나타내는 클래스
+///
+/// [KAuth.signIn] 메서드의 반환값으로, 로그인 성공/실패 정보와
+/// 사용자 정보, 토큰 등을 포함합니다.
+///
+/// ## 기본 사용법
+///
+/// ```dart
+/// final result = await kAuth.signIn(AuthProvider.kakao);
+///
+/// if (result.success) {
+///   final user = result.user!;
+///   print('환영합니다, ${user.displayName}!');
+/// } else {
+///   print('로그인 실패: ${result.errorMessage}');
+/// }
+/// ```
+///
+/// ## 함수형 스타일 (권장)
+///
+/// ```dart
+/// // fold: 성공/실패 분기
+/// final message = result.fold(
+///   onSuccess: (user) => '환영합니다, ${user.displayName}!',
+///   onFailure: (error) => '로그인 실패: $error',
+/// );
+///
+/// // when: 성공/취소/실패 세분화
+/// result.when(
+///   success: (user) => navigateToHome(user),
+///   cancelled: () => showToast('로그인을 취소했습니다'),
+///   failure: (code, msg) => showError(msg),
+/// );
+///
+/// // 체이닝
+/// result
+///   .onSuccess((user) => saveUser(user))
+///   .onFailure((code, msg) => logError(msg));
+///
+/// // 값 추출
+/// final name = result.mapUserOr((u) => u.displayName, 'Guest');
+/// ```
+///
+/// ## 토큰 관리
+///
+/// ```dart
+/// if (result.isExpired) {
+///   // 토큰 만료됨, 재로그인 필요
+/// }
+///
+/// if (result.isExpiringSoon()) {
+///   // 5분 내 만료 예정, 갱신 권장
+/// }
+///
+/// print('남은 시간: ${result.timeUntilExpiry}');
+/// ```
+///
+/// ## JSON 직렬화
+///
+/// ```dart
+/// // 저장
+/// final json = result.toJson();
+/// await storage.write('auth', jsonEncode(json));
+///
+/// // 복원
+/// final data = jsonDecode(await storage.read('auth'));
+/// final restored = AuthResult.fromJson(data);
+/// ```
+///
+/// See also:
+/// - [KAuthUser] - 표준화된 사용자 정보
+/// - [AuthProvider] - 지원하는 로그인 Provider
+/// - [KAuth.signIn] - 로그인 실행 메서드
 class AuthResult {
   /// 로그인 성공 여부
   final bool success;
 
   /// 표준화된 사용자 정보
+  ///
+  /// 로그인 성공 시에만 값이 있습니다.
+  /// `user.id`, `user.email`, `user.name` 등으로 접근하세요.
   final KAuthUser? user;
-
-  /// 사용자 고유 ID (provider별 고유값)
-  /// [user.id]와 동일 (하위 호환성 유지)
-  final String? userId;
-
-  /// 사용자 이메일
-  /// [user.email]와 동일 (하위 호환성 유지)
-  final String? email;
-
-  /// 사용자 이름
-  /// [user.name]와 동일 (하위 호환성 유지)
-  final String? name;
-
-  /// 프로필 이미지 URL
-  /// [user.image]와 동일 (하위 호환성 유지)
-  final String? profileImageUrl;
 
   /// 액세스 토큰
   final String? accessToken;
@@ -55,10 +114,6 @@ class AuthResult {
     required this.success,
     required this.provider,
     this.user,
-    this.userId,
-    this.email,
-    this.name,
-    this.profileImageUrl,
     this.accessToken,
     this.refreshToken,
     this.idToken,
@@ -83,10 +138,6 @@ class AuthResult {
       success: true,
       provider: provider,
       user: user,
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      profileImageUrl: user.image,
       accessToken: accessToken,
       refreshToken: refreshToken,
       idToken: idToken,
@@ -135,10 +186,6 @@ class AuthResult {
         'success': success,
         'provider': provider.name,
         if (user != null) 'user': user!.toJson(),
-        if (userId != null) 'userId': userId,
-        if (email != null) 'email': email,
-        if (name != null) 'name': name,
-        if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
         if (accessToken != null) 'accessToken': accessToken,
         if (refreshToken != null) 'refreshToken': refreshToken,
         if (idToken != null) 'idToken': idToken,
@@ -159,10 +206,6 @@ class AuthResult {
       user: json['user'] != null
           ? KAuthUser.fromJson(json['user'] as Map<String, dynamic>)
           : null,
-      userId: json['userId'] as String?,
-      email: json['email'] as String?,
-      name: json['name'] as String?,
-      profileImageUrl: json['profileImageUrl'] as String?,
       accessToken: json['accessToken'] as String?,
       refreshToken: json['refreshToken'] as String?,
       idToken: json['idToken'] as String?,
@@ -176,6 +219,99 @@ class AuthResult {
     );
   }
 
+  /// 성공/실패에 따라 다른 값 반환
+  ///
+  /// ```dart
+  /// final message = result.fold(
+  ///   onSuccess: (user) => '환영합니다, ${user.displayName}님!',
+  ///   onFailure: (error) => '로그인 실패: $error',
+  /// );
+  /// ```
+  T fold<T>({
+    required T Function(KAuthUser user) onSuccess,
+    required T Function(String? errorMessage) onFailure,
+  }) {
+    if (success && user != null) {
+      return onSuccess(user!);
+    }
+    return onFailure(errorMessage);
+  }
+
+  /// 성공/실패/취소에 따라 다른 값 반환
+  ///
+  /// ```dart
+  /// result.when(
+  ///   success: (user) => navigateToHome(user),
+  ///   cancelled: () => showToast('로그인을 취소했습니다'),
+  ///   failure: (code, message) => showError(message),
+  /// );
+  /// ```
+  T when<T>({
+    required T Function(KAuthUser user) success,
+    required T Function() cancelled,
+    required T Function(String? code, String? message) failure,
+  }) {
+    if (this.success && user != null) {
+      return success(user!);
+    }
+    if (errorCode == 'USER_CANCELLED') {
+      return cancelled();
+    }
+    return failure(errorCode, errorMessage);
+  }
+
+  /// 성공 시에만 콜백 실행
+  ///
+  /// ```dart
+  /// result.onSuccess((user) {
+  ///   print('로그인 성공: ${user.name}');
+  /// });
+  /// ```
+  AuthResult onSuccess(void Function(KAuthUser user) callback) {
+    if (success && user != null) {
+      callback(user!);
+    }
+    return this;
+  }
+
+  /// 실패 시에만 콜백 실행
+  ///
+  /// ```dart
+  /// result.onFailure((code, message) {
+  ///   print('에러: $message');
+  /// });
+  /// ```
+  AuthResult onFailure(void Function(String? code, String? message) callback) {
+    if (!success) {
+      callback(errorCode, errorMessage);
+    }
+    return this;
+  }
+
+  /// 사용자 정보를 변환하여 반환 (실패 시 null)
+  ///
+  /// ```dart
+  /// final userName = result.mapUser((user) => user.displayName);
+  /// ```
+  T? mapUser<T>(T Function(KAuthUser user) mapper) {
+    if (success && user != null) {
+      return mapper(user!);
+    }
+    return null;
+  }
+
+  /// 사용자 정보를 변환하거나 기본값 반환
+  ///
+  /// ```dart
+  /// final userName = result.mapUserOr((user) => user.displayName, 'Guest');
+  /// ```
+  T mapUserOr<T>(T Function(KAuthUser user) mapper, T defaultValue) {
+    if (success && user != null) {
+      return mapper(user!);
+    }
+    return defaultValue;
+  }
+
   @override
   String toString() {
     if (success) {
@@ -186,10 +322,57 @@ class AuthResult {
 }
 
 /// 지원하는 소셜 로그인 Provider
+///
+/// K-Auth에서 지원하는 OAuth Provider 목록입니다.
+///
+/// ## 사용 예시
+///
+/// ```dart
+/// // 특정 Provider로 로그인
+/// await kAuth.signIn(AuthProvider.kakao);
+///
+/// // 설정된 Provider 확인
+/// if (kAuth.isConfigured(AuthProvider.naver)) {
+///   print('네이버 로그인 가능');
+/// }
+///
+/// // Provider 정보 접근
+/// print(AuthProvider.kakao.displayName);  // '카카오'
+/// print(AuthProvider.kakao.supportsUnlink);  // true
+/// ```
+///
+/// ## Provider별 특징
+///
+/// | Provider | 연결해제 | 토큰갱신 | 비고 |
+/// |----------|---------|---------|------|
+/// | kakao | O | O | Native App Key 필요 |
+/// | naver | O | O | scope 미지원 (개발자센터에서 설정) |
+/// | google | O | O | iOS는 iosClientId 필요 |
+/// | apple | X | X | iOS 13+, macOS만 지원 |
 enum AuthProvider {
+  /// 카카오 로그인
+  ///
+  /// [KakaoConfig]로 설정합니다.
+  /// Native App Key가 필요합니다 (REST API Key 아님).
   kakao,
+
+  /// 네이버 로그인
+  ///
+  /// [NaverConfig]로 설정합니다.
+  /// scope 파라미터를 지원하지 않으므로 개발자센터에서 직접 설정해야 합니다.
   naver,
+
+  /// 구글 로그인
+  ///
+  /// [GoogleConfig]로 설정합니다.
+  /// iOS에서는 iosClientId가 필요합니다.
   google,
+
+  /// 애플 로그인
+  ///
+  /// [AppleConfig]로 설정합니다.
+  /// iOS 13+, macOS에서만 지원됩니다.
+  /// 첫 로그인 시에만 이름을 제공합니다.
   apple;
 
   /// 표시용 이름

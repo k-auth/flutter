@@ -4,18 +4,23 @@ import 'package:k_auth/k_auth.dart';
 void main() {
   group('AuthResult', () {
     test('성공 결과를 생성한다', () {
-      final result = AuthResult.success(
-        provider: AuthProvider.kakao,
-        userId: '12345',
+      final user = KAuthUser(
+        id: '12345',
         email: 'test@example.com',
         name: '홍길동',
+        provider: 'kakao',
+      );
+
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
       );
 
       expect(result.success, true);
       expect(result.provider, AuthProvider.kakao);
-      expect(result.userId, '12345');
-      expect(result.email, 'test@example.com');
-      expect(result.name, '홍길동');
+      expect(result.user?.id, '12345');
+      expect(result.user?.email, 'test@example.com');
+      expect(result.user?.name, '홍길동');
       expect(result.errorMessage, isNull);
     });
 
@@ -30,20 +35,202 @@ void main() {
       expect(result.provider, AuthProvider.naver);
       expect(result.errorMessage, '로그인 실패');
       expect(result.errorCode, ErrorCodes.loginFailed);
-      expect(result.userId, isNull);
+      expect(result.user, isNull);
     });
 
-    test('toString이 올바른 형식을 반환한다', () {
+    test('토큰 만료 확인이 동작한다', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+
+      final expired = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+      );
+
+      final valid = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      );
+
+      expect(expired.isExpired, true);
+      expect(valid.isExpired, false);
+    });
+
+    test('토큰 곧 만료 확인이 동작한다', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+
+      final expiringSoon = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+        expiresAt: DateTime.now().add(const Duration(minutes: 3)),
+      );
+
+      expect(expiringSoon.isExpiringSoon(), true);
+      expect(expiringSoon.isExpiringSoon(const Duration(minutes: 1)), false);
+    });
+
+    test('JSON 직렬화가 동작한다', () {
+      final user = KAuthUser(
+        id: '12345',
+        email: 'test@example.com',
+        provider: 'google',
+      );
+
       final result = AuthResult.success(
         provider: AuthProvider.google,
-        userId: '12345',
-        email: 'test@example.com',
+        user: user,
+        accessToken: 'token123',
+      );
+
+      final json = result.toJson();
+      final restored = AuthResult.fromJson(json);
+
+      expect(restored.success, true);
+      expect(restored.provider, AuthProvider.google);
+      expect(restored.user?.id, '12345');
+      expect(restored.accessToken, 'token123');
+    });
+
+    test('fold가 성공 시 onSuccess를 실행한다', () {
+      final user = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+      );
+
+      final message = result.fold(
+        onSuccess: (u) => '환영합니다, ${u.name}!',
+        onFailure: (e) => '실패: $e',
+      );
+
+      expect(message, '환영합니다, 홍길동!');
+    });
+
+    test('fold가 실패 시 onFailure를 실행한다', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '로그인 실패',
+      );
+
+      final message = result.fold(
+        onSuccess: (u) => '환영합니다!',
+        onFailure: (e) => '에러: $e',
+      );
+
+      expect(message, '에러: 로그인 실패');
+    });
+
+    test('when이 성공/취소/실패를 구분한다', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+
+      final successResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+      );
+      final cancelledResult = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '취소됨',
+        errorCode: 'USER_CANCELLED',
+      );
+      final failureResult = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '네트워크 오류',
+        errorCode: 'NETWORK_ERROR',
       );
 
       expect(
-        result.toString(),
-        'AuthResult(success: true, provider: AuthProvider.google, userId: 12345, email: test@example.com)',
+        successResult.when(
+          success: (_) => 'success',
+          cancelled: () => 'cancelled',
+          failure: (_, __) => 'failure',
+        ),
+        'success',
       );
+
+      expect(
+        cancelledResult.when(
+          success: (_) => 'success',
+          cancelled: () => 'cancelled',
+          failure: (_, __) => 'failure',
+        ),
+        'cancelled',
+      );
+
+      expect(
+        failureResult.when(
+          success: (_) => 'success',
+          cancelled: () => 'cancelled',
+          failure: (_, __) => 'failure',
+        ),
+        'failure',
+      );
+    });
+
+    test('onSuccess가 체이닝을 지원한다', () {
+      final user = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+      );
+
+      String? capturedName;
+      String? capturedError;
+
+      result
+          .onSuccess((u) => capturedName = u.name)
+          .onFailure((_, msg) => capturedError = msg);
+
+      expect(capturedName, '홍길동');
+      expect(capturedError, isNull);
+    });
+
+    test('onFailure가 체이닝을 지원한다', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '실패',
+      );
+
+      String? capturedName;
+      String? capturedError;
+
+      result
+          .onSuccess((u) => capturedName = u.name)
+          .onFailure((_, msg) => capturedError = msg);
+
+      expect(capturedName, isNull);
+      expect(capturedError, '실패');
+    });
+
+    test('mapUser가 성공 시 변환된 값을 반환한다', () {
+      final user = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+      );
+
+      final name = result.mapUser((u) => u.name);
+      expect(name, '홍길동');
+    });
+
+    test('mapUser가 실패 시 null을 반환한다', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '실패',
+      );
+
+      final name = result.mapUser((u) => u.name);
+      expect(name, isNull);
+    });
+
+    test('mapUserOr가 실패 시 기본값을 반환한다', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '실패',
+      );
+
+      final name = result.mapUserOr((u) => u.name ?? 'Unknown', 'Guest');
+      expect(name, 'Guest');
     });
   });
 
@@ -56,20 +243,17 @@ void main() {
       expect(config.allScopes, contains('account_email'));
     });
 
-    test('collectPhone이 true이면 phone_number scope를 추가한다', () {
+    test('collect 옵션으로 phone scope를 추가한다', () {
       final config = KakaoConfig(
         appKey: 'test_key',
-        collectPhone: true,
+        collect: const KakaoCollectOptions(phone: true),
       );
 
       expect(config.allScopes, contains('phone_number'));
     });
 
-    test('collectPhone이 false이면 phone_number scope를 포함하지 않는다', () {
-      final config = KakaoConfig(
-        appKey: 'test_key',
-        collectPhone: false,
-      );
+    test('collect 옵션 기본값은 phone을 포함하지 않는다', () {
+      final config = KakaoConfig(appKey: 'test_key');
 
       expect(config.allScopes, isNot(contains('phone_number')));
     });
@@ -77,7 +261,7 @@ void main() {
     test('추가 scope를 포함한다', () {
       final config = KakaoConfig(
         appKey: 'test_key',
-        scopes: ['friends', 'talk_message'],
+        additionalScopes: ['friends', 'talk_message'],
       );
 
       expect(config.allScopes, contains('friends'));
@@ -87,13 +271,20 @@ void main() {
     test('중복 scope를 제거한다', () {
       final config = KakaoConfig(
         appKey: 'test_key',
-        scopes: ['profile_nickname', 'friends'],
+        additionalScopes: ['profile_nickname', 'friends'],
       );
 
-      final nicknameCount = config.allScopes
-          .where((s) => s == 'profile_nickname')
-          .length;
+      final nicknameCount =
+          config.allScopes.where((s) => s == 'profile_nickname').length;
       expect(nicknameCount, 1);
+    });
+
+    test('빈 appKey는 검증 에러를 반환한다', () {
+      final config = KakaoConfig(appKey: '');
+      final errors = config.validate();
+
+      expect(errors, isNotEmpty);
+      expect(errors.first.code, ErrorCodes.missingAppKey);
     });
   });
 
@@ -109,19 +300,34 @@ void main() {
       expect(config.clientSecret, 'client_secret');
       expect(config.appName, 'Test App');
     });
+
+    test('빈 clientId는 검증 에러를 반환한다', () {
+      final config = NaverConfig(
+        clientId: '',
+        clientSecret: 'secret',
+        appName: 'Test',
+      );
+      final errors = config.validate();
+
+      expect(errors.any((e) => e.code == ErrorCodes.missingClientId), true);
+    });
   });
 
   group('GoogleConfig', () {
-    test('선택적 설정값을 저장한다', () {
+    test('기본 scope를 포함한다', () {
+      final config = GoogleConfig();
+
+      expect(config.allScopes, contains('openid'));
+      expect(config.allScopes, contains('email'));
+      expect(config.allScopes, contains('profile'));
+    });
+
+    test('추가 scope를 포함한다', () {
       final config = GoogleConfig(
-        iosClientId: 'ios_client_id',
-        serverClientId: 'server_client_id',
-        scopes: ['calendar'],
+        additionalScopes: ['calendar'],
       );
 
-      expect(config.iosClientId, 'ios_client_id');
-      expect(config.serverClientId, 'server_client_id');
-      expect(config.scopes, contains('calendar'));
+      expect(config.allScopes, contains('calendar'));
     });
 
     test('설정값 없이 생성할 수 있다', () {
@@ -129,7 +335,6 @@ void main() {
 
       expect(config.iosClientId, isNull);
       expect(config.serverClientId, isNull);
-      expect(config.scopes, isNull);
     });
   });
 
@@ -137,7 +342,8 @@ void main() {
     test('기본 설정으로 생성할 수 있다', () {
       final config = AppleConfig();
 
-      expect(config.scopes, isNull);
+      expect(config.collect.email, true);
+      expect(config.collect.fullName, true);
     });
   });
 
@@ -170,6 +376,24 @@ void main() {
       expect(config.google, isNull);
       expect(config.apple, isNull);
     });
+
+    test('설정된 Provider 목록을 반환한다', () {
+      final config = KAuthConfig(
+        kakao: KakaoConfig(appKey: 'key'),
+        google: GoogleConfig(),
+      );
+
+      expect(config.configuredProviders, contains('kakao'));
+      expect(config.configuredProviders, contains('google'));
+      expect(config.configuredProviders.length, 2);
+    });
+
+    test('Provider가 없으면 검증 에러를 반환한다', () {
+      final config = KAuthConfig();
+      final errors = config.validate();
+
+      expect(errors.any((e) => e.code == ErrorCodes.noProviderConfigured), true);
+    });
   });
 
   group('KAuthError', () {
@@ -181,6 +405,14 @@ void main() {
 
       expect(error.code, ErrorCodes.loginFailed);
       expect(error.message, '로그인 실패');
+    });
+
+    test('에러 코드로 생성한다', () {
+      final error = KAuthError.fromCode(ErrorCodes.userCancelled);
+
+      expect(error.code, ErrorCodes.userCancelled);
+      expect(error.message, isNotEmpty);
+      expect(error.hint, isNotNull);
     });
 
     test('toString이 올바른 형식을 반환한다', () {
@@ -202,33 +434,19 @@ void main() {
 
       expect(error.originalError, originalError);
     });
-  });
 
-  group('ErrorMessages', () {
-    test('에러 코드에 대한 한글 메시지를 반환한다', () {
-      expect(
-        ErrorMessages.getMessage(ErrorCodes.userCancelled),
-        '사용자가 로그인을 취소했습니다.',
+    test('JSON으로 변환할 수 있다', () {
+      final error = KAuthError(
+        code: ErrorCodes.loginFailed,
+        message: '로그인 실패',
+        hint: '다시 시도하세요',
       );
-      expect(
-        ErrorMessages.getMessage(ErrorCodes.loginFailed),
-        '로그인에 실패했습니다.',
-      );
-      expect(
-        ErrorMessages.getMessage(ErrorCodes.networkError),
-        '네트워크 오류가 발생했습니다.',
-      );
-      expect(
-        ErrorMessages.getMessage(ErrorCodes.providerNotConfigured),
-        '해당 Provider가 설정되지 않았습니다.',
-      );
-    });
 
-    test('알 수 없는 에러 코드에 대해 기본 메시지를 반환한다', () {
-      expect(
-        ErrorMessages.getMessage('UNKNOWN_ERROR'),
-        '알 수 없는 에러가 발생했습니다.',
-      );
+      final json = error.toJson();
+
+      expect(json['code'], ErrorCodes.loginFailed);
+      expect(json['message'], '로그인 실패');
+      expect(json['hint'], '다시 시도하세요');
     });
   });
 
@@ -244,6 +462,19 @@ void main() {
       expect(ErrorCodes.providerNotSupported, 'PROVIDER_NOT_SUPPORTED');
       expect(ErrorCodes.platformNotSupported, 'PLATFORM_NOT_SUPPORTED');
     });
+
+    test('에러 정보를 반환한다', () {
+      final info = ErrorCodes.getErrorInfo(ErrorCodes.userCancelled);
+
+      expect(info.message, isNotEmpty);
+      expect(info.hint, isNotNull);
+    });
+
+    test('알 수 없는 코드에 대해 기본 정보를 반환한다', () {
+      final info = ErrorCodes.getErrorInfo('UNKNOWN_CODE_XYZ');
+
+      expect(info.message, contains('알 수 없는'));
+    });
   });
 
   group('KAuth', () {
@@ -256,6 +487,17 @@ void main() {
 
       expect(kAuth, isNotNull);
       expect(kAuth.config.kakao, isNotNull);
+      expect(kAuth.isInitialized, false);
+    });
+
+    test('초기화 전에는 isInitialized가 false다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(
+          kakao: KakaoConfig(appKey: 'test_key'),
+        ),
+      );
+
+      expect(kAuth.isInitialized, false);
     });
 
     test('초기화 전 signIn 호출 시 에러를 발생시킨다', () {
@@ -267,19 +509,6 @@ void main() {
 
       expect(
         () => kAuth.signIn(AuthProvider.kakao),
-        throwsA(isA<KAuthError>()),
-      );
-    });
-
-    test('초기화 전 signInWithKakao 호출 시 에러를 발생시킨다', () {
-      final kAuth = KAuth(
-        config: KAuthConfig(
-          kakao: KakaoConfig(appKey: 'test_key'),
-        ),
-      );
-
-      expect(
-        () => kAuth.signInWithKakao(),
         throwsA(isA<KAuthError>()),
       );
     });
@@ -296,6 +525,30 @@ void main() {
         throwsA(isA<KAuthError>()),
       );
     });
+
+    test('isConfigured가 올바르게 동작한다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(
+          kakao: KakaoConfig(appKey: 'test_key'),
+        ),
+      );
+
+      expect(kAuth.isConfigured(AuthProvider.kakao), true);
+      expect(kAuth.isConfigured(AuthProvider.naver), false);
+    });
+
+    test('configuredProviders가 올바르게 동작한다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(
+          kakao: KakaoConfig(appKey: 'key'),
+          google: GoogleConfig(),
+        ),
+      );
+
+      expect(kAuth.configuredProviders, contains(AuthProvider.kakao));
+      expect(kAuth.configuredProviders, contains(AuthProvider.google));
+      expect(kAuth.configuredProviders.length, 2);
+    });
   });
 
   group('AuthProvider', () {
@@ -305,6 +558,74 @@ void main() {
       expect(AuthProvider.values, contains(AuthProvider.google));
       expect(AuthProvider.values, contains(AuthProvider.apple));
       expect(AuthProvider.values.length, 4);
+    });
+
+    test('displayName이 올바르다', () {
+      expect(AuthProvider.kakao.displayName, '카카오');
+      expect(AuthProvider.naver.displayName, '네이버');
+      expect(AuthProvider.google.displayName, 'Google');
+      expect(AuthProvider.apple.displayName, 'Apple');
+    });
+
+    test('supportsUnlink가 올바르다', () {
+      expect(AuthProvider.kakao.supportsUnlink, true);
+      expect(AuthProvider.naver.supportsUnlink, true);
+      expect(AuthProvider.google.supportsUnlink, true);
+      expect(AuthProvider.apple.supportsUnlink, false);
+    });
+  });
+
+  group('KAuthUser', () {
+    test('기본 생성자로 생성한다', () {
+      final user = KAuthUser(
+        id: '12345',
+        name: '홍길동',
+        email: 'test@example.com',
+        provider: 'kakao',
+      );
+
+      expect(user.id, '12345');
+      expect(user.name, '홍길동');
+      expect(user.email, 'test@example.com');
+      expect(user.provider, 'kakao');
+    });
+
+    test('displayName이 올바르게 동작한다', () {
+      final withName = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final withEmail = KAuthUser(
+          id: '2', email: 'test@example.com', provider: 'kakao');
+      final withNeither = KAuthUser(id: '3', provider: 'kakao');
+
+      expect(withName.displayName, '홍길동');
+      expect(withEmail.displayName, 'test');
+      expect(withNeither.displayName, isNull);
+    });
+
+    test('age가 올바르게 계산된다', () {
+      final currentYear = DateTime.now().year;
+      final user = KAuthUser(
+        id: '1',
+        birthyear: '2000',
+        provider: 'kakao',
+      );
+
+      expect(user.age, currentYear - 2000);
+    });
+
+    test('JSON 직렬화가 동작한다', () {
+      final user = KAuthUser(
+        id: '12345',
+        name: '홍길동',
+        email: 'test@example.com',
+        provider: 'kakao',
+      );
+
+      final json = user.toJson();
+      final restored = KAuthUser.fromJson(json);
+
+      expect(restored.id, '12345');
+      expect(restored.name, '홍길동');
+      expect(restored.email, 'test@example.com');
     });
   });
 }

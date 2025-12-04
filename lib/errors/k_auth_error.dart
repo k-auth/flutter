@@ -347,12 +347,3 @@ class ErrorCodes {
   };
 }
 
-/// 에러 메시지 (하위 호환성 유지)
-@Deprecated('Use ErrorCodes.getErrorInfo() instead')
-class ErrorMessages {
-  ErrorMessages._();
-
-  static String getMessage(String code) {
-    return ErrorCodes.getErrorInfo(code).message;
-  }
-}
