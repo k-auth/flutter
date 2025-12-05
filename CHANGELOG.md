@@ -1,3 +1,14 @@
+## 0.3.0
+
+### Changed
+- 의존성 최신 버전 업데이트
+  - `kakao_flutter_sdk`: ^1.10.0
+  - `flutter_naver_login`: ^2.1.0
+  - `google_sign_in`: ^7.2.0
+  - `sign_in_with_apple`: ^7.0.0
+  - `flutter_svg`: ^2.2.0
+- pub.dev 점수 개선 (description 영문화, dart format)
+
 ## 0.2.0
 
 ### Added
