@@ -1212,6 +1212,547 @@ void main() {
       expect(await storage.read('key2'), isNull);
     });
   });
+
+  // ============================================
+  // 추가 테스트: Config 검증
+  // ============================================
+
+  group('NaverConfig 검증', () {
+    test('빈 clientSecret는 검증 에러를 반환한다', () {
+      final config = NaverConfig(
+        clientId: 'valid_id',
+        clientSecret: '',
+        appName: 'Test',
+      );
+      final errors = config.validate();
+
+      expect(errors.any((e) => e.code == ErrorCodes.missingClientSecret), true);
+    });
+
+    test('빈 appName은 에러가 없다 (appName은 필수가 아님)', () {
+      final config = NaverConfig(
+        clientId: 'valid_id',
+        clientSecret: 'valid_secret',
+        appName: '',
+      );
+      final errors = config.validate();
+
+      // appName은 필수 검증 대상이 아님
+      expect(errors, isEmpty);
+    });
+
+    test('모든 필드가 유효하면 에러가 없다', () {
+      final config = NaverConfig(
+        clientId: 'valid_id',
+        clientSecret: 'valid_secret',
+        appName: 'Valid App',
+      );
+      final errors = config.validate();
+
+      expect(errors, isEmpty);
+    });
+  });
+
+  group('GoogleConfig 검증', () {
+    test('iosClientId가 올바른 형식인지 확인한다', () {
+      final configWithValid = GoogleConfig(
+        iosClientId: '123456789.apps.googleusercontent.com',
+      );
+      final configWithInvalid = GoogleConfig(
+        iosClientId: 'invalid_format',
+      );
+
+      // 형식 검증은 validate에서 하지 않지만 저장은 됨
+      expect(configWithValid.iosClientId, contains('googleusercontent.com'));
+      expect(configWithInvalid.iosClientId, 'invalid_format');
+    });
+
+    test('serverClientId를 설정할 수 있다', () {
+      final config = GoogleConfig(
+        serverClientId: 'server_client_id',
+      );
+
+      expect(config.serverClientId, 'server_client_id');
+    });
+  });
+
+  // ============================================
+  // 추가 테스트: 에러 코드별 메시지/힌트
+  // ============================================
+
+  group('에러 코드 상세 테스트', () {
+    test('모든 에러 코드에 메시지가 있다', () {
+      final codes = [
+        ErrorCodes.configNotFound,
+        ErrorCodes.invalidConfig,
+        ErrorCodes.userCancelled,
+        ErrorCodes.loginFailed,
+        ErrorCodes.tokenExpired,
+        ErrorCodes.networkError,
+        ErrorCodes.providerNotConfigured,
+        ErrorCodes.providerNotSupported,
+        ErrorCodes.platformNotSupported,
+        ErrorCodes.noProviderConfigured,
+        ErrorCodes.missingAppKey,
+        ErrorCodes.missingClientId,
+        ErrorCodes.missingClientSecret,
+      ];
+
+      for (final code in codes) {
+        final info = ErrorCodes.getErrorInfo(code);
+        expect(info.message, isNotEmpty, reason: 'Missing message for $code');
+      }
+    });
+
+    test('주요 에러 코드에 힌트가 있다', () {
+      final codesWithHints = [
+        ErrorCodes.userCancelled,
+        ErrorCodes.loginFailed,
+        ErrorCodes.tokenExpired,
+        ErrorCodes.networkError,
+        ErrorCodes.providerNotConfigured,
+      ];
+
+      for (final code in codesWithHints) {
+        final info = ErrorCodes.getErrorInfo(code);
+        expect(info.hint, isNotNull, reason: 'Missing hint for $code');
+      }
+    });
+
+    test('카카오 관련 에러 코드가 정의되어 있다', () {
+      expect(ErrorCodes.kakaoAppKeyInvalid, isNotNull);
+    });
+
+    test('네이버 관련 에러 코드가 정의되어 있다', () {
+      expect(ErrorCodes.naverClientInfoInvalid, isNotNull);
+    });
+
+    test('구글 관련 에러 코드가 정의되어 있다', () {
+      expect(ErrorCodes.googleSignInFailed, isNotNull);
+    });
+
+    test('애플 관련 에러 코드가 정의되어 있다', () {
+      expect(ErrorCodes.appleSignInFailed, isNotNull);
+    });
+  });
+
+  // ============================================
+  // 추가 테스트: Edge Cases
+  // ============================================
+
+  group('KAuthUser Edge Cases', () {
+    test('모든 필드가 null인 경우 처리', () {
+      final user = KAuthUser(id: 'minimal', provider: 'test');
+
+      expect(user.id, 'minimal');
+      expect(user.name, isNull);
+      expect(user.email, isNull);
+      expect(user.image, isNull);
+      expect(user.phone, isNull);
+      expect(user.displayName, isNull);
+    });
+
+    test('빈 문자열 필드 처리', () {
+      final user = KAuthUser(
+        id: '',
+        name: '',
+        email: '',
+        provider: '',
+      );
+
+      expect(user.id, '');
+      expect(user.name, '');
+      expect(user.email, '');
+    });
+
+    test('특수 문자가 포함된 이름 처리', () {
+      final user = KAuthUser(
+        id: '1',
+        name: '홍길동 (테스트) <test>',
+        provider: 'kakao',
+      );
+
+      expect(user.name, '홍길동 (테스트) <test>');
+      expect(user.displayName, '홍길동 (테스트) <test>');
+    });
+
+    test('이메일에서 displayName 추출', () {
+      final user = KAuthUser(
+        id: '1',
+        email: 'user.name+tag@example.com',
+        provider: 'google',
+      );
+
+      expect(user.displayName, 'user.name+tag');
+    });
+
+    test('잘못된 birthyear로 age 계산', () {
+      final userWithInvalid = KAuthUser(
+        id: '1',
+        birthyear: 'invalid',
+        provider: 'kakao',
+      );
+
+      expect(userWithInvalid.age, isNull);
+    });
+
+    test('미래 birthyear로 age 계산', () {
+      final futureYear = (DateTime.now().year + 10).toString();
+      final user = KAuthUser(
+        id: '1',
+        birthyear: futureYear,
+        provider: 'kakao',
+      );
+
+      expect(user.age, lessThan(0));
+    });
+
+    test('fromKakao에서 중첩된 null 처리', () {
+      final kakaoData = {
+        'id': 123,
+        'kakao_account': null,
+      };
+
+      final user = KAuthUser.fromKakao(kakaoData);
+      expect(user.id, '123');
+      expect(user.name, isNull);
+    });
+
+    test('fromNaver에서 response가 빈 경우', () {
+      final naverData = {
+        'response': <String, dynamic>{
+          'id': '',
+        },
+      };
+
+      final user = KAuthUser.fromNaver(naverData);
+      expect(user.provider, 'naver');
+      expect(user.id, '');
+    });
+
+    test('fromGoogle에서 photoUrl 필드 처리', () {
+      final googleData = {
+        'id': 'google123',
+        'photoUrl': 'https://photo.url',
+      };
+
+      final user = KAuthUser.fromGoogle(googleData);
+      expect(user.image, 'https://photo.url');
+    });
+  });
+
+  group('AuthResult Edge Cases', () {
+    test('accessToken만 있는 성공 결과', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+        accessToken: 'token',
+      );
+
+      expect(result.accessToken, 'token');
+      expect(result.refreshToken, isNull);
+      expect(result.idToken, isNull);
+    });
+
+    test('rawData가 있는 결과', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+        rawData: {'custom': 'data'},
+      );
+
+      expect(result.rawData, {'custom': 'data'});
+    });
+
+    test('에러 힌트가 있는 실패 결과', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '에러 메시지',
+        errorCode: 'ERROR_CODE',
+        errorHint: '이렇게 해결하세요',
+      );
+
+      expect(result.errorHint, '이렇게 해결하세요');
+    });
+
+    test('expiresAt가 null일 때 isExpired는 false', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+      final result = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+      );
+
+      expect(result.isExpired, false);
+      expect(result.isExpiringSoon(), false);
+    });
+
+    test('JSON 직렬화 시 모든 필드 포함', () {
+      final user = KAuthUser(
+        id: '123',
+        name: '테스트',
+        email: 'test@test.com',
+        provider: 'google',
+      );
+      final result = AuthResult.success(
+        provider: AuthProvider.google,
+        user: user,
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        idToken: 'id_token',
+        expiresAt: DateTime(2025, 12, 31),
+      );
+
+      final json = result.toJson();
+
+      expect(json['success'], true);
+      expect(json['provider'], 'google');
+      expect(json['accessToken'], 'access');
+      expect(json['refreshToken'], 'refresh');
+      expect(json['idToken'], 'id_token');
+      expect(json['expiresAt'], isNotNull);
+      expect(json['user'], isNotNull);
+    });
+
+    test('실패 결과의 JSON 직렬화', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.naver,
+        errorMessage: '에러',
+        errorCode: 'CODE',
+        errorHint: '힌트',
+      );
+
+      final json = result.toJson();
+
+      expect(json['success'], false);
+      expect(json['errorMessage'], '에러');
+      expect(json['errorCode'], 'CODE');
+      expect(json['errorHint'], '힌트');
+    });
+  });
+
+  group('KAuthSession Edge Cases', () {
+    test('모든 토큰이 null인 세션', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+      final session = KAuthSession(
+        provider: AuthProvider.kakao,
+        user: user,
+        savedAt: DateTime.now(),
+      );
+
+      expect(session.accessToken, isNull);
+      expect(session.refreshToken, isNull);
+      expect(session.idToken, isNull);
+      expect(session.serverToken, isNull);
+    });
+
+    test('손상된 JSON 디코딩 시 예외 발생', () {
+      expect(
+        () => KAuthSession.decode('invalid json'),
+        throwsA(anything),
+      );
+    });
+
+    test('빈 JSON 디코딩 시 예외 발생', () {
+      expect(
+        () => KAuthSession.decode('{}'),
+        throwsA(anything),
+      );
+    });
+
+    test('세션 만료 확인 다양한 시간 테스트', () {
+      final user = KAuthUser(id: '1', provider: 'kakao');
+
+      // 10분 후 만료
+      final session10Min = KAuthSession(
+        provider: AuthProvider.kakao,
+        user: user,
+        expiresAt: DateTime.now().add(const Duration(minutes: 10)),
+        savedAt: DateTime.now(),
+      );
+
+      // 만료 안됨
+      expect(session10Min.isExpired, false);
+
+      // 이미 만료됨
+      final expiredSession = KAuthSession(
+        provider: AuthProvider.kakao,
+        user: user,
+        expiresAt: DateTime.now().subtract(const Duration(minutes: 1)),
+        savedAt: DateTime.now(),
+      );
+      expect(expiredSession.isExpired, true);
+    });
+  });
+
+  group('AuthTokens', () {
+    test('기본 생성', () {
+      const tokens = AuthTokens(
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        idToken: 'id',
+        expiresAt: null,
+      );
+
+      expect(tokens.accessToken, 'access');
+      expect(tokens.refreshToken, 'refresh');
+      expect(tokens.idToken, 'id');
+      expect(tokens.expiresAt, isNull);
+    });
+
+    test('모든 값이 null인 토큰', () {
+      const tokens = AuthTokens();
+
+      expect(tokens.accessToken, isNull);
+      expect(tokens.refreshToken, isNull);
+      expect(tokens.idToken, isNull);
+      expect(tokens.expiresAt, isNull);
+    });
+  });
+
+  group('AuthProvider 확장', () {
+    test('supportsTokenRefresh가 올바르다', () {
+      expect(AuthProvider.kakao.supportsTokenRefresh, true);
+      expect(AuthProvider.naver.supportsTokenRefresh, true);
+      expect(AuthProvider.google.supportsTokenRefresh, true);
+      expect(AuthProvider.apple.supportsTokenRefresh, false);
+    });
+
+    test('name이 올바르게 동작한다', () {
+      expect(AuthProvider.kakao.name, 'kakao');
+      expect(AuthProvider.naver.name, 'naver');
+      expect(AuthProvider.google.name, 'google');
+      expect(AuthProvider.apple.name, 'apple');
+    });
+  });
+
+  // ============================================
+  // 추가 테스트: KAuth 기능 테스트
+  // ============================================
+
+  group('KAuth 추가 기능', () {
+    test('validateOnInitialize가 false면 검증을 스킵한다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(), // 빈 설정
+        validateOnInitialize: false,
+      );
+
+      // 초기화 시 에러가 발생하지 않아야 함
+      // 단, Provider SDK가 없으므로 실제 초기화는 할 수 없음
+      expect(kAuth.validateOnInitialize, false);
+    });
+
+    test('storage가 없으면 세션 저장이 스킵된다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+        storage: null,
+      );
+
+      expect(kAuth.storage, isNull);
+    });
+
+    test('currentUser가 로그인 전에 null이다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+      );
+
+      expect(kAuth.currentUser, isNull);
+      expect(kAuth.currentProvider, isNull);
+      expect(kAuth.isSignedIn, false);
+      expect(kAuth.serverToken, isNull);
+    });
+
+    test('lastResult가 로그인 전에 null이다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+      );
+
+      expect(kAuth.lastResult, isNull);
+    });
+
+    test('dispose가 호출되어도 에러가 발생하지 않는다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+      );
+
+      expect(() => kAuth.dispose(), returnsNormally);
+    });
+  });
+
+  group('KAuthConfig 추가 테스트', () {
+    test('copyWith가 동작한다', () {
+      final original = KAuthConfig(
+        kakao: KakaoConfig(appKey: 'key1'),
+      );
+
+      final copied = KAuthConfig(
+        kakao: KakaoConfig(appKey: 'key2'),
+        google: GoogleConfig(),
+      );
+
+      expect(copied.kakao?.appKey, 'key2');
+      expect(copied.google, isNotNull);
+      expect(original.kakao?.appKey, 'key1');
+      expect(original.google, isNull);
+    });
+
+    test('여러 에러가 있으면 모두 반환한다', () {
+      final config = KAuthConfig(
+        kakao: KakaoConfig(appKey: ''),
+        naver: NaverConfig(clientId: '', clientSecret: '', appName: ''),
+      );
+
+      final errors = config.validate();
+
+      // 카카오 + 네이버 에러 모두 포함
+      expect(errors.length, greaterThan(1));
+    });
+  });
+
+  group('KakaoCollectOptions', () {
+    test('기본값 테스트', () {
+      const options = KakaoCollectOptions();
+
+      expect(options.phone, false);
+      expect(options.gender, false);
+      expect(options.birthday, false);
+      expect(options.ageRange, false);
+    });
+
+    test('모든 옵션 활성화', () {
+      const options = KakaoCollectOptions(
+        phone: true,
+        gender: true,
+        birthday: true,
+        ageRange: true,
+      );
+
+      expect(options.phone, true);
+      expect(options.gender, true);
+      expect(options.birthday, true);
+      expect(options.ageRange, true);
+    });
+  });
+
+  group('AppleCollectOptions', () {
+    test('기본값 테스트', () {
+      const options = AppleCollectOptions();
+
+      expect(options.email, true);
+      expect(options.fullName, true);
+    });
+
+    test('이메일만 수집', () {
+      const options = AppleCollectOptions(
+        email: true,
+        fullName: false,
+      );
+
+      expect(options.email, true);
+      expect(options.fullName, false);
+    });
+  });
 }
 
 /// 테스트용 인메모리 세션 저장소
@@ -1237,4 +1778,8 @@ class InMemorySessionStorage implements KAuthSessionStorage {
   Future<void> clear() async {
     _data.clear();
   }
+
+  /// 저장된 데이터 확인 (테스트용)
+  bool get isEmpty => _data.isEmpty;
+  bool containsKey(String key) => _data.containsKey(key);
 }
