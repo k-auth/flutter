@@ -10,10 +10,6 @@
 
 > **Next.js 버전**: [k-auth/next](https://github.com/k-auth/next)
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/k-auth/flutter/main/.github/assets/demo.gif" width="300" alt="K-Auth Demo" />
-</p>
-
 ## 왜 K-Auth인가요?
 
 | 기존 방식 | K-Auth |
