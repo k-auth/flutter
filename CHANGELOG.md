@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2024-12
+
+### Changed
+
+- **Documentation**: Complete overhaul of README and CHANGELOG
+
 ## [0.3.0] - 2024-12
 
 ### Changed
