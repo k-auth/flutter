@@ -100,7 +100,8 @@ class KakaoLoginButton extends StatelessWidget {
     final config = _ButtonSizeConfig.fromSize(size);
     final isIconOnly = size == ButtonSize.icon;
     final effectiveHeight = height ?? config.height;
-    final effectiveWidth = isIconOnly ? effectiveHeight : (width ?? double.infinity);
+    final effectiveWidth =
+        isIconOnly ? effectiveHeight : (width ?? double.infinity);
 
     return SizedBox(
       width: effectiveWidth,
@@ -110,8 +111,10 @@ class KakaoLoginButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFEE500),
           foregroundColor: const Color(0xFF000000),
-          disabledBackgroundColor: const Color(0xFFFEE500).withValues(alpha: 0.6),
-          disabledForegroundColor: const Color(0xFF000000).withValues(alpha: 0.6),
+          disabledBackgroundColor:
+              const Color(0xFFFEE500).withValues(alpha: 0.6),
+          disabledForegroundColor:
+              const Color(0xFF000000).withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -185,7 +188,8 @@ class NaverLoginButton extends StatelessWidget {
     final config = _ButtonSizeConfig.fromSize(size);
     final isIconOnly = size == ButtonSize.icon;
     final effectiveHeight = height ?? config.height;
-    final effectiveWidth = isIconOnly ? effectiveHeight : (width ?? double.infinity);
+    final effectiveWidth =
+        isIconOnly ? effectiveHeight : (width ?? double.infinity);
 
     return SizedBox(
       width: effectiveWidth,
@@ -195,7 +199,8 @@ class NaverLoginButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF03C75A),
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFF03C75A).withValues(alpha: 0.6),
+          disabledBackgroundColor:
+              const Color(0xFF03C75A).withValues(alpha: 0.6),
           disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
@@ -270,7 +275,8 @@ class GoogleLoginButton extends StatelessWidget {
     final config = _ButtonSizeConfig.fromSize(size);
     final isIconOnly = size == ButtonSize.icon;
     final effectiveHeight = height ?? config.height;
-    final effectiveWidth = isIconOnly ? effectiveHeight : (width ?? double.infinity);
+    final effectiveWidth =
+        isIconOnly ? effectiveHeight : (width ?? double.infinity);
 
     return SizedBox(
       width: effectiveWidth,
@@ -281,9 +287,12 @@ class GoogleLoginButton extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF1F1F1F),
           disabledBackgroundColor: Colors.white.withValues(alpha: 0.6),
-          disabledForegroundColor: const Color(0xFF1F1F1F).withValues(alpha: 0.6),
+          disabledForegroundColor:
+              const Color(0xFF1F1F1F).withValues(alpha: 0.6),
           side: BorderSide(
-            color: disabled ? const Color(0xFFDADCE0).withValues(alpha: 0.6) : const Color(0xFFDADCE0),
+            color: disabled
+                ? const Color(0xFFDADCE0).withValues(alpha: 0.6)
+                : const Color(0xFFDADCE0),
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
@@ -360,7 +369,8 @@ class AppleLoginButton extends StatelessWidget {
     final config = _ButtonSizeConfig.fromSize(size);
     final isIconOnly = size == ButtonSize.icon;
     final effectiveHeight = height ?? config.height;
-    final effectiveWidth = isIconOnly ? effectiveHeight : (width ?? double.infinity);
+    final effectiveWidth =
+        isIconOnly ? effectiveHeight : (width ?? double.infinity);
 
     final bgColor = isDark ? Colors.black : Colors.white;
     final fgColor = isDark ? Colors.white : Colors.black;
@@ -377,7 +387,9 @@ class AppleLoginButton extends StatelessWidget {
           disabledForegroundColor: fgColor.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            side: isDark ? BorderSide.none : const BorderSide(color: Colors.black),
+            side: isDark
+                ? BorderSide.none
+                : const BorderSide(color: Colors.black),
           ),
           padding: config.padding,
           elevation: 0,
@@ -387,7 +399,8 @@ class AppleLoginButton extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(_ButtonSizeConfig config, bool isIconOnly, Color fgColor) {
+  Widget _buildContent(
+      _ButtonSizeConfig config, bool isIconOnly, Color fgColor) {
     if (isLoading) {
       return SizedBox(
         width: config.iconSize,

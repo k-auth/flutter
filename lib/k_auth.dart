@@ -278,7 +278,8 @@ class KAuth {
   KAuthUser? get currentUser => _lastResult?.user;
 
   /// 로그인 여부
-  bool get isSignedIn => _lastResult?.success == true && _lastResult?.user != null;
+  bool get isSignedIn =>
+      _lastResult?.success == true && _lastResult?.user != null;
 
   /// 마지막 로그인 결과
   AuthResult? get lastResult => _lastResult;
@@ -649,7 +650,8 @@ class KAuth {
           await onSignOut!(targetProvider);
           KAuthLogger.debug('로그아웃 콜백 완료', provider: targetProvider.name);
         } catch (e) {
-          KAuthLogger.error('로그아웃 콜백 실패', provider: targetProvider.name, error: e);
+          KAuthLogger.error('로그아웃 콜백 실패',
+              provider: targetProvider.name, error: e);
         }
       }
 

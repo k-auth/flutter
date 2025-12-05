@@ -1,7 +1,7 @@
 name: k_auth
 description: >-
-  한국 앱을 위한 소셜 로그인 SDK. 카카오 로그인, 네이버 로그인, 구글 로그인, 애플 로그인을 하나의 통합 API로 구현.
-  Flutter 소셜 로그인 패키지. 표준화된 사용자 정보, 한글 에러 메시지, 공식 디자인 가이드라인 준수 버튼 제공.
+  Social login SDK for Korean apps. Unified API for Kakao, Naver, Google, and Apple login.
+  Standardized user info, Korean error messages, and official design guideline buttons.
 version: 0.2.0
 homepage: https://github.com/k-auth/flutter
 repository: https://github.com/k-auth/flutter

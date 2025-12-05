@@ -213,7 +213,8 @@ class KAuthDiagnostic {
         severity: DiagnosticSeverity.error,
         message: 'appKey가 비어있습니다',
         solution: 'KakaoConfig(appKey: "YOUR_NATIVE_APP_KEY")로 설정하세요',
-        docUrl: 'https://developers.kakao.com/docs/latest/ko/getting-started/app',
+        docUrl:
+            'https://developers.kakao.com/docs/latest/ko/getting-started/app',
       ));
       return issues;
     }
@@ -249,7 +250,8 @@ class KAuthDiagnostic {
     return issues;
   }
 
-  static Future<List<DiagnosticIssue>> _checkKakaoIOS(KakaoConfig config) async {
+  static Future<List<DiagnosticIssue>> _checkKakaoIOS(
+      KakaoConfig config) async {
     final issues = <DiagnosticIssue>[];
 
     // Info.plist URL Scheme 검증
@@ -271,7 +273,8 @@ class KAuthDiagnostic {
     </array>
   </dict>
 </array>''',
-          docUrl: 'https://developers.kakao.com/docs/latest/ko/getting-started/sdk-ios',
+          docUrl:
+              'https://developers.kakao.com/docs/latest/ko/getting-started/sdk-ios',
         ));
       }
     } catch (_) {
@@ -320,7 +323,8 @@ class KAuthDiagnostic {
               android:scheme="kakao{YOUR_NATIVE_APP_KEY}" />
     </intent-filter>
 </activity>''',
-      docUrl: 'https://developers.kakao.com/docs/latest/ko/flutter/getting-started',
+      docUrl:
+          'https://developers.kakao.com/docs/latest/ko/flutter/getting-started',
     ));
 
     return issues;
@@ -469,7 +473,8 @@ class KAuthDiagnostic {
         provider: AuthProvider.google,
         severity: DiagnosticSeverity.info,
         message: 'Info.plist에 구글 로그인 설정을 확인하세요',
-        solution: '''<!-- 1. GIDClientID 추가 (GoogleService-Info.plist의 CLIENT_ID) -->
+        solution:
+            '''<!-- 1. GIDClientID 추가 (GoogleService-Info.plist의 CLIENT_ID) -->
 <key>GIDClientID</key>
 <string>YOUR_IOS_CLIENT_ID.apps.googleusercontent.com</string>
 

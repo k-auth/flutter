@@ -273,8 +273,7 @@ class ErrorCodes {
     ),
     kakaoPhoneNotEnabled: ErrorInfo(
       message: '전화번호 수집 권한이 활성화되지 않았습니다.',
-      hint:
-          '카카오 개발자센터 > 카카오 로그인 > 동의항목에서 전화번호 항목을 활성화하세요.',
+      hint: '카카오 개발자센터 > 카카오 로그인 > 동의항목에서 전화번호 항목을 활성화하세요.',
       docs: 'https://developers.kakao.com/console',
     ),
     kakaoConsentRequired: ErrorInfo(
@@ -346,4 +345,3 @@ class ErrorCodes {
     ),
   };
 }
-
