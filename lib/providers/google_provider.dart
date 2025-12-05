@@ -8,33 +8,49 @@ import '../errors/k_auth_error.dart';
 /// 구글 로그인 Provider
 class GoogleProvider {
   final GoogleConfig config;
-  late final GoogleSignIn _googleSignIn;
+  bool _initialized = false;
 
-  GoogleProvider(this.config) {
-    _googleSignIn = GoogleSignIn(
+  GoogleProvider(this.config);
+
+  /// Provider 초기화
+  Future<void> initialize() async {
+    if (_initialized) return;
+
+    await GoogleSignIn.instance.initialize(
       clientId: config.iosClientId,
       serverClientId: config.serverClientId,
-      scopes: config.allScopes,
-      forceCodeForRefreshToken: config.forceConsent,
     );
+    _initialized = true;
   }
 
   /// 구글 로그인 실행
   Future<AuthResult> signIn() async {
     try {
-      final account = await _googleSignIn.signIn();
-
-      if (account == null) {
-        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
-        return AuthResult.failure(
-          provider: AuthProvider.google,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: error.hint,
-        );
+      if (!_initialized) {
+        await initialize();
       }
 
-      final auth = await account.authentication;
+      // 먼저 조용한 로그인 시도
+      GoogleSignInAccount? account =
+          await GoogleSignIn.instance.attemptLightweightAuthentication();
+
+      // 실패하면 전체 로그인 플로우
+      if (account == null) {
+        if (!GoogleSignIn.instance.supportsAuthenticate()) {
+          final error = KAuthError.fromCode(ErrorCodes.platformNotSupported);
+          return AuthResult.failure(
+            provider: AuthProvider.google,
+            errorMessage: error.message,
+            errorCode: error.code,
+            errorHint: error.hint,
+          );
+        }
+
+        account = await GoogleSignIn.instance.authenticate();
+      }
+
+      // 인증 토큰 가져오기
+      final auth = account.authentication;
 
       // 원본 데이터 구성
       final rawData = <String, dynamic>{
@@ -42,7 +58,6 @@ class GoogleProvider {
         'email': account.email,
         'displayName': account.displayName,
         'photoUrl': account.photoUrl,
-        'serverAuthCode': account.serverAuthCode,
         'idToken': auth.idToken,
       };
 
@@ -52,9 +67,29 @@ class GoogleProvider {
       return AuthResult.success(
         provider: AuthProvider.google,
         user: user,
-        accessToken: auth.accessToken,
         idToken: auth.idToken,
         rawData: rawData,
+      );
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
+        return AuthResult.failure(
+          provider: AuthProvider.google,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorHint: error.hint,
+        );
+      }
+
+      final error = KAuthError.fromCode(
+        ErrorCodes.googleSignInFailed,
+        originalError: e,
+      );
+      return AuthResult.failure(
+        provider: AuthProvider.google,
+        errorMessage: '구글 로그인 중 오류 발생: ${e.description ?? e.code}',
+        errorCode: error.code,
+        errorHint: error.hint,
       );
     } catch (e) {
       final error = KAuthError.fromCode(
@@ -73,7 +108,7 @@ class GoogleProvider {
   /// 구글 로그아웃
   Future<void> signOut() async {
     try {
-      await _googleSignIn.signOut();
+      await GoogleSignIn.instance.signOut();
     } catch (e) {
       throw KAuthError(
         code: ErrorCodes.loginFailed,
@@ -86,7 +121,7 @@ class GoogleProvider {
   /// 구글 연결 해제 (탈퇴)
   Future<void> unlink() async {
     try {
-      await _googleSignIn.disconnect();
+      await GoogleSignIn.instance.disconnect();
     } catch (e) {
       throw KAuthError(
         code: ErrorCodes.loginFailed,
@@ -101,7 +136,12 @@ class GoogleProvider {
   /// UI 없이 기존 세션으로 로그인을 시도합니다.
   Future<AuthResult> refreshToken() async {
     try {
-      final account = await _googleSignIn.signInSilently();
+      if (!_initialized) {
+        await initialize();
+      }
+
+      final account =
+          await GoogleSignIn.instance.attemptLightweightAuthentication();
 
       if (account == null) {
         final error = KAuthError.fromCode(ErrorCodes.tokenExpired);
@@ -113,7 +153,7 @@ class GoogleProvider {
         );
       }
 
-      final auth = await account.authentication;
+      final auth = account.authentication;
 
       // 원본 데이터 구성
       final rawData = <String, dynamic>{
@@ -121,7 +161,6 @@ class GoogleProvider {
         'email': account.email,
         'displayName': account.displayName,
         'photoUrl': account.photoUrl,
-        'serverAuthCode': account.serverAuthCode,
         'idToken': auth.idToken,
       };
 
@@ -131,7 +170,6 @@ class GoogleProvider {
       return AuthResult.success(
         provider: AuthProvider.google,
         user: user,
-        accessToken: auth.accessToken,
         idToken: auth.idToken,
         rawData: rawData,
       );

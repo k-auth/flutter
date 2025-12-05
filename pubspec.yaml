@@ -29,11 +29,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  kakao_flutter_sdk: ^1.9.0
-  flutter_naver_login: ^1.8.0
-  google_sign_in: ^6.1.0
-  sign_in_with_apple: ^5.0.0
-  flutter_svg: ^2.0.10+1
+  kakao_flutter_sdk: ^1.10.0
+  flutter_naver_login: ^2.1.0
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^7.0.0
+  flutter_svg: ^2.2.0
 
 dev_dependencies:
   flutter_test:

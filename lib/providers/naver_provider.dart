@@ -1,4 +1,5 @@
 import 'package:flutter_naver_login/flutter_naver_login.dart';
+import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
 
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
@@ -17,21 +18,20 @@ class NaverProvider {
       final result = await FlutterNaverLogin.logIn();
 
       if (result.status == NaverLoginStatus.error) {
+        final errorMsg = result.errorMessage ?? '네이버 로그인 실패';
         final error = KAuthError.fromCode(
           ErrorCodes.loginFailed,
-          details: {'naverError': result.errorMessage},
+          details: {'naverError': errorMsg},
         );
         return AuthResult.failure(
           provider: AuthProvider.naver,
-          errorMessage: result.errorMessage.isNotEmpty
-              ? result.errorMessage
-              : '네이버 로그인 실패',
+          errorMessage: errorMsg,
           errorCode: error.code,
           errorHint: error.hint,
         );
       }
 
-      if (result.status == NaverLoginStatus.cancelledByUser) {
+      if (result.status == NaverLoginStatus.loggedOut) {
         final error = KAuthError.fromCode(ErrorCodes.userCancelled);
         return AuthResult.failure(
           provider: AuthProvider.naver,
@@ -42,7 +42,7 @@ class NaverProvider {
       }
 
       // 토큰 정보 조회
-      final token = await FlutterNaverLogin.currentAccessToken;
+      final token = await FlutterNaverLogin.getCurrentAccessToken();
 
       // expiresAt 파싱 (String -> DateTime)
       DateTime? expiresAt;
@@ -50,19 +50,22 @@ class NaverProvider {
         expiresAt = DateTime.tryParse(token.expiresAt);
       }
 
+      // 사용자 정보
+      final account = result.account;
+
       // 원본 데이터 구성
       final rawData = <String, dynamic>{
         'response': {
-          'id': result.account.id,
-          'email': result.account.email,
-          'name': result.account.name,
-          'nickname': result.account.nickname,
-          'profile_image': result.account.profileImage,
-          'gender': result.account.gender,
-          'age': result.account.age,
-          'birthday': result.account.birthday,
-          'birthyear': result.account.birthyear,
-          'mobile': result.account.mobile,
+          'id': account?.id,
+          'email': account?.email,
+          'name': account?.name,
+          'nickname': account?.nickname,
+          'profile_image': account?.profileImage,
+          'gender': account?.gender,
+          'age': account?.age,
+          'birthday': account?.birthday,
+          'birthyear': account?.birthYear,
+          'mobile': account?.mobile,
         },
       };
 
@@ -123,7 +126,7 @@ class NaverProvider {
   Future<AuthResult> refreshToken() async {
     try {
       // 현재 토큰 상태 확인 (SDK가 자동으로 갱신)
-      final token = await FlutterNaverLogin.currentAccessToken;
+      final token = await FlutterNaverLogin.getCurrentAccessToken();
 
       if (token.accessToken.isEmpty) {
         final error = KAuthError.fromCode(ErrorCodes.tokenExpired);
@@ -136,7 +139,7 @@ class NaverProvider {
       }
 
       // 사용자 정보 조회
-      final result = await FlutterNaverLogin.currentAccount();
+      final account = await FlutterNaverLogin.getCurrentAccount();
 
       // expiresAt 파싱
       DateTime? expiresAt;
@@ -147,16 +150,16 @@ class NaverProvider {
       // 원본 데이터 구성
       final rawData = <String, dynamic>{
         'response': {
-          'id': result.id,
-          'email': result.email,
-          'name': result.name,
-          'nickname': result.nickname,
-          'profile_image': result.profileImage,
-          'gender': result.gender,
-          'age': result.age,
-          'birthday': result.birthday,
-          'birthyear': result.birthyear,
-          'mobile': result.mobile,
+          'id': account.id,
+          'email': account.email,
+          'name': account.name,
+          'nickname': account.nickname,
+          'profile_image': account.profileImage,
+          'gender': account.gender,
+          'age': account.age,
+          'birthday': account.birthday,
+          'birthyear': account.birthYear,
+          'mobile': account.mobile,
         },
       };
 

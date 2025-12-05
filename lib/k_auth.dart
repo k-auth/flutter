@@ -372,6 +372,7 @@ class KAuth {
 
     if (config.google != null) {
       _googleProvider = GoogleProvider(config.google!);
+      await _googleProvider!.initialize();
       KAuthLogger.debug('구글 Provider 초기화 완료', provider: 'google');
     }
 
