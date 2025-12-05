@@ -170,7 +170,7 @@ if (kAuth.isSignedIn) {
 final kAuth = KAuth(
   config: config,
   // 소셜 로그인 성공 후 자동 호출
-  onAuthenticated: (provider, tokens, user) async {
+  onSignIn: (provider, tokens, user) async {
     // 백엔드 서버에 토큰 전송
     final response = await myApi.socialLogin(
       provider: provider.name,
@@ -181,6 +181,10 @@ final kAuth = KAuth(
     // 반환값은 serverToken에 저장됨
     return response.jwt;
   },
+  // 로그아웃 시 호출
+  onSignOut: (provider) async {
+    await myApi.logout();
+  },
 );
 
 // 로그인 후 serverToken 사용
@@ -189,6 +193,25 @@ if (result.success) {
   print('서버 토큰: ${kAuth.serverToken}');
 }
 ```
+
+### 8. 토큰 갱신
+
+```dart
+// 현재 로그인된 Provider로 토큰 갱신
+final result = await kAuth.refreshToken();
+
+result.fold(
+  onSuccess: (user) => print('토큰 갱신 성공'),
+  onFailure: (error) => print('갱신 실패, 재로그인 필요'),
+);
+
+// 토큰 만료 임박 확인
+if (kAuth.lastResult?.isExpiringSoon() ?? false) {
+  await kAuth.refreshToken();
+}
+```
+
+> ⚠️ Apple은 토큰 갱신을 지원하지 않습니다. 재로그인이 필요합니다.
 
 ## 디버그 로깅
 
@@ -304,15 +327,27 @@ AppleConfig(
 
 | 메서드 | 설명 |
 |--------|------|
-| `initialize()` | SDK 초기화 |
+| `initialize([autoRestore])` | SDK 초기화 (자동 로그인 옵션) |
 | `signIn(provider)` | 소셜 로그인 |
 | `signOut([provider])` | 로그아웃 (생략 시 현재 Provider) |
 | `signOutAll()` | 전체 로그아웃 |
+| `refreshToken([provider])` | 토큰 갱신 (Apple 미지원) |
 | `unlink(provider)` | 연결 해제 (탈퇴) |
 | `authStateChanges` | 인증 상태 Stream |
 | `currentUser` | 현재 로그인된 사용자 |
+| `currentProvider` | 현재 로그인된 Provider |
+| `serverToken` | 백엔드에서 받은 토큰 |
 | `isSignedIn` | 로그인 여부 |
 | `dispose()` | 리소스 해제 |
+
+### Provider별 지원 기능
+
+| Provider | 연결해제 | 토큰갱신 | 비고 |
+|----------|:-------:|:-------:|------|
+| kakao | O | O | Native App Key 필요 |
+| naver | O | O | scope 미지원 |
+| google | O | O | iOS는 iosClientId 필요 |
+| apple | X | X | iOS 13+/macOS만 |
 
 ## 에러 처리
 

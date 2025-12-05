@@ -1,12 +1,18 @@
 ## 0.2.0
 
 ### Added
-- 함수형 API: `fold`, `when`, `onSuccess`, `onFailure`, `mapUser`
-- 상태 관리: `authStateChanges` Stream, `currentUser`, `isSignedIn`
+- 함수형 API: `fold`, `when`, `onSuccess`, `onFailure`, `mapUser`, `mapUserOr`
+- 상태 관리: `authStateChanges` Stream, `currentUser`, `currentProvider`, `isSignedIn`
+- 자동 로그인: `KAuthSessionStorage` 인터페이스, `initialize(autoRestore: true)`
+- 백엔드 연동: `onSignIn`, `onSignOut` 콜백, `serverToken`
+- 토큰 갱신: `refreshToken()`, `isExpired`, `isExpiringSoon()`
+- 설정 진단: `KAuthDiagnostic.run()` - 네이티브 설정 검증
 - 디버그 로깅: `KAuthLogger`
+- SVG 아이콘: 카카오, 네이버, 구글 로고
 
 ### Changed
-- `signOut()` provider 인자 생략 가능
+- `signOut()` provider 인자 생략 가능 (현재 Provider로 자동)
+- `AuthResult` JSON 직렬화 지원
 
 ### Removed (Breaking)
 - `AuthResult.userId`, `email`, `name`, `profileImageUrl` 제거 → `user.*` 사용
