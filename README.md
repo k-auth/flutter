@@ -1,31 +1,40 @@
-# K-Auth Flutter
+<p align="center">
+  <h1 align="center">K-Auth</h1>
+  <p align="center">
+    <strong>한국 앱을 위한 소셜 로그인 SDK</strong>
+  </p>
+  <p align="center">
+    카카오, 네이버, 구글, 애플 로그인을 하나의 통합 API로
+  </p>
+</p>
 
-한국 앱을 위한 소셜 로그인 SDK. 카카오, 네이버, 구글, 애플을 하나의 API로 구현하세요.
+<p align="center">
+  <a href="https://pub.dev/packages/k_auth"><img src="https://img.shields.io/pub/v/k_auth.svg" alt="pub package"></a>
+  <a href="https://pub.dev/packages/k_auth/score"><img src="https://img.shields.io/pub/points/k_auth" alt="pub points"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
-[![pub package](https://img.shields.io/pub/v/k_auth.svg)](https://pub.dev/packages/k_auth)
-[![pub points](https://img.shields.io/pub/points/k_auth)](https://pub.dev/packages/k_auth/score)
-[![pub likes](https://img.shields.io/pub/likes/k_auth)](https://pub.dev/packages/k_auth)
-[![pub popularity](https://img.shields.io/pub/popularity/k_auth)](https://pub.dev/packages/k_auth)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+  <a href="#설치">설치</a> •
+  <a href="#빠른-시작">빠른 시작</a> •
+  <a href="#features">Features</a> •
+  <a href="#api">API</a> •
+  <a href="#플랫폼-설정">플랫폼 설정</a>
+</p>
 
-> **Next.js 버전**: [k-auth/next](https://github.com/k-auth/next)
+---
 
-## 왜 K-Auth인가요?
+## Features
 
-| 기존 방식 | K-Auth |
-|----------|--------|
-| Provider마다 다른 API | 통합 API로 모든 Provider 처리 |
-| Provider마다 다른 응답 형식 | `KAuthUser`로 표준화된 사용자 정보 |
-| 영어 에러 메시지 | 한글 에러 메시지 + 해결 힌트 |
-| if-else 분기 처리 | `fold`, `when` 함수형 패턴 |
-| 버튼 직접 구현 | 공식 디자인 가이드라인 준수 버튼 제공 |
+| | K-Auth | 기존 방식 |
+|---|:---:|:---:|
+| **통합 API** | `signIn(provider)` 하나로 끝 | Provider마다 다른 메서드 |
+| **표준화된 응답** | `KAuthUser`로 통일 | Provider마다 다른 응답 형식 |
+| **한글 에러** | 한글 메시지 + 해결 힌트 | 영어 에러 메시지 |
+| **함수형 패턴** | `fold`, `when` 지원 | if-else 분기 처리 |
+| **공식 UI** | 디자인 가이드라인 준수 버튼 | 직접 구현 필요 |
 
 ## 설치
-
-```yaml
-dependencies:
-  k_auth: ^0.2.0
-```
 
 ```bash
 flutter pub add k_auth
@@ -38,389 +47,153 @@ flutter pub add k_auth
 ```dart
 import 'package:k_auth/k_auth.dart';
 
-void main() {
-  final kAuth = KAuth(
-    config: KAuthConfig(
-      kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
-      naver: NaverConfig(
-        clientId: 'YOUR_CLIENT_ID',
-        clientSecret: 'YOUR_CLIENT_SECRET',
-        appName: 'Your App',
-      ),
-      google: GoogleConfig(),
-      apple: AppleConfig(),
+final kAuth = KAuth(
+  config: KAuthConfig(
+    kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+    naver: NaverConfig(
+      clientId: 'YOUR_CLIENT_ID',
+      clientSecret: 'YOUR_CLIENT_SECRET',
+      appName: 'Your App',
     ),
-  );
+    google: GoogleConfig(),
+    apple: AppleConfig(),
+  ),
+);
 
-  kAuth.initialize();
-  runApp(MyApp());
-}
+await kAuth.initialize();
 ```
 
-### 2. 로그인 (함수형 스타일 권장)
+### 2. 로그인
 
 ```dart
 final result = await kAuth.signIn(AuthProvider.kakao);
 
-// ✅ fold: 성공/실패 분기
 result.fold(
   onSuccess: (user) => print('환영합니다, ${user.displayName}!'),
   onFailure: (error) => print('로그인 실패: $error'),
 );
-
-// ✅ when: 성공/취소/실패 세분화
-result.when(
-  success: (user) => navigateToHome(user),
-  cancelled: () => showToast('로그인을 취소했습니다'),
-  failure: (code, msg) => showError(msg),
-);
-
-// ✅ 체이닝
-result
-  .onSuccess((user) => saveUser(user))
-  .onFailure((code, msg) => logError(msg));
-
-// ✅ 값 추출
-final name = result.mapUserOr((u) => u.displayName, 'Guest');
 ```
 
-### 3. 인증 상태 감지
-
-```dart
-// Firebase Auth 스타일의 Stream
-kAuth.authStateChanges.listen((user) {
-  if (user != null) {
-    print('로그인됨: ${user.displayName}');
-  } else {
-    print('로그아웃됨');
-  }
-});
-```
-
-### 4. 로그아웃
-
-```dart
-// 현재 로그인된 Provider로 자동 로그아웃
-await kAuth.signOut();
-
-// 또는 특정 Provider 지정
-await kAuth.signOut(AuthProvider.kakao);
-```
-
-### 5. UI 버튼
+### 3. UI 버튼
 
 ```dart
 // 개별 버튼
-KakaoLoginButton(
-  onPressed: () => kAuth.signInWithKakao(),
-)
+KakaoLoginButton(onPressed: () => kAuth.signIn(AuthProvider.kakao))
 
 // 버튼 그룹
 LoginButtonGroup(
-  providers: kAuth.configuredProviders,
+  providers: [AuthProvider.kakao, AuthProvider.naver, AuthProvider.google],
   onPressed: (provider) => kAuth.signIn(provider),
 )
 ```
 
-### 6. 자동 로그인 (세션 복원)
+## API
+
+### 함수형 결과 처리
 
 ```dart
-// 1. SessionStorage 구현 (SecureStorage 권장)
-class SecureSessionStorage implements KAuthSessionStorage {
-  final _storage = FlutterSecureStorage();
-
-  @override
-  Future<void> save(String key, String value) =>
-    _storage.write(key: key, value: value);
-
-  @override
-  Future<String?> read(String key) =>
-    _storage.read(key: key);
-
-  @override
-  Future<void> delete(String key) =>
-    _storage.delete(key: key);
-
-  @override
-  Future<void> clear() =>
-    _storage.deleteAll();
-}
-
-// 2. KAuth에 storage 설정
-final kAuth = KAuth(
-  config: config,
-  storage: SecureSessionStorage(),
+// fold: 성공/실패 분기
+result.fold(
+  onSuccess: (user) => navigateToHome(user),
+  onFailure: (error) => showError(error),
 );
 
-// 3. 초기화 시 자동 복원
+// when: 성공/취소/실패 세분화
+result.when(
+  success: (user) => navigateToHome(user),
+  cancelled: () => showToast('취소됨'),
+  failure: (code, msg) => showError(msg),
+);
+
+// 체이닝
+result
+  .onSuccess((user) => saveUser(user))
+  .onFailure((code, msg) => logError(msg));
+```
+
+### 자동 로그인
+
+```dart
+final kAuth = KAuth(
+  config: config,
+  storage: SecureSessionStorage(), // 직접 구현
+);
+
 await kAuth.initialize(autoRestore: true);
 
 if (kAuth.isSignedIn) {
-  print('자동 로그인 성공: ${kAuth.currentUser?.displayName}');
+  print('자동 로그인: ${kAuth.currentUser?.displayName}');
 }
 ```
 
-### 7. 백엔드 연동
+### 백엔드 연동
 
 ```dart
 final kAuth = KAuth(
   config: config,
-  // 소셜 로그인 성공 후 자동 호출
   onSignIn: (provider, tokens, user) async {
-    // 백엔드 서버에 토큰 전송
-    final response = await myApi.socialLogin(
+    final jwt = await myApi.socialLogin(
       provider: provider.name,
       accessToken: tokens.accessToken,
-      idToken: tokens.idToken,  // Google/Apple OIDC
     );
-
-    // 반환값은 serverToken에 저장됨
-    return response.jwt;
-  },
-  // 로그아웃 시 호출
-  onSignOut: (provider) async {
-    await myApi.logout();
+    return jwt; // serverToken에 저장됨
   },
 );
-
-// 로그인 후 serverToken 사용
-final result = await kAuth.signIn(AuthProvider.kakao);
-if (result.success) {
-  print('서버 토큰: ${kAuth.serverToken}');
-}
 ```
 
-### 8. 토큰 갱신
+### 토큰 갱신
 
 ```dart
-// 현재 로그인된 Provider로 토큰 갱신
 final result = await kAuth.refreshToken();
-
-result.fold(
-  onSuccess: (user) => print('토큰 갱신 성공'),
-  onFailure: (error) => print('갱신 실패, 재로그인 필요'),
-);
-
-// 토큰 만료 임박 확인
-if (kAuth.lastResult?.isExpiringSoon() ?? false) {
-  await kAuth.refreshToken();
-}
 ```
 
-> ⚠️ Apple은 토큰 갱신을 지원하지 않습니다. 재로그인이 필요합니다.
+> Apple은 토큰 갱신을 지원하지 않습니다.
 
-## 디버그 로깅
+## Provider별 지원
 
-개발 중 디버깅을 위해 로그를 활성화할 수 있습니다:
+| Provider | 연결해제 | 토큰갱신 | 비고 |
+|:--------:|:-------:|:-------:|------|
+| Kakao | ✅ | ✅ | Native App Key 필요 |
+| Naver | ✅ | ✅ | scope 미지원 |
+| Google | ✅ | ✅ | iOS는 clientId 필요 |
+| Apple | ❌ | ❌ | iOS 13+/macOS만 |
 
-```dart
-// 개발 환경에서 로그 활성화
-KAuthLogger.level = KAuthLogLevel.debug;
+## KAuth 메서드
 
-// 프로덕션에서는 비활성화 (기본값)
-KAuthLogger.level = KAuthLogLevel.none;
+| 메서드 | 설명 |
+|--------|------|
+| `initialize()` | SDK 초기화 |
+| `signIn(provider)` | 소셜 로그인 |
+| `signOut()` | 로그아웃 |
+| `refreshToken()` | 토큰 갱신 |
+| `unlink(provider)` | 연결 해제 |
 
-// 커스텀 로거 (Firebase Crashlytics 등)
-KAuthLogger.onLog = (event) {
-  if (event.level == KAuthLogLevel.error) {
-    FirebaseCrashlytics.instance.recordError(
-      event.error,
-      event.stackTrace,
-      reason: event.message,
-    );
-  }
-};
-```
+| 프로퍼티 | 설명 |
+|----------|------|
+| `currentUser` | 현재 사용자 |
+| `currentProvider` | 현재 Provider |
+| `isSignedIn` | 로그인 여부 |
+| `authStateChanges` | 인증 상태 Stream |
 
-## Provider 설정
-
-### 카카오
-
-```dart
-KakaoConfig(
-  appKey: 'YOUR_KAKAO_NATIVE_APP_KEY',  // Native App Key (REST API Key 아님!)
-  collect: KakaoCollectOptions(
-    email: true,      // 이메일
-    profile: true,    // 닉네임, 프로필 이미지
-    phone: false,     // 전화번호 (개발자센터 활성화 필요)
-    birthday: false,  // 생일
-    gender: false,    // 성별
-  ),
-)
-```
-
-📖 [카카오 공식 문서](https://developers.kakao.com/docs/latest/ko/kakaologin/flutter)
-
-### 네이버
-
-```dart
-NaverConfig(
-  clientId: 'YOUR_CLIENT_ID',
-  clientSecret: 'YOUR_CLIENT_SECRET',
-  appName: 'Your App Name',
-)
-```
-
-> ⚠️ 네이버는 scope 파라미터를 지원하지 않습니다.
-> 수집 항목은 [네이버 개발자센터](https://developers.naver.com/apps)에서 직접 설정하세요.
-
-### 구글
-
-```dart
-GoogleConfig(
-  iosClientId: 'YOUR_IOS_CLIENT_ID',      // iOS 필수
-  serverClientId: 'YOUR_SERVER_CLIENT_ID', // 백엔드 연동 시
-  forceConsent: true,                      // refresh token 획득
-)
-```
-
-📖 [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-
-### 애플
-
-```dart
-AppleConfig(
-  collect: AppleCollectOptions(
-    email: true,
-    fullName: true,  // 첫 로그인 시에만 제공
-  ),
-)
-```
-
-> ⚠️ iOS 13+, macOS에서만 지원됩니다.
-
-## API 레퍼런스
-
-### KAuthUser (표준화된 사용자 정보)
+## KAuthUser
 
 | 프로퍼티 | 타입 | 설명 |
 |---------|------|------|
-| `id` | `String` | Provider별 고유 ID |
-| `name` | `String?` | 이름 |
+| `id` | `String` | 고유 ID |
 | `email` | `String?` | 이메일 |
-| `image` | `String?` | 프로필 이미지 URL |
+| `name` | `String?` | 이름 |
+| `image` | `String?` | 프로필 이미지 |
 | `phone` | `String?` | 전화번호 |
-| `birthday` | `String?` | 생일 (MM-DD) |
-| `birthyear` | `String?` | 출생연도 (YYYY) |
-| `gender` | `String?` | 성별 (male/female) |
-| `displayName` | `String?` | 표시할 이름 (헬퍼) |
-| `age` | `int?` | 만 나이 (헬퍼) |
-
-### AuthResult
-
-| 메서드 | 설명 |
-|--------|------|
-| `fold(onSuccess, onFailure)` | 성공/실패 분기 처리 |
-| `when(success, cancelled, failure)` | 성공/취소/실패 세분화 |
-| `onSuccess(callback)` | 성공 시 콜백 (체이닝 지원) |
-| `onFailure(callback)` | 실패 시 콜백 (체이닝 지원) |
-| `mapUser(mapper)` | 사용자 정보 변환 |
-| `mapUserOr(mapper, defaultValue)` | 변환 또는 기본값 |
-| `isExpired` | 토큰 만료 여부 |
-| `isExpiringSoon([threshold])` | 곧 만료되는지 확인 |
-
-### KAuth
-
-| 메서드 | 설명 |
-|--------|------|
-| `initialize([autoRestore])` | SDK 초기화 (자동 로그인 옵션) |
-| `signIn(provider)` | 소셜 로그인 |
-| `signOut([provider])` | 로그아웃 (생략 시 현재 Provider) |
-| `signOutAll()` | 전체 로그아웃 |
-| `refreshToken([provider])` | 토큰 갱신 (Apple 미지원) |
-| `unlink(provider)` | 연결 해제 (탈퇴) |
-| `authStateChanges` | 인증 상태 Stream |
-| `currentUser` | 현재 로그인된 사용자 |
-| `currentProvider` | 현재 로그인된 Provider |
-| `serverToken` | 백엔드에서 받은 토큰 |
-| `isSignedIn` | 로그인 여부 |
-| `dispose()` | 리소스 해제 |
-
-### Provider별 지원 기능
-
-| Provider | 연결해제 | 토큰갱신 | 비고 |
-|----------|:-------:|:-------:|------|
-| kakao | O | O | Native App Key 필요 |
-| naver | O | O | scope 미지원 |
-| google | O | O | iOS는 iosClientId 필요 |
-| apple | X | X | iOS 13+/macOS만 |
-
-## 에러 처리
-
-모든 에러는 한글 메시지와 해결 힌트를 포함합니다:
-
-```dart
-result.when(
-  success: (user) => ...,
-  cancelled: () => showToast('로그인을 취소했습니다'),
-  failure: (code, message) {
-    switch (code) {
-      case ErrorCodes.networkError:
-        showRetryDialog();
-        break;
-      case ErrorCodes.kakaoPhoneNotEnabled:
-        // 힌트: 카카오 개발자센터에서 전화번호 수집을 활성화하세요
-        showSettingsGuide();
-        break;
-      default:
-        showError(message);
-    }
-  },
-);
-```
-
-### 주요 에러 코드
-
-| 코드 | 설명 |
-|------|------|
-| `USER_CANCELLED` | 사용자가 로그인을 취소 |
-| `NETWORK_ERROR` | 네트워크 오류 |
-| `PROVIDER_NOT_CONFIGURED` | Provider 미설정 |
-| `KAKAO_PHONE_NOT_ENABLED` | 카카오 전화번호 권한 미활성화 |
-| `GOOGLE_MISSING_IOS_CLIENT_ID` | iOS Client ID 미설정 |
-| `APPLE_NOT_SUPPORTED` | 애플 로그인 미지원 기기 |
-
-## 설정 진단
-
-네이티브 설정이 잘 되어있는지 확인할 수 있습니다:
-
-```dart
-// 진단 실행
-final result = await KAuthDiagnostic.run(kAuth.config);
-
-// 결과 확인
-if (result.hasErrors) {
-  print(result.prettyPrint());
-  // ═══════════════════════════════════════
-  //   K-Auth 진단 결과
-  // ═══════════════════════════════════════
-  // 플랫폼: ios
-  //
-  // 발견된 문제: 2개
-  //   - 에러: 1개
-  //   - 경고: 1개
-  //
-  // ❌ [카카오] URL Scheme이 Info.plist에 등록되지 않았습니다
-  //    💡 해결: Info.plist에 kakao{APP_KEY} URL Scheme 추가
-  //    📖 문서: https://developers.kakao.com/docs/...
-}
-
-// 개별 이슈 처리
-for (final issue in result.errors) {
-  print('${issue.provider}: ${issue.message}');
-  if (issue.solution != null) {
-    print('해결: ${issue.solution}');
-  }
-}
-```
-
-앱 개발 중 설정 문제로 로그인이 안 될 때 유용합니다!
+| `gender` | `String?` | 성별 |
+| `birthday` | `String?` | 생일 |
+| `displayName` | `String` | 표시 이름 |
 
 ## 플랫폼 설정
 
-> 💡 설정이 잘 되었는지 확인하려면 `KAuthDiagnostic.run()`을 사용하세요!
+<details>
+<summary><b>iOS 설정</b></summary>
 
-### iOS (`ios/Runner/Info.plist`)
+`ios/Runner/Info.plist`:
 
 ```xml
 <!-- 카카오 -->
@@ -429,7 +202,7 @@ for (final issue in result.errors) {
   <dict>
     <key>CFBundleURLSchemes</key>
     <array>
-      <string>kakao{YOUR_NATIVE_APP_KEY}</string>
+      <string>kakao{YOUR_APP_KEY}</string>
     </array>
   </dict>
 </array>
@@ -437,43 +210,28 @@ for (final issue in result.errors) {
 <array>
   <string>kakaokompassauth</string>
   <string>kakaolink</string>
-  <string>kakaoplus</string>
   <string>kakaotalk</string>
 </array>
 
-<!-- 구글 -->
-<key>GIDClientID</key>
-<string>{YOUR_IOS_CLIENT_ID}.apps.googleusercontent.com</string>
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>com.googleusercontent.apps.{YOUR_CLIENT_ID}</string>
-    </array>
-  </dict>
-</array>
-
 <!-- 네이버 -->
-<key>NidClientID</key>
-<string>{YOUR_CLIENT_ID}</string>
-<key>NidClientSecret</key>
-<string>{YOUR_CLIENT_SECRET}</string>
-<key>NidAppName</key>
-<string>{YOUR_APP_NAME}</string>
 <key>LSApplicationQueriesSchemes</key>
 <array>
   <string>naversearchapp</string>
   <string>naversearchthirdlogin</string>
 </array>
 
-<!-- 애플: Xcode > Signing & Capabilities > + > "Sign in with Apple" 추가 -->
+<!-- 애플: Xcode > Signing & Capabilities > Sign in with Apple -->
 ```
 
-### Android
+</details>
 
-**카카오** (`android/app/src/main/AndroidManifest.xml`)
+<details>
+<summary><b>Android 설정</b></summary>
+
+`android/app/src/main/AndroidManifest.xml`:
+
 ```xml
+<!-- 카카오 -->
 <activity
     android:name="com.kakao.sdk.flutter.AuthCodeCustomTabsActivity"
     android:exported="true">
@@ -482,62 +240,50 @@ for (final issue in result.errors) {
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
         <data android:host="oauth"
-              android:scheme="kakao{YOUR_NATIVE_APP_KEY}" />
+              android:scheme="kakao{YOUR_APP_KEY}" />
     </intent-filter>
 </activity>
 ```
 
-**네이버** - `MainActivity`가 `FlutterFragmentActivity`를 상속해야 합니다:
-```kotlin
-// MainActivity.kt
-import io.flutter.embedding.android.FlutterFragmentActivity
+네이버는 `MainActivity`가 `FlutterFragmentActivity`를 상속해야 합니다.
 
-class MainActivity: FlutterFragmentActivity()
-```
+</details>
 
-```xml
-<!-- AndroidManifest.xml -->
-<application>
-  <meta-data android:name="com.naver.sdk.clientId" android:value="@string/client_id" />
-  <meta-data android:name="com.naver.sdk.clientSecret" android:value="@string/client_secret" />
-  <meta-data android:name="com.naver.sdk.clientName" android:value="@string/client_name" />
-</application>
-```
-
-**구글** - `android/app/google-services.json` 파일 추가
-
-## 마이그레이션
-
-### 0.1.x → 0.2.0
+## 설정 진단
 
 ```dart
-// Before
-if (result.success) {
-  print(result.user!.name);
-} else {
-  print(result.errorMessage);
+final result = await KAuthDiagnostic.run(kAuth.config);
+
+if (result.hasErrors) {
+  print(result.prettyPrint());
 }
-
-// After (권장)
-result.fold(
-  onSuccess: (user) => print(user.name),
-  onFailure: (error) => print(error),
-);
-
-// Before
-await kAuth.signOut(AuthProvider.kakao);
-
-// After (현재 Provider로 자동)
-await kAuth.signOut();
 ```
 
-## 라이선스
+## 에러 처리
 
-MIT License
+모든 에러는 한글 메시지와 해결 힌트를 포함합니다:
 
-## 관련 링크
+```dart
+result.when(
+  success: (user) => ...,
+  cancelled: () => showToast('취소됨'),
+  failure: (code, message) {
+    // code: USER_CANCELLED, NETWORK_ERROR, PROVIDER_NOT_CONFIGURED 등
+    showError(message);
+  },
+);
+```
 
-- [GitHub](https://github.com/k-auth/flutter)
-- [pub.dev](https://pub.dev/packages/k_auth)
-- [이슈 등록](https://github.com/k-auth/flutter/issues)
-- [Contributing](CONTRIBUTING.md)
+## Contributing
+
+이슈와 PR을 환영합니다! [CONTRIBUTING.md](CONTRIBUTING.md)를 참고해주세요.
+
+## License
+
+MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참고하세요.
+
+---
+
+<p align="center">
+  Made with ❤️ for Korean developers
+</p>
