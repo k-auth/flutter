@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2024-12
+
+### Added
+
+- **Documentation**: Comprehensive setup guides for all providers
+- **Documentation**: Detailed platform configuration (iOS/Android)
+- **Documentation**: Advanced usage examples (auto-login, backend integration)
+- **Documentation**: Full app example (main, login, home screens)
+- **Documentation**: Troubleshooting section with common errors
+
 ## [0.3.1] - 2024-12
 
 ### Changed
