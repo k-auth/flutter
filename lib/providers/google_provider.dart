@@ -52,6 +52,14 @@ class GoogleProvider {
       // 인증 토큰 가져오기
       final auth = account.authentication;
 
+      // accessToken을 위한 authorization 요청
+      String? accessToken;
+      if (config.allScopes.isNotEmpty) {
+        final authorization = await account.authorizationClient
+            .authorizationForScopes(config.allScopes);
+        accessToken = authorization?.accessToken;
+      }
+
       // 원본 데이터 구성
       final rawData = <String, dynamic>{
         'id': account.id,
@@ -59,6 +67,7 @@ class GoogleProvider {
         'displayName': account.displayName,
         'photoUrl': account.photoUrl,
         'idToken': auth.idToken,
+        'accessToken': accessToken,
       };
 
       // KAuthUser 생성
@@ -67,6 +76,7 @@ class GoogleProvider {
       return AuthResult.success(
         provider: AuthProvider.google,
         user: user,
+        accessToken: accessToken,
         idToken: auth.idToken,
         rawData: rawData,
       );
@@ -155,6 +165,14 @@ class GoogleProvider {
 
       final auth = account.authentication;
 
+      // accessToken을 위한 authorization 요청
+      String? accessToken;
+      if (config.allScopes.isNotEmpty) {
+        final authorization = await account.authorizationClient
+            .authorizationForScopes(config.allScopes);
+        accessToken = authorization?.accessToken;
+      }
+
       // 원본 데이터 구성
       final rawData = <String, dynamic>{
         'id': account.id,
@@ -162,6 +180,7 @@ class GoogleProvider {
         'displayName': account.displayName,
         'photoUrl': account.photoUrl,
         'idToken': auth.idToken,
+        'accessToken': accessToken,
       };
 
       // KAuthUser 생성
@@ -170,6 +189,7 @@ class GoogleProvider {
       return AuthResult.success(
         provider: AuthProvider.google,
         user: user,
+        accessToken: accessToken,
         idToken: auth.idToken,
         rawData: rawData,
       );
