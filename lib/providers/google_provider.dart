@@ -95,4 +95,57 @@ class GoogleProvider {
       );
     }
   }
+
+  /// 구글 토큰 갱신 (조용한 로그인)
+  ///
+  /// UI 없이 기존 세션으로 로그인을 시도합니다.
+  Future<AuthResult> refreshToken() async {
+    try {
+      final account = await _googleSignIn.signInSilently();
+
+      if (account == null) {
+        final error = KAuthError.fromCode(ErrorCodes.tokenExpired);
+        return AuthResult.failure(
+          provider: AuthProvider.google,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorHint: '다시 로그인해주세요.',
+        );
+      }
+
+      final auth = await account.authentication;
+
+      // 원본 데이터 구성
+      final rawData = <String, dynamic>{
+        'id': account.id,
+        'email': account.email,
+        'displayName': account.displayName,
+        'photoUrl': account.photoUrl,
+        'serverAuthCode': account.serverAuthCode,
+        'idToken': auth.idToken,
+      };
+
+      // KAuthUser 생성
+      final user = KAuthUser.fromGoogle(rawData);
+
+      return AuthResult.success(
+        provider: AuthProvider.google,
+        user: user,
+        accessToken: auth.accessToken,
+        idToken: auth.idToken,
+        rawData: rawData,
+      );
+    } catch (e) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.tokenExpired,
+        originalError: e,
+      );
+      return AuthResult.failure(
+        provider: AuthProvider.google,
+        errorMessage: '구글 토큰 갱신 중 오류 발생: $e',
+        errorCode: error.code,
+        errorHint: error.hint,
+      );
+    }
+  }
 }

@@ -121,4 +121,69 @@ class KakaoProvider {
       );
     }
   }
+
+  /// 카카오 토큰 갱신
+  Future<AuthResult> refreshToken() async {
+    try {
+      // 토큰 갱신
+      final token = await kakao.AuthApi.instance.refreshToken();
+
+      // 사용자 정보 조회
+      final kakaoUser = await kakao.UserApi.instance.me();
+
+      // 원본 데이터 구성
+      final rawData = <String, dynamic>{
+        'id': kakaoUser.id,
+        'kakao_account': {
+          'email': kakaoUser.kakaoAccount?.email,
+          'profile': {
+            'nickname': kakaoUser.kakaoAccount?.profile?.nickname,
+            'profile_image_url':
+                kakaoUser.kakaoAccount?.profile?.profileImageUrl,
+          },
+          'phone_number': kakaoUser.kakaoAccount?.phoneNumber,
+          'birthday': kakaoUser.kakaoAccount?.birthday,
+          'birthyear': kakaoUser.kakaoAccount?.birthyear,
+          'gender': kakaoUser.kakaoAccount?.gender?.name,
+          'age_range': kakaoUser.kakaoAccount?.ageRange?.name,
+        },
+      };
+
+      // KAuthUser 생성
+      final user = KAuthUser.fromKakao(rawData);
+
+      return AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: user,
+        accessToken: token.accessToken,
+        refreshToken: token.refreshToken,
+        idToken: token.idToken,
+        expiresAt: token.expiresAt,
+        rawData: rawData,
+      );
+    } on kakao.KakaoAuthException catch (e) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.tokenExpired,
+        details: {'kakaoError': e.message},
+        originalError: e,
+      );
+      return AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '카카오 토큰 갱신 실패: ${e.message}',
+        errorCode: error.code,
+        errorHint: error.hint,
+      );
+    } catch (e) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.tokenExpired,
+        originalError: e,
+      );
+      return AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '카카오 토큰 갱신 중 오류 발생: $e',
+        errorCode: error.code,
+        errorHint: error.hint,
+      );
+    }
+  }
 }

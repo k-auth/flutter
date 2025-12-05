@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/auth_result.dart';
 
@@ -533,30 +534,14 @@ class _KakaoIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _KakaoIconPainter()),
+      child: SvgPicture.asset(
+        'lib/assets/icons/kakao.svg',
+        package: 'k_auth',
+        width: size,
+        height: size,
+      ),
     );
   }
-}
-
-class _KakaoIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF000000)
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    // 카카오 말풍선 아이콘 간소화 버전
-    path.addOval(Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 2 - 1),
-      width: size.width * 0.9,
-      height: size.height * 0.7,
-    ));
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _NaverIcon extends StatelessWidget {
@@ -566,12 +551,14 @@ class _NaverIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'N',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: size * 0.9,
-        fontWeight: FontWeight.bold,
+    return SizedBox(
+      width: size,
+      height: size,
+      child: SvgPicture.asset(
+        'lib/assets/icons/naver.svg',
+        package: 'k_auth',
+        width: size,
+        height: size,
       ),
     );
   }
@@ -587,62 +574,14 @@ class _GoogleIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _GoogleIconPainter()),
+      child: SvgPicture.asset(
+        'lib/assets/icons/google.svg',
+        package: 'k_auth',
+        width: size,
+        height: size,
+      ),
     );
   }
-}
-
-class _GoogleIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 간소화된 G 로고
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.15;
-
-    // 빨강
-    paint.color = const Color(0xFFEA4335);
-    canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      -0.5,
-      1.2,
-      false,
-      paint,
-    );
-
-    // 노랑
-    paint.color = const Color(0xFFFBBC05);
-    canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      0.7,
-      1.2,
-      false,
-      paint,
-    );
-
-    // 초록
-    paint.color = const Color(0xFF34A853);
-    canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      1.9,
-      1.2,
-      false,
-      paint,
-    );
-
-    // 파랑
-    paint.color = const Color(0xFF4285F4);
-    canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      3.1,
-      1.2,
-      false,
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _AppleIcon extends StatelessWidget {

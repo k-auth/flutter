@@ -115,4 +115,72 @@ class NaverProvider {
       );
     }
   }
+
+  /// 네이버 토큰 갱신
+  ///
+  /// 네이버 SDK는 자동 토큰 갱신을 지원합니다.
+  /// 이 메서드는 현재 토큰 상태를 확인하고 필요시 갱신합니다.
+  Future<AuthResult> refreshToken() async {
+    try {
+      // 현재 토큰 상태 확인 (SDK가 자동으로 갱신)
+      final token = await FlutterNaverLogin.currentAccessToken;
+
+      if (token.accessToken.isEmpty) {
+        final error = KAuthError.fromCode(ErrorCodes.tokenExpired);
+        return AuthResult.failure(
+          provider: AuthProvider.naver,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorHint: '다시 로그인해주세요.',
+        );
+      }
+
+      // 사용자 정보 조회
+      final result = await FlutterNaverLogin.currentAccount();
+
+      // expiresAt 파싱
+      DateTime? expiresAt;
+      if (token.expiresAt.isNotEmpty) {
+        expiresAt = DateTime.tryParse(token.expiresAt);
+      }
+
+      // 원본 데이터 구성
+      final rawData = <String, dynamic>{
+        'response': {
+          'id': result.id,
+          'email': result.email,
+          'name': result.name,
+          'nickname': result.nickname,
+          'profile_image': result.profileImage,
+          'gender': result.gender,
+          'age': result.age,
+          'birthday': result.birthday,
+          'birthyear': result.birthyear,
+          'mobile': result.mobile,
+        },
+      };
+
+      // KAuthUser 생성
+      final user = KAuthUser.fromNaver(rawData);
+
+      return AuthResult.success(
+        provider: AuthProvider.naver,
+        user: user,
+        accessToken: token.accessToken,
+        expiresAt: expiresAt,
+        rawData: rawData,
+      );
+    } catch (e) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.tokenExpired,
+        originalError: e,
+      );
+      return AuthResult.failure(
+        provider: AuthProvider.naver,
+        errorMessage: '네이버 토큰 갱신 중 오류 발생: $e',
+        errorCode: error.code,
+        errorHint: error.hint,
+      );
+    }
+  }
 }

@@ -16,14 +16,35 @@ final kAuth = KAuth(
     google: GoogleConfig(),
     apple: AppleConfig(),
   ),
+  // 2. 세션 저장소 (자동 로그인용)
+  storage: InMemorySessionStorage(),
+  // 3. 로그인 콜백 (백엔드 연동)
+  onSignIn: (provider, tokens, user) async {
+    debugPrint('[onSignIn] ${provider.displayName} 로그인 성공');
+    debugPrint('  - accessToken: ${tokens.accessToken?.substring(0, 20)}...');
+    debugPrint('  - user: ${user.displayName}');
+    // 백엔드에 토큰 전송하고 JWT 받아오기
+    // final jwt = await myApi.socialLogin(tokens.accessToken);
+    // return jwt;
+    return null;
+  },
+  // 4. 로그아웃 콜백
+  onSignOut: (provider) async {
+    debugPrint('[onSignOut] ${provider.displayName} 로그아웃');
+    // 백엔드 JWT 무효화
+    // await myApi.logout();
+  },
 );
 
-void main() {
-  // 2. 디버그 로깅 활성화 (개발 환경에서만)
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 5. 디버그 로깅 활성화 (개발 환경에서만)
   KAuthLogger.level = KAuthLogLevel.debug;
 
-  // 3. 초기화
-  kAuth.initialize();
+  // 6. 초기화 + 자동 로그인 (세션 복원)
+  await kAuth.initialize(autoRestore: true);
+
   runApp(const MyApp());
 }
 
@@ -103,6 +124,15 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _signOut() async {
     await kAuth.signOut();
     _showSnackBar('로그아웃되었습니다');
+  }
+
+  // 7. 토큰 갱신
+  Future<void> _refreshToken() async {
+    final result = await kAuth.refreshToken();
+    result.fold(
+      onSuccess: (user) => _showSnackBar('토큰이 갱신되었습니다'),
+      onFailure: (error) => _showSnackBar('토큰 갱신 실패: $error'),
+    );
   }
 
   void _showSnackBar(String message) {
@@ -324,11 +354,27 @@ class _LoginPageState extends State<LoginPage> {
 
           const SizedBox(height: 24),
 
-          // 로그아웃 버튼
-          FilledButton.tonalIcon(
-            onPressed: _signOut,
-            icon: const Icon(Icons.logout),
-            label: const Text('로그아웃'),
+          // 버튼 그룹
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 토큰 갱신 버튼
+              if (kAuth.currentProvider?.supportsTokenRefresh ?? false)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: OutlinedButton.icon(
+                    onPressed: _refreshToken,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('토큰 갱신'),
+                  ),
+                ),
+              // 로그아웃 버튼
+              FilledButton.tonalIcon(
+                onPressed: _signOut,
+                icon: const Icon(Icons.logout),
+                label: const Text('로그아웃'),
+              ),
+            ],
           ),
         ],
       ),

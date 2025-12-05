@@ -110,25 +110,37 @@ class AuthTokens {
   });
 }
 
-/// 백엔드 인증 콜백 타입
+/// 로그인 콜백 타입
 ///
 /// 소셜 로그인 성공 후 호출됩니다.
 /// 백엔드 서버에 토큰을 전송하고 JWT 등을 받아올 수 있습니다.
 ///
 /// ```dart
-/// onAuthenticated: (provider, tokens, user) async {
+/// onSignIn: (provider, tokens, user) async {
 ///   final jwt = await myApi.socialLogin(
 ///     provider: provider.name,
 ///     accessToken: tokens.accessToken,
 ///   );
-///   return jwt;  // 저장됨
+///   return jwt;  // serverToken에 저장됨
 /// }
 /// ```
-typedef OnAuthenticatedCallback = Future<String?> Function(
+typedef OnSignInCallback = Future<String?> Function(
   AuthProvider provider,
   AuthTokens tokens,
   KAuthUser user,
 );
+
+/// 로그아웃 콜백 타입
+///
+/// 로그아웃 시 호출됩니다.
+/// 백엔드 서버의 JWT 무효화 등에 사용할 수 있습니다.
+///
+/// ```dart
+/// onSignOut: (provider) async {
+///   await myApi.logout();
+/// }
+/// ```
+typedef OnSignOutCallback = Future<void> Function(AuthProvider provider);
 
 /// K-Auth 메인 클래스
 ///
@@ -164,13 +176,17 @@ typedef OnAuthenticatedCallback = Future<String?> Function(
 /// ```dart
 /// final kAuth = KAuth(
 ///   config: config,
-///   onAuthenticated: (provider, tokens, user) async {
+///   onSignIn: (provider, tokens, user) async {
 ///     // 백엔드에 토큰 전송
 ///     final jwt = await myApi.socialLogin(
 ///       provider: provider.name,
 ///       accessToken: tokens.accessToken,
 ///     );
 ///     return jwt;  // serverToken으로 저장됨
+///   },
+///   onSignOut: (provider) async {
+///     // 백엔드 JWT 무효화
+///     await myApi.logout();
 ///   },
 /// );
 /// ```
@@ -208,11 +224,17 @@ class KAuth {
   /// 설정 검증 여부
   final bool validateOnInitialize;
 
-  /// 백엔드 인증 콜백
+  /// 로그인 콜백
   ///
   /// 소셜 로그인 성공 후 호출됩니다.
   /// 반환값은 [serverToken]에 저장됩니다.
-  final OnAuthenticatedCallback? onAuthenticated;
+  final OnSignInCallback? onSignIn;
+
+  /// 로그아웃 콜백
+  ///
+  /// 로그아웃 시 호출됩니다.
+  /// 백엔드 서버의 JWT 무효화 등에 사용할 수 있습니다.
+  final OnSignOutCallback? onSignOut;
 
   /// 세션 저장소
   ///
@@ -238,12 +260,14 @@ class KAuth {
   ///
   /// [config]: Provider별 설정
   /// [validateOnInitialize]: initialize() 시 설정 검증 여부 (기본: true)
-  /// [onAuthenticated]: 백엔드 인증 콜백 (선택)
+  /// [onSignIn]: 로그인 성공 콜백 (선택)
+  /// [onSignOut]: 로그아웃 콜백 (선택)
   /// [storage]: 세션 저장소 (자동 로그인용, 선택)
   KAuth({
     required this.config,
     this.validateOnInitialize = true,
-    this.onAuthenticated,
+    this.onSignIn,
+    this.onSignOut,
     this.storage,
   });
 
@@ -500,8 +524,8 @@ class KAuth {
       _lastResult = result;
       _authStateController.add(result.user);
 
-      // 백엔드 인증 콜백 호출
-      if (onAuthenticated != null) {
+      // 로그인 콜백 호출
+      if (onSignIn != null) {
         try {
           final tokens = AuthTokens(
             accessToken: result.accessToken,
@@ -510,16 +534,16 @@ class KAuth {
             expiresAt: result.expiresAt,
           );
 
-          _serverToken = await onAuthenticated!(provider, tokens, result.user!);
+          _serverToken = await onSignIn!(provider, tokens, result.user!);
 
           KAuthLogger.debug(
-            '백엔드 인증 완료',
+            '로그인 콜백 완료',
             provider: provider.name,
             data: {'hasServerToken': _serverToken != null},
           );
         } catch (e) {
           KAuthLogger.error(
-            '백엔드 인증 실패',
+            '로그인 콜백 실패',
             provider: provider.name,
             error: e,
           );
@@ -619,6 +643,16 @@ class KAuth {
     }
 
     if (_lastResult?.provider == targetProvider) {
+      // 로그아웃 콜백 호출
+      if (onSignOut != null) {
+        try {
+          await onSignOut!(targetProvider);
+          KAuthLogger.debug('로그아웃 콜백 완료', provider: targetProvider.name);
+        } catch (e) {
+          KAuthLogger.error('로그아웃 콜백 실패', provider: targetProvider.name, error: e);
+        }
+      }
+
       _lastResult = null;
       _serverToken = null;
       _authStateController.add(null);
@@ -697,6 +731,85 @@ class KAuth {
       case AuthProvider.apple:
         return config.apple != null;
     }
+  }
+
+  /// 토큰 갱신
+  ///
+  /// 현재 로그인된 Provider의 토큰을 갱신합니다.
+  /// [provider]를 지정하면 해당 Provider의 토큰을 갱신합니다.
+  ///
+  /// ⚠️ Apple은 토큰 갱신을 지원하지 않습니다.
+  ///
+  /// ```dart
+  /// // 현재 로그인된 Provider로 갱신
+  /// final result = await kAuth.refreshToken();
+  ///
+  /// // 특정 Provider로 갱신
+  /// final result = await kAuth.refreshToken(AuthProvider.kakao);
+  ///
+  /// result.fold(
+  ///   onSuccess: (user) => print('토큰 갱신 성공'),
+  ///   onFailure: (error) => print('토큰 갱신 실패: $error'),
+  /// );
+  /// ```
+  Future<AuthResult> refreshToken([AuthProvider? provider]) async {
+    _ensureInitialized();
+
+    final targetProvider = provider ?? currentProvider;
+    if (targetProvider == null) {
+      final error = KAuthError.fromCode(ErrorCodes.providerNotConfigured);
+      return AuthResult.failure(
+        provider: AuthProvider.kakao, // 기본값
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorHint: '로그인된 상태가 아닙니다.',
+      );
+    }
+
+    // Apple은 토큰 갱신 미지원
+    if (!targetProvider.supportsTokenRefresh) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.providerNotSupported,
+        details: {'provider': targetProvider.name},
+      );
+      return AuthResult.failure(
+        provider: targetProvider,
+        errorMessage: '${targetProvider.displayName}은(는) 토큰 갱신을 지원하지 않습니다.',
+        errorCode: error.code,
+        errorHint: '다시 로그인해주세요.',
+      );
+    }
+
+    KAuthLogger.info('토큰 갱신 시작', provider: targetProvider.name);
+
+    final result = switch (targetProvider) {
+      AuthProvider.kakao => await _kakaoProvider!.refreshToken(),
+      AuthProvider.naver => await _naverProvider!.refreshToken(),
+      AuthProvider.google => await _googleProvider!.refreshToken(),
+      AuthProvider.apple => AuthResult.failure(
+          provider: AuthProvider.apple,
+          errorMessage: 'Apple은 토큰 갱신을 지원하지 않습니다.',
+          errorCode: ErrorCodes.providerNotSupported,
+        ),
+    };
+
+    if (result.success && result.user != null) {
+      _lastResult = result;
+      _authStateController.add(result.user);
+
+      // 세션 저장
+      await _saveSession(result);
+
+      KAuthLogger.info('토큰 갱신 성공', provider: targetProvider.name);
+    } else {
+      KAuthLogger.warning(
+        '토큰 갱신 실패',
+        provider: targetProvider.name,
+        data: {'errorCode': result.errorCode},
+      );
+    }
+
+    return result;
   }
 
   /// 리소스 해제
