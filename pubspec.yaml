@@ -39,7 +39,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  widgetbook: ^3.20.2
 
 flutter:
   assets:
