@@ -5,14 +5,20 @@ import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
 import '../errors/k_auth_error.dart';
+import 'base_auth_provider.dart';
 
 /// 네이버 로그인 Provider
-class NaverProvider {
+class NaverProvider implements BaseAuthProvider {
   final NaverConfig config;
 
   NaverProvider(this.config);
 
+  /// 네이버 SDK 초기화 (별도 초기화 필요 없음)
+  @override
+  Future<void> initialize() async {}
+
   /// 네이버 로그인 실행
+  @override
   Future<AuthResult> signIn() async {
     try {
       final result = await FlutterNaverLogin.logIn();
@@ -94,6 +100,7 @@ class NaverProvider {
   }
 
   /// 네이버 로그아웃
+  @override
   Future<void> signOut() async {
     try {
       await FlutterNaverLogin.logOut();
@@ -107,6 +114,7 @@ class NaverProvider {
   }
 
   /// 네이버 연결 해제 (탈퇴)
+  @override
   Future<void> unlink() async {
     try {
       await FlutterNaverLogin.logOutAndDeleteToken();
@@ -123,6 +131,7 @@ class NaverProvider {
   ///
   /// 네이버 SDK는 자동 토큰 갱신을 지원합니다.
   /// 이 메서드는 현재 토큰 상태를 확인하고 필요시 갱신합니다.
+  @override
   Future<AuthResult> refreshToken() async {
     try {
       // 현재 토큰 상태 확인 (SDK가 자동으로 갱신)

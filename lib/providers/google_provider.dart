@@ -4,15 +4,17 @@ import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
 import '../errors/k_auth_error.dart';
+import 'base_auth_provider.dart';
 
 /// 구글 로그인 Provider
-class GoogleProvider {
+class GoogleProvider implements BaseAuthProvider {
   final GoogleConfig config;
   bool _initialized = false;
 
   GoogleProvider(this.config);
 
   /// Provider 초기화
+  @override
   Future<void> initialize() async {
     if (_initialized) return;
 
@@ -24,6 +26,7 @@ class GoogleProvider {
   }
 
   /// 구글 로그인 실행
+  @override
   Future<AuthResult> signIn() async {
     try {
       if (!_initialized) {
@@ -116,6 +119,7 @@ class GoogleProvider {
   }
 
   /// 구글 로그아웃
+  @override
   Future<void> signOut() async {
     try {
       await GoogleSignIn.instance.signOut();
@@ -129,6 +133,7 @@ class GoogleProvider {
   }
 
   /// 구글 연결 해제 (탈퇴)
+  @override
   Future<void> unlink() async {
     try {
       await GoogleSignIn.instance.disconnect();
@@ -144,6 +149,7 @@ class GoogleProvider {
   /// 구글 토큰 갱신 (조용한 로그인)
   ///
   /// UI 없이 기존 세션으로 로그인을 시도합니다.
+  @override
   Future<AuthResult> refreshToken() async {
     try {
       if (!_initialized) {

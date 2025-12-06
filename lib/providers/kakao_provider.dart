@@ -4,19 +4,22 @@ import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
 import '../errors/k_auth_error.dart';
+import 'base_auth_provider.dart';
 
 /// 카카오 로그인 Provider
-class KakaoProvider {
+class KakaoProvider implements BaseAuthProvider {
   final KakaoConfig config;
 
   KakaoProvider(this.config);
 
   /// 카카오 SDK 초기화
-  void initialize() {
+  @override
+  Future<void> initialize() async {
     kakao.KakaoSdk.init(nativeAppKey: config.appKey);
   }
 
   /// 카카오 로그인 실행
+  @override
   Future<AuthResult> signIn() async {
     try {
       // 카카오톡 설치 여부에 따라 로그인 방식 선택
@@ -97,6 +100,7 @@ class KakaoProvider {
   }
 
   /// 카카오 로그아웃
+  @override
   Future<void> signOut() async {
     try {
       await kakao.UserApi.instance.logout();
@@ -110,6 +114,7 @@ class KakaoProvider {
   }
 
   /// 카카오 연결 해제 (탈퇴)
+  @override
   Future<void> unlink() async {
     try {
       await kakao.UserApi.instance.unlink();
@@ -123,6 +128,7 @@ class KakaoProvider {
   }
 
   /// 카카오 토큰 갱신
+  @override
   Future<AuthResult> refreshToken() async {
     try {
       // 토큰 갱신

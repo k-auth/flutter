@@ -4,7 +4,7 @@
     <strong>한국 앱을 위한 소셜 로그인 SDK</strong>
   </p>
   <p align="center">
-    카카오, 네이버, 구글, 애플 로그인을 하나의 통합 API로
+한국 앱을 위한 소셜 로그인 SDK (v0.3.2). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
   </p>
 </p>
 
@@ -28,22 +28,22 @@
 
 ## Features
 
-| | K-Auth | 기존 방식 |
-|---|:---:|:---:|
-| **통합 API** | `signIn(provider)` 하나로 끝 | Provider마다 다른 메서드 |
-| **표준화된 응답** | `KAuthUser`로 통일 | Provider마다 다른 응답 형식 |
-| **한글 에러** | 한글 메시지 + 해결 힌트 | 영어 에러 메시지 |
-| **함수형 패턴** | `fold`, `when` 지원 | if-else 분기 처리 |
-| **공식 UI** | 디자인 가이드라인 준수 버튼 | 직접 구현 필요 |
+|                   |            K-Auth            |          기존 방식          |
+| ----------------- | :--------------------------: | :-------------------------: |
+| **통합 API**      | `signIn(provider)` 하나로 끝 |  Provider마다 다른 메서드   |
+| **표준화된 응답** |      `KAuthUser`로 통일      | Provider마다 다른 응답 형식 |
+| **한글 에러**     |   한글 메시지 + 해결 힌트    |      영어 에러 메시지       |
+| **함수형 패턴**   |     `fold`, `when` 지원      |      if-else 분기 처리      |
+| **공식 UI**       | 디자인 가이드라인 준수 버튼  |       직접 구현 필요        |
 
 ### Provider별 지원 기능
 
-| Provider | 연결해제 | 토큰갱신 | 비고 |
-|:--------:|:-------:|:-------:|------|
-| Kakao | ✅ | ✅ | Native App Key 필요 |
-| Naver | ✅ | ✅ | scope 미지원 |
-| Google | ✅ | ✅ | iOS는 clientId 필요 |
-| Apple | ❌ | ❌ | iOS 13+/macOS만 |
+| Provider | 연결해제 | 토큰갱신 | 비고                |
+| :------: | :------: | :------: | ------------------- |
+|  Kakao   |    ✅    |    ✅    | Native App Key 필요 |
+|  Naver   |    ✅    |    ✅    | scope 미지원        |
+|  Google  |    ✅    |    ✅    | iOS는 clientId 필요 |
+|  Apple   |    ❌    |    ❌    | iOS 13+/macOS만     |
 
 ---
 
@@ -287,22 +287,22 @@ keytool -exportcert -alias {YOUR_ALIAS} -keystore {YOUR_KEYSTORE_PATH} | openssl
 
 #### 메서드
 
-| 메서드 | 설명 |
-|--------|------|
+| 메서드                      | 설명                                          |
+| --------------------------- | --------------------------------------------- |
 | `initialize({autoRestore})` | SDK 초기화. `autoRestore: true`로 자동 로그인 |
-| `signIn(provider)` | 소셜 로그인 실행 |
-| `signOut()` | 현재 Provider에서 로그아웃 |
-| `refreshToken()` | 토큰 갱신 (Apple 미지원) |
-| `unlink(provider)` | 연결 해제 (회원 탈퇴) |
+| `signIn(provider)`          | 소셜 로그인 실행                              |
+| `signOut()`                 | 현재 Provider에서 로그아웃                    |
+| `refreshToken()`            | 토큰 갱신 (Apple 미지원)                      |
+| `unlink(provider)`          | 연결 해제 (회원 탈퇴)                         |
 
 #### 프로퍼티
 
-| 프로퍼티 | 타입 | 설명 |
-|----------|------|------|
-| `currentUser` | `KAuthUser?` | 현재 로그인된 사용자 |
-| `currentProvider` | `AuthProvider?` | 현재 로그인 Provider |
-| `isSignedIn` | `bool` | 로그인 여부 |
-| `serverToken` | `String?` | 백엔드에서 받은 토큰 |
+| 프로퍼티           | 타입                 | 설명                  |
+| ------------------ | -------------------- | --------------------- |
+| `currentUser`      | `KAuthUser?`         | 현재 로그인된 사용자  |
+| `currentProvider`  | `AuthProvider?`      | 현재 로그인 Provider  |
+| `isSignedIn`       | `bool`               | 로그인 여부           |
+| `serverToken`      | `String?`            | 백엔드에서 받은 토큰  |
 | `authStateChanges` | `Stream<KAuthUser?>` | 인증 상태 변화 스트림 |
 
 ### AuthResult 클래스
@@ -335,18 +335,18 @@ final customUserOrNull = result.mapUserOr((user) => MyUser.fromKAuth(user), null
 
 ### KAuthUser 클래스
 
-| 프로퍼티 | 타입 | 설명 |
-|---------|------|------|
-| `id` | `String` | Provider 고유 ID |
-| `email` | `String?` | 이메일 |
-| `name` | `String?` | 이름 |
-| `nickname` | `String?` | 닉네임 |
-| `image` | `String?` | 프로필 이미지 URL |
-| `phone` | `String?` | 전화번호 |
-| `gender` | `String?` | 성별 |
-| `birthday` | `String?` | 생일 |
-| `birthyear` | `String?` | 출생연도 |
-| `displayName` | `String` | 표시용 이름 (name ?? nickname ?? email ?? id) |
+| 프로퍼티      | 타입      | 설명                                          |
+| ------------- | --------- | --------------------------------------------- |
+| `id`          | `String`  | Provider 고유 ID                              |
+| `email`       | `String?` | 이메일                                        |
+| `name`        | `String?` | 이름                                          |
+| `nickname`    | `String?` | 닉네임                                        |
+| `image`       | `String?` | 프로필 이미지 URL                             |
+| `phone`       | `String?` | 전화번호                                      |
+| `gender`      | `String?` | 성별                                          |
+| `birthday`    | `String?` | 생일                                          |
+| `birthyear`   | `String?` | 출생연도                                      |
+| `displayName` | `String`  | 표시용 이름 (name ?? nickname ?? email ?? id) |
 
 ---
 
@@ -493,6 +493,23 @@ if (result.hasErrors) {
 // 특정 Provider만 진단
 final kakaoResult = await KAuthDiagnostic.checkKakao(kAuth.config.kakao!);
 ```
+
+---
+
+## 버튼 UI 프리뷰 (Widgetbook)
+
+로그인 버튼 디자인을 **Storybook처럼** 미리 확인하고 싶으신가요?
+
+```bash
+flutter run -t widgetbook/main.dart -d chrome
+```
+
+Widgetbook으로 모든 버튼을 인터랙티브하게 확인:
+- ✅ 실시간 Props 조정 (사이즈, 로딩, 비활성화, 텍스트)
+- ✅ 다크/라이트 모드 토글
+- ✅ 디바이스 프레임 프리뷰 (iPhone, iPad, etc.)
+- ✅ 모든 Use Case 체계적 관리
+- ✅ 4가지 Provider × 4가지 사이즈 × 다양한 상태
 
 ---
 
@@ -749,6 +766,7 @@ class HomeScreen extends StatelessWidget {
 **원인**: 네이티브 앱 키가 잘못되었거나 플랫폼 설정이 없음
 
 **해결**:
+
 1. 카카오 개발자 콘솔에서 **네이티브 앱 키** 확인 (REST API 키 아님!)
 2. 플랫폼 설정에서 패키지명/번들 ID 확인
 3. Android: 키 해시 등록 확인
@@ -761,6 +779,7 @@ class HomeScreen extends StatelessWidget {
 **원인**: 카카오 로그인이 활성화되지 않음
 
 **해결**:
+
 1. 카카오 개발자 콘솔 > 카카오 로그인 > 활성화 설정 ON
 
 </details>
@@ -806,6 +825,7 @@ class MainActivity: FlutterFragmentActivity()
 **원인**: Client ID 또는 Client Secret이 잘못됨
 
 **해결**:
+
 1. 네이버 개발자 센터에서 Client ID/Secret 재확인
 2. 앱 이름이 개발자 센터 등록명과 일치하는지 확인
 
@@ -834,6 +854,7 @@ GoogleConfig(
 **원인**: SHA-1 인증서 지문이 등록되지 않음
 
 **해결**:
+
 1. SHA-1 지문 확인: `./gradlew signingReport`
 2. Google Cloud Console > 사용자 인증 정보 > Android 클라이언트 > SHA-1 인증서 지문 추가
 
@@ -862,6 +883,7 @@ GoogleConfig(
 **원인**: iOS 13 미만이거나 Capability가 추가되지 않음
 
 **해결**:
+
 1. Xcode > Signing & Capabilities > Sign in with Apple 추가
 2. Apple Developer에서 App ID에 Sign in with Apple 활성화
 
@@ -873,6 +895,7 @@ GoogleConfig(
 **원인**: Apple은 최초 로그인 시에만 이름/이메일 제공
 
 **해결**:
+
 - 최초 로그인 시 받은 정보를 서버에 저장
 - 테스트 시 Apple ID 설정 > 암호 및 보안 > Apple로 로그인하는 앱 에서 앱 연결 해제 후 재시도
 
@@ -909,18 +932,18 @@ print(result.prettyPrint());
 
 ## 에러 코드
 
-| 코드 | 설명 |
-|------|------|
-| `USER_CANCELLED` | 사용자가 로그인 취소 |
-| `NETWORK_ERROR` | 네트워크 연결 오류 |
-| `PROVIDER_NOT_CONFIGURED` | Provider 설정 누락 |
-| `PLATFORM_NOT_SUPPORTED` | 지원하지 않는 플랫폼 |
-| `TOKEN_EXPIRED` | 토큰 만료 |
-| `INVALID_CREDENTIALS` | 잘못된 인증 정보 |
-| `KAKAO_*` | 카카오 관련 에러 |
-| `NAVER_*` | 네이버 관련 에러 |
-| `GOOGLE_*` | 구글 관련 에러 |
-| `APPLE_*` | 애플 관련 에러 |
+| 코드                      | 설명                 |
+| ------------------------- | -------------------- |
+| `USER_CANCELLED`          | 사용자가 로그인 취소 |
+| `NETWORK_ERROR`           | 네트워크 연결 오류   |
+| `PROVIDER_NOT_CONFIGURED` | Provider 설정 누락   |
+| `PLATFORM_NOT_SUPPORTED`  | 지원하지 않는 플랫폼 |
+| `TOKEN_EXPIRED`           | 토큰 만료            |
+| `INVALID_CREDENTIALS`     | 잘못된 인증 정보     |
+| `KAKAO_*`                 | 카카오 관련 에러     |
+| `NAVER_*`                 | 네이버 관련 에러     |
+| `GOOGLE_*`                | 구글 관련 에러       |
+| `APPLE_*`                 | 애플 관련 에러       |
 
 모든 에러는 한글 메시지와 해결 힌트를 포함합니다.
 

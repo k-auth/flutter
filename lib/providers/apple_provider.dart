@@ -6,9 +6,10 @@ import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
 import '../errors/k_auth_error.dart';
+import 'base_auth_provider.dart';
 
 /// 애플 로그인 Provider
-class AppleProvider {
+class AppleProvider implements BaseAuthProvider {
   final AppleConfig config;
 
   AppleProvider(this.config);
@@ -21,7 +22,12 @@ class AppleProvider {
     return await SignInWithApple.isAvailable();
   }
 
+  /// 초기화 (별도 초기화 필요 없음)
+  @override
+  Future<void> initialize() async {}
+
   /// 애플 로그인 실행
+  @override
   Future<AuthResult> signIn() async {
     try {
       // 플랫폼 지원 확인
@@ -99,8 +105,27 @@ class AppleProvider {
   }
 
   /// 애플 로그아웃 (클라이언트에서 세션만 정리)
+  @override
   Future<void> signOut() async {
     // 애플은 별도의 로그아웃 API가 없음
     // 앱에서 저장된 토큰/세션만 정리하면 됨
+  }
+
+  /// 애플 연결 해제 (서버사이드에서만 가능)
+  @override
+  Future<void> unlink() async {
+    // Apple은 클라이언트에서 연결 해제를 지원하지 않음
+    // 아무 동작도 하지 않음 or 에러 throw?
+    // 기존 로직이 break였으므로 아무 동작 안함.
+  }
+
+  /// 애플 토큰 갱신 (지원하지 않음)
+  @override
+  Future<AuthResult> refreshToken() async {
+    return AuthResult.failure(
+      provider: AuthProvider.apple,
+      errorMessage: 'Apple은 토큰 갱신을 지원하지 않습니다.',
+      errorCode: ErrorCodes.providerNotSupported,
+    );
   }
 }

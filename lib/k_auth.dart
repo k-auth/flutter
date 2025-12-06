@@ -81,6 +81,7 @@ import 'models/k_auth_user.dart';
 import 'errors/k_auth_error.dart';
 import 'utils/logger.dart';
 import 'utils/session_storage.dart';
+import 'providers/base_auth_provider.dart';
 import 'providers/kakao_provider.dart';
 import 'providers/naver_provider.dart';
 import 'providers/google_provider.dart';
@@ -244,10 +245,8 @@ class KAuth {
   /// 세션 저장 키
   static const String _sessionKey = 'k_auth_session';
 
-  KakaoProvider? _kakaoProvider;
-  NaverProvider? _naverProvider;
-  GoogleProvider? _googleProvider;
-  AppleProvider? _appleProvider;
+  /// Provider 인스턴스 맵
+  final Map<AuthProvider, BaseAuthProvider> _providers = {};
 
   bool _initialized = false;
   AuthResult? _lastResult;
@@ -401,25 +400,32 @@ class KAuth {
       }
     }
 
+    // Provider 초기화 및 등록
     if (config.kakao != null) {
-      _kakaoProvider = KakaoProvider(config.kakao!);
-      _kakaoProvider!.initialize();
+      final provider = KakaoProvider(config.kakao!);
+      await provider.initialize();
+      _providers[AuthProvider.kakao] = provider;
       KAuthLogger.debug('카카오 Provider 초기화 완료', provider: 'kakao');
     }
 
     if (config.naver != null) {
-      _naverProvider = NaverProvider(config.naver!);
+      final provider = NaverProvider(config.naver!);
+      await provider.initialize();
+      _providers[AuthProvider.naver] = provider;
       KAuthLogger.debug('네이버 Provider 초기화 완료', provider: 'naver');
     }
 
     if (config.google != null) {
-      _googleProvider = GoogleProvider(config.google!);
-      await _googleProvider!.initialize();
+      final provider = GoogleProvider(config.google!);
+      await provider.initialize();
+      _providers[AuthProvider.google] = provider;
       KAuthLogger.debug('구글 Provider 초기화 완료', provider: 'google');
     }
 
     if (config.apple != null) {
-      _appleProvider = AppleProvider(config.apple!);
+      final provider = AppleProvider(config.apple!);
+      await provider.initialize();
+      _providers[AuthProvider.apple] = provider;
       KAuthLogger.debug('애플 Provider 초기화 완료', provider: 'apple');
     }
 
@@ -602,14 +608,24 @@ class KAuth {
       provider: provider.name,
     );
 
+    final providerImpl = _providers[provider];
+    if (providerImpl == null) {
+      final error = KAuthError.fromCode(
+        ErrorCodes.providerNotConfigured,
+        details: {'provider': provider.name},
+      );
+      return AuthResult.failure(
+        provider: provider,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorHint: error.hint,
+      );
+    }
+
     final stopwatch = Stopwatch()..start();
 
-    final result = switch (provider) {
-      AuthProvider.kakao => await _signInWithKakao(),
-      AuthProvider.naver => await _signInWithNaver(),
-      AuthProvider.google => await _signInWithGoogle(),
-      AuthProvider.apple => await _signInWithApple(),
-    };
+    // Provider signIn 호출 (다형성 활용)
+    final result = await providerImpl.signIn();
 
     stopwatch.stop();
 
@@ -672,26 +688,22 @@ class KAuth {
 
   /// 카카오 로그인
   Future<AuthResult> signInWithKakao() async {
-    _ensureInitialized();
-    return _signInWithKakao();
+    return signIn(AuthProvider.kakao);
   }
 
   /// 네이버 로그인
   Future<AuthResult> signInWithNaver() async {
-    _ensureInitialized();
-    return _signInWithNaver();
+    return signIn(AuthProvider.naver);
   }
 
   /// 구글 로그인
   Future<AuthResult> signInWithGoogle() async {
-    _ensureInitialized();
-    return _signInWithGoogle();
+    return signIn(AuthProvider.google);
   }
 
   /// 애플 로그인
   Future<AuthResult> signInWithApple() async {
-    _ensureInitialized();
-    return _signInWithApple();
+    return signIn(AuthProvider.apple);
   }
 
   /// 로그아웃
@@ -720,20 +732,14 @@ class KAuth {
 
     KAuthLogger.info('로그아웃 시작', provider: targetProvider.name);
 
-    switch (targetProvider) {
-      case AuthProvider.kakao:
-        await _kakaoProvider?.signOut();
-        break;
-      case AuthProvider.naver:
-        await _naverProvider?.signOut();
-        break;
-      case AuthProvider.google:
-        await _googleProvider?.signOut();
-        break;
-      case AuthProvider.apple:
-        await _appleProvider?.signOut();
-        break;
+    final providerImpl = _providers[targetProvider];
+    if (providerImpl == null) {
+      KAuthLogger.debug('로그아웃 스킵: Provider 설정 안됨',
+          provider: targetProvider.name);
+      return;
     }
+
+    await providerImpl.signOut();
 
     if (_lastResult?.provider == targetProvider) {
       // 로그아웃 콜백 호출
@@ -762,12 +768,8 @@ class KAuth {
   Future<void> signOutAll() async {
     _ensureInitialized();
 
-    await Future.wait([
-      if (_kakaoProvider != null) _kakaoProvider!.signOut(),
-      if (_naverProvider != null) _naverProvider!.signOut(),
-      if (_googleProvider != null) _googleProvider!.signOut(),
-      if (_appleProvider != null) _appleProvider!.signOut(),
-    ]);
+    final futures = _providers.values.map((p) => p.signOut());
+    await Future.wait(futures);
 
     _lastResult = null;
     _serverToken = null;
@@ -797,34 +799,20 @@ class KAuth {
       );
     }
 
-    switch (provider) {
-      case AuthProvider.kakao:
-        await _kakaoProvider?.unlink();
-        break;
-      case AuthProvider.naver:
-        await _naverProvider?.unlink();
-        break;
-      case AuthProvider.google:
-        await _googleProvider?.unlink();
-        break;
-      case AuthProvider.apple:
-        // Apple은 서버사이드에서만 revoke 가능
-        break;
+    final providerImpl = _providers[provider];
+    if (providerImpl == null) {
+      throw KAuthError.fromCode(
+        ErrorCodes.providerNotConfigured,
+        details: {'provider': provider.name},
+      );
     }
+
+    await providerImpl.unlink();
   }
 
   /// Provider가 설정되어 있는지 확인
   bool isConfigured(AuthProvider provider) {
-    switch (provider) {
-      case AuthProvider.kakao:
-        return config.kakao != null;
-      case AuthProvider.naver:
-        return config.naver != null;
-      case AuthProvider.google:
-        return config.google != null;
-      case AuthProvider.apple:
-        return config.apple != null;
-    }
+    return _providers.containsKey(provider);
   }
 
   /// 토큰 갱신
@@ -876,16 +864,18 @@ class KAuth {
 
     KAuthLogger.info('토큰 갱신 시작', provider: targetProvider.name);
 
-    final result = switch (targetProvider) {
-      AuthProvider.kakao => await _kakaoProvider!.refreshToken(),
-      AuthProvider.naver => await _naverProvider!.refreshToken(),
-      AuthProvider.google => await _googleProvider!.refreshToken(),
-      AuthProvider.apple => AuthResult.failure(
-          provider: AuthProvider.apple,
-          errorMessage: 'Apple은 토큰 갱신을 지원하지 않습니다.',
-          errorCode: ErrorCodes.providerNotSupported,
-        ),
-    };
+    final providerImpl = _providers[targetProvider];
+    if (providerImpl == null) {
+      final error = KAuthError.fromCode(ErrorCodes.providerNotConfigured);
+      return AuthResult.failure(
+        provider: targetProvider,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorHint: 'Provider가 설정되지 않았습니다.',
+      );
+    }
+
+    final result = await providerImpl.refreshToken();
 
     if (result.success && result.user != null) {
       _lastResult = result;
@@ -930,69 +920,5 @@ class KAuth {
     if (!_initialized) {
       throw KAuthError.fromCode(ErrorCodes.configNotFound);
     }
-  }
-
-  Future<AuthResult> _signInWithKakao() async {
-    if (_kakaoProvider == null) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.providerNotConfigured,
-        details: {'provider': 'kakao'},
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorHint: error.hint,
-      );
-    }
-    return _kakaoProvider!.signIn();
-  }
-
-  Future<AuthResult> _signInWithNaver() async {
-    if (_naverProvider == null) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.providerNotConfigured,
-        details: {'provider': 'naver'},
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.naver,
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorHint: error.hint,
-      );
-    }
-    return _naverProvider!.signIn();
-  }
-
-  Future<AuthResult> _signInWithGoogle() async {
-    if (_googleProvider == null) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.providerNotConfigured,
-        details: {'provider': 'google'},
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.google,
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorHint: error.hint,
-      );
-    }
-    return _googleProvider!.signIn();
-  }
-
-  Future<AuthResult> _signInWithApple() async {
-    if (_appleProvider == null) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.providerNotConfigured,
-        details: {'provider': 'apple'},
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.apple,
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorHint: error.hint,
-      );
-    }
-    return _appleProvider!.signIn();
   }
 }
