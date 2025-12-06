@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.3] - 2024-12
+
+### Fixed
+
+- **UI**: Google login button font weight consistency (w500 → w600)
+
 ## [0.3.2] - 2024-12
 
 ### Added
