@@ -320,7 +320,8 @@ class KAuth {
 
   /// KAuth 초기화
   ///
-  /// 앱 시작 시 main() 또는 initState()에서 호출해야 합니다.
+  /// 앱 시작 시 main() 또는 initState()에서 **반드시 호출**해야 합니다.
+  /// signIn() 등 다른 메서드를 호출하기 전에 initialize()를 먼저 실행하세요.
   ///
   /// [validateOnInitialize]가 true이면 설정을 검증하고,
   /// 설정이 유효하지 않으면 [KAuthError]를 던집니다.
@@ -328,13 +329,54 @@ class KAuth {
   /// [autoRestore]가 true이면 저장된 세션을 자동으로 복원합니다.
   /// [storage]가 설정되어 있어야 동작합니다.
   ///
-  /// ```dart
-  /// final kAuth = KAuth(config: config, storage: myStorage);
-  /// await kAuth.initialize(autoRestore: true);
+  /// ## 사용 예시
   ///
-  /// if (kAuth.isSignedIn) {
-  ///   print('자동 로그인 성공!');
+  /// **기본 초기화**
+  /// ```dart
+  /// void main() async {
+  ///   WidgetsFlutterBinding.ensureInitialized();
+  ///
+  ///   final kAuth = KAuth(
+  ///     config: KAuthConfig(
+  ///       kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  ///     ),
+  ///   );
+  ///
+  ///   await kAuth.initialize();
+  ///
+  ///   runApp(MyApp());
   /// }
+  /// ```
+  ///
+  /// **자동 로그인 (세션 복원)**
+  /// ```dart
+  /// void main() async {
+  ///   WidgetsFlutterBinding.ensureInitialized();
+  ///
+  ///   final kAuth = KAuth(
+  ///     config: config,
+  ///     storage: SecureSessionStorage(),
+  ///   );
+  ///
+  ///   // 저장된 세션 자동 복원
+  ///   await kAuth.initialize(autoRestore: true);
+  ///
+  ///   if (kAuth.isSignedIn) {
+  ///     print('자동 로그인 성공: ${kAuth.currentUser?.displayName}');
+  ///   }
+  ///
+  ///   runApp(MyApp());
+  /// }
+  /// ```
+  ///
+  /// **설정 검증 비활성화 (개발 환경)**
+  /// ```dart
+  /// final kAuth = KAuth(
+  ///   config: config,
+  ///   validateOnInitialize: false, // 설정 검증 건너뛰기
+  /// );
+  ///
+  /// await kAuth.initialize();
   /// ```
   Future<void> initialize({bool autoRestore = false}) async {
     if (_initialized) {
@@ -489,19 +531,68 @@ class KAuth {
   ///
   /// ## 사용 예시
   ///
+  /// **기본 사용법 (if-else)**
   /// ```dart
   /// final result = await kAuth.signIn(AuthProvider.kakao);
   ///
-  /// // 함수형 스타일
-  /// result.fold(
-  ///   onSuccess: (user) => print('환영합니다, ${user.displayName}!'),
-  ///   onFailure: (error) => print('실패: $error'),
-  /// );
+  /// if (result.success) {
+  ///   print('환영합니다, ${result.user?.displayName}!');
+  ///   navigateToHome();
+  /// } else {
+  ///   print('로그인 실패: ${result.errorMessage}');
+  ///   showErrorDialog(result.errorMessage);
+  /// }
+  /// ```
   ///
-  /// // 체이닝 스타일
+  /// **함수형 스타일 (fold)**
+  /// ```dart
+  /// final result = await kAuth.signIn(AuthProvider.kakao);
+  ///
+  /// result.fold(
+  ///   onSuccess: (user) {
+  ///     print('환영합니다, ${user.displayName}!');
+  ///     navigateToHome(user);
+  ///   },
+  ///   onFailure: (error) {
+  ///     print('실패: $error');
+  ///     showErrorDialog(error);
+  ///   },
+  /// );
+  /// ```
+  ///
+  /// **상세 처리 (when - 성공/취소/실패 구분)**
+  /// ```dart
+  /// final result = await kAuth.signIn(AuthProvider.kakao);
+  ///
+  /// result.when(
+  ///   success: (user) {
+  ///     print('로그인 성공: ${user.displayName}');
+  ///     navigateToHome(user);
+  ///   },
+  ///   cancelled: () {
+  ///     print('사용자가 로그인을 취소했습니다');
+  ///     showSnackBar('로그인이 취소되었습니다');
+  ///   },
+  ///   failure: (code, message) {
+  ///     print('로그인 실패 [$code]: $message');
+  ///     showErrorDialog(message);
+  ///   },
+  /// );
+  /// ```
+  ///
+  /// **체이닝 스타일**
+  /// ```dart
+  /// final result = await kAuth.signIn(AuthProvider.kakao);
+  ///
   /// result
-  ///   .onSuccess((user) => saveUser(user))
-  ///   .onFailure((code, msg) => showError(msg));
+  ///   .onSuccess((user) {
+  ///     saveUserToDatabase(user);
+  ///     navigateToHome(user);
+  ///   })
+  ///   .onFailure((code, msg) {
+  ///     logError(code, msg);
+  ///     showError(msg);
+  ///   });
   /// ```
   Future<AuthResult> signIn(AuthProvider provider) async {
     _ensureInitialized();

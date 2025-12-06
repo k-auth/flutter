@@ -496,6 +496,17 @@ final kakaoResult = await KAuthDiagnostic.checkKakao(kAuth.config.kakao!);
 
 ---
 
+## 코드 패턴 가이드
+
+AI 코드 생성 도구를 사용하시나요? [PATTERNS.md](PATTERNS.md) 문서에서 복사해서 바로 사용할 수 있는 코드 패턴들을 확인하세요.
+
+- 모든 주요 사용 패턴
+- 안티패턴과 베스트 프랙티스
+- VSCode 스니펫 (`.vscode/k_auth.code-snippets`)
+- 최소 예제 (`example/basic/main.dart`)
+
+---
+
 ## 전체 예제
 
 실제 앱에서 사용하는 전체 플로우 예제입니다.
