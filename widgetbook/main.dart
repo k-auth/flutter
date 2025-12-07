@@ -98,7 +98,7 @@ class _GalleryPageState extends State<GalleryPage> {
                 color: _isDarkMode ? Colors.grey[850] : Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(2, 0),
                   ),
@@ -224,7 +224,7 @@ class _GalleryPageState extends State<GalleryPage> {
                 color: _isDarkMode ? Colors.grey[850] : Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(-2, 0),
                   ),
