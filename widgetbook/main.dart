@@ -113,7 +113,9 @@ class _GalleryPageState extends State<GalleryPage> {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: _isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                          color: _isDarkMode
+                              ? Colors.grey[700]!
+                              : Colors.grey[200]!,
                         ),
                       ),
                     ),
@@ -193,7 +195,8 @@ class _GalleryPageState extends State<GalleryPage> {
                         ),
                         // 다크모드 토글
                         IconButton(
-                          icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                          icon: Icon(
+                              _isDarkMode ? Icons.light_mode : Icons.dark_mode),
                           onPressed: () {
                             setState(() => _isDarkMode = !_isDarkMode);
                           },
@@ -243,14 +246,17 @@ class _GalleryPageState extends State<GalleryPage> {
                   const SizedBox(height: 20),
 
                   // Size 선택
-                  const Text('Size', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  const Text('Size',
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   SegmentedButton<ButtonSize>(
                     segments: const [
                       ButtonSegment(value: ButtonSize.small, label: Text('S')),
                       ButtonSegment(value: ButtonSize.medium, label: Text('M')),
                       ButtonSegment(value: ButtonSize.large, label: Text('L')),
-                      ButtonSegment(value: ButtonSize.icon, label: Icon(Icons.apps)),
+                      ButtonSegment(
+                          value: ButtonSize.icon, label: Icon(Icons.apps)),
                     ],
                     selected: {_selectedSize},
                     onSelectionChanged: (Set<ButtonSize> newSelection) {
@@ -261,7 +267,8 @@ class _GalleryPageState extends State<GalleryPage> {
 
                   // Loading 스위치
                   SwitchListTile(
-                    title: const Text('Loading', style: TextStyle(fontSize: 14)),
+                    title:
+                        const Text('Loading', style: TextStyle(fontSize: 14)),
                     value: _isLoading,
                     onChanged: (value) {
                       setState(() => _isLoading = value);
@@ -270,7 +277,8 @@ class _GalleryPageState extends State<GalleryPage> {
 
                   // Disabled 스위치
                   SwitchListTile(
-                    title: const Text('Disabled', style: TextStyle(fontSize: 14)),
+                    title:
+                        const Text('Disabled', style: TextStyle(fontSize: 14)),
                     value: _isDisabled,
                     onChanged: (value) {
                       setState(() => _isDisabled = value);
@@ -317,9 +325,9 @@ class _GalleryPageState extends State<GalleryPage> {
 
   Widget _buildMenuItem(String title, IconData icon) {
     final isSelected = _selectedProvider == title ||
-                       (title == 'Button Group' && _selectedProvider == 'Button Group') ||
-                       (title == 'All Sizes' && _selectedProvider == 'All Sizes') ||
-                       (title == 'All States' && _selectedProvider == 'All States');
+        (title == 'Button Group' && _selectedProvider == 'Button Group') ||
+        (title == 'All Sizes' && _selectedProvider == 'All Sizes') ||
+        (title == 'All States' && _selectedProvider == 'All States');
 
     return ListTile(
       dense: true,
@@ -414,7 +422,9 @@ class _GalleryPageState extends State<GalleryPage> {
           AuthProvider.apple,
         ],
         onPressed: (provider) {},
-        buttonSize: _selectedSize == ButtonSize.icon ? ButtonSize.icon : ButtonSize.large,
+        buttonSize: _selectedSize == ButtonSize.icon
+            ? ButtonSize.icon
+            : ButtonSize.large,
         direction: _selectedSize == ButtonSize.icon
             ? ButtonGroupDirection.horizontal
             : ButtonGroupDirection.vertical,
@@ -425,11 +435,14 @@ class _GalleryPageState extends State<GalleryPage> {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          KakaoLoginButton(onPressed: () {}, size: ButtonSize.small, text: 'Small'),
+          KakaoLoginButton(
+              onPressed: () {}, size: ButtonSize.small, text: 'Small'),
           const SizedBox(height: 12),
-          KakaoLoginButton(onPressed: () {}, size: ButtonSize.medium, text: 'Medium'),
+          KakaoLoginButton(
+              onPressed: () {}, size: ButtonSize.medium, text: 'Medium'),
           const SizedBox(height: 12),
-          KakaoLoginButton(onPressed: () {}, size: ButtonSize.large, text: 'Large'),
+          KakaoLoginButton(
+              onPressed: () {}, size: ButtonSize.large, text: 'Large'),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -125,13 +125,72 @@ Future<AuthResult> signInWithKakao() async {
 flutter test
 
 # 특정 파일
-flutter test test/auth_result_test.dart
+flutter test test/k_auth_test.dart
 
-# 커버리지
+# 커버리지 리포트 생성
 flutter test --coverage
+
+# 커버리지 HTML 보기 (macOS)
+genhtml coverage/lcov.info -o coverage/html
+open coverage/html/index.html
 ```
 
 테스트 파일은 `test/` 디렉토리에 위치하며, `_test.dart` 접미사를 사용합니다.
+
+### 테스트 구조
+
+```
+test/
+├── k_auth_test.dart      # KAuth 메인 클래스 및 AuthResult 테스트
+├── provider_test.dart    # KAuthUser.fromXxx 파싱 테스트
+├── error_test.dart       # 에러 시나리오 테스트
+└── widgets_test.dart     # 로그인 버튼 위젯 테스트
+```
+
+## CI/CD
+
+### GitHub Actions
+
+PR을 생성하면 자동으로 다음이 실행됩니다:
+
+1. **Analyze & Test**: `dart format`, `dart analyze`, `flutter test`
+2. **Build Example**: Android APK 빌드 테스트
+3. **Coverage**: Codecov로 커버리지 리포트 업로드
+
+### Codecov 설정 (메인테이너용)
+
+커버리지 배지가 동작하려면 GitHub Secrets에 `CODECOV_TOKEN`을 추가해야 합니다:
+
+1. [Codecov](https://codecov.io)에서 GitHub으로 로그인
+2. `k-auth/flutter` 저장소 추가
+3. Settings > Repository Upload Token 복사
+4. GitHub 저장소 > Settings > Secrets and variables > Actions
+5. `CODECOV_TOKEN` 시크릿 추가
+
+```yaml
+# .github/workflows/ci.yml 에서 사용됨
+- name: Upload coverage to Codecov
+  uses: codecov/codecov-action@v4
+  with:
+    files: coverage/lcov.info
+  env:
+    CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+```
+
+### 자동 배포 (pub.dev)
+
+`v*` 태그를 push하면 자동으로 pub.dev에 배포됩니다:
+
+```bash
+# 버전 업데이트 후
+git tag v0.5.0
+git push --tags
+```
+
+**주의**: pub.dev 자동 배포를 위해 OIDC 인증 설정이 필요합니다:
+1. https://pub.dev 에서 패키지 관리 페이지 이동
+2. "Automated publishing" 활성화
+3. GitHub 저장소 연결
 
 ## 문서 작성
 

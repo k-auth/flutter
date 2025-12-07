@@ -60,8 +60,7 @@ void main() {
       expect(pressed, false);
     });
 
-    testWidgets('isLoading일 때 CircularProgressIndicator를 표시한다',
-        (tester) async {
+    testWidgets('isLoading일 때 CircularProgressIndicator를 표시한다', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Error**: `signOutFailed`, `unlinkFailed`, `refreshFailed` 에러 코드 추가
+- **CI/CD**: GitHub Actions 워크플로우 추가 (테스트, 분석, 자동 배포)
+- **Test**: Provider별 테스트, 에러 케이스 테스트 추가
 
 ### Fixed
 
@@ -21,6 +23,67 @@ All notable changes to this project will be documented in this file.
 - **API**: `refreshToken()` 기본 provider를 configuredProviders에서 선택
 - **UI**: `.withOpacity()` deprecated API를 `.withValues(alpha:)`로 수정
 - **Error**: Apple `unlink()` 명확한 에러 메시지 및 문서 링크 추가
+
+### Migration Guide (0.3.x → 0.4.0)
+
+#### Breaking Changes
+
+**1. `signOut()` 반환 타입 변경**
+
+```dart
+// Before (0.3.x)
+await kAuth.signOut();  // Future<void>
+
+// After (0.4.0)
+final result = await kAuth.signOut();  // Future<AuthResult>
+if (result.success) {
+  print('로그아웃 성공');
+} else {
+  print('로그아웃 실패: ${result.errorMessage}');
+}
+```
+
+**2. `unlink()` 반환 타입 변경**
+
+```dart
+// Before (0.3.x)
+await kAuth.unlink(AuthProvider.kakao);  // Future<void>
+
+// After (0.4.0)
+final result = await kAuth.unlink(AuthProvider.kakao);  // Future<AuthResult>
+result.fold(
+  onSuccess: (_) => print('연결 해제 완료'),
+  onFailure: (error) => print('실패: $error'),
+);
+```
+
+**3. `signOutAll()` 반환 타입 변경**
+
+```dart
+// Before (0.3.x)
+await kAuth.signOutAll();  // Future<void>
+
+// After (0.4.0)
+final results = await kAuth.signOutAll();  // Future<List<AuthResult>>
+for (final result in results) {
+  print('${result.provider}: ${result.success ? '성공' : '실패'}');
+}
+```
+
+#### 권장 마이그레이션
+
+기존 코드가 단순히 `signOut()`을 호출만 하고 결과를 사용하지 않았다면, 코드 변경 없이 동작합니다. 하지만 에러 처리를 추가하는 것을 권장합니다:
+
+```dart
+// 최소 변경 (기존 코드 호환)
+await kAuth.signOut();  // 여전히 동작함
+
+// 권장 (에러 처리 추가)
+final result = await kAuth.signOut();
+if (!result.success) {
+  // 에러 처리
+}
+```
 
 ## [0.3.3] - 2024-12
 
