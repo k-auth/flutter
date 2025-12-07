@@ -736,8 +736,9 @@ class KAuth {
     if (targetProvider == null) {
       KAuthLogger.debug('로그아웃 스킵: 로그인된 상태가 아님');
       // 로그인된 상태가 아니면 성공으로 처리 (이미 로그아웃 상태)
-      final defaultProvider =
-          configuredProviders.isNotEmpty ? configuredProviders.first : AuthProvider.kakao;
+      final defaultProvider = configuredProviders.isNotEmpty
+          ? configuredProviders.first
+          : AuthProvider.kakao;
       return AuthResult.success(
         provider: defaultProvider,
         user: null,
@@ -901,8 +902,9 @@ class KAuth {
     final targetProvider = provider ?? currentProvider;
     if (targetProvider == null) {
       final error = KAuthError.fromCode(ErrorCodes.refreshFailed);
-      final defaultProvider =
-          configuredProviders.isNotEmpty ? configuredProviders.first : AuthProvider.kakao;
+      final defaultProvider = configuredProviders.isNotEmpty
+          ? configuredProviders.first
+          : AuthProvider.kakao;
       return AuthResult.failure(
         provider: defaultProvider,
         errorMessage: '토큰을 갱신할 수 없습니다.',

@@ -123,9 +123,11 @@ class AppleProvider implements BaseAuthProvider {
     // 서버에서 Apple REST API를 통해 처리해야 함
     return AuthResult.failure(
       provider: AuthProvider.apple,
-      errorMessage: 'Apple은 클라이언트에서 연결 해제를 지원하지 않습니다. 서버에서 Apple REST API를 통해 처리하세요.',
+      errorMessage:
+          'Apple은 클라이언트에서 연결 해제를 지원하지 않습니다. 서버에서 Apple REST API를 통해 처리하세요.',
       errorCode: ErrorCodes.providerNotSupported,
-      errorHint: 'https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens',
+      errorHint:
+          'https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens',
     );
   }
 

@@ -480,7 +480,8 @@ void main() {
       final config = KAuthConfig();
       final errors = config.validate();
 
-      expect(errors.any((e) => e.code == ErrorCodes.noProviderConfigured), true);
+      expect(
+          errors.any((e) => e.code == ErrorCodes.noProviderConfigured), true);
     });
   });
 
@@ -996,8 +997,8 @@ void main() {
 
     test('displayName이 올바르게 동작한다', () {
       final withName = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
-      final withEmail = KAuthUser(
-          id: '2', email: 'test@example.com', provider: 'kakao');
+      final withEmail =
+          KAuthUser(id: '2', email: 'test@example.com', provider: 'kakao');
       final withNeither = KAuthUser(id: '3', provider: 'kakao');
 
       expect(withName.displayName, '홍길동');
