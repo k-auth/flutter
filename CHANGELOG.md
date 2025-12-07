@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2024-12
+
+### Changed
+
+- **API**: `signOut()`, `unlink()` 반환 타입을 `Future<AuthResult>`로 변경 (Result 패턴 통일)
+- **API**: `signOutAll()` 반환 타입을 `Future<List<AuthResult>>`로 변경
+- **Error**: 에러 메시지 kDebugMode 분기 (개발: 상세, 릴리즈: 간결)
+- **Error**: `tokenRefreshFailed` → `refreshFailed`로 간결화
+
+### Added
+
+- **Error**: `signOutFailed`, `unlinkFailed`, `refreshFailed` 에러 코드 추가
+
+### Fixed
+
+- **API**: `isConfigured()` 초기화 전에도 동작하도록 수정
+- **API**: `refreshToken()` 기본 provider를 configuredProviders에서 선택
+- **UI**: `.withOpacity()` deprecated API를 `.withValues(alpha:)`로 수정
+- **Error**: Apple `unlink()` 명확한 에러 메시지 및 문서 링크 추가
+
 ## [0.3.3] - 2024-12
 
 ### Fixed
