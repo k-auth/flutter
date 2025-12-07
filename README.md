@@ -187,15 +187,34 @@ AppleConfig()  // 별도 설정 불필요
 `ios/Runner/Info.plist`에 다음을 추가:
 
 ```xml
-<!-- 카카오 URL Scheme -->
+<!-- URL Schemes (카카오, 네이버, 구글) -->
 <key>CFBundleURLTypes</key>
 <array>
+  <!-- 카카오 -->
   <dict>
     <key>CFBundleTypeRole</key>
     <string>Editor</string>
     <key>CFBundleURLSchemes</key>
     <array>
       <string>kakao{YOUR_NATIVE_APP_KEY}</string>
+    </array>
+  </dict>
+  <!-- 네이버 -->
+  <dict>
+    <key>CFBundleTypeRole</key>
+    <string>Editor</string>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>{YOUR_NAVER_URL_SCHEME}</string>
+    </array>
+  </dict>
+  <!-- 구글 (역방향 클라이언트 ID) -->
+  <dict>
+    <key>CFBundleTypeRole</key>
+    <string>Editor</string>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>com.googleusercontent.apps.{YOUR_CLIENT_ID}</string>
     </array>
   </dict>
 </array>
@@ -212,19 +231,49 @@ AppleConfig()  // 별도 설정 불필요
   <string>naversearchthirdlogin</string>
 </array>
 
-<!-- 구글 URL Scheme (역방향 클라이언트 ID) -->
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>com.googleusercontent.apps.{YOUR_CLIENT_ID}</string>
-    </array>
-  </dict>
-</array>
+<!-- 네이버 로그인 설정 -->
+<key>NidConsumerKey</key>
+<string>{YOUR_NAVER_CLIENT_ID}</string>
+<key>NidConsumerSecret</key>
+<string>{YOUR_NAVER_CLIENT_SECRET}</string>
+<key>NidAppName</key>
+<string>{YOUR_APP_NAME}</string>
 ```
 
-#### 2. Apple Sign In 설정 (Xcode)
+#### 2. AppDelegate 설정 (네이버)
+
+`ios/Runner/AppDelegate.swift`에서 네이버 URL 핸들링 추가:
+
+```swift
+import UIKit
+import Flutter
+import NidThirdPartyLogin  // 추가
+
+@main
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // 네이버 로그인 URL 핸들링 추가
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+  ) -> Bool {
+    if NidOAuth.shared.handleURL(url) {
+      return true
+    }
+    return super.application(app, open: url, options: options)
+  }
+}
+```
+
+#### 3. Apple Sign In 설정 (Xcode)
 
 1. Xcode에서 프로젝트 열기
 2. **Runner** 타겟 선택
@@ -234,11 +283,35 @@ AppleConfig()  // 별도 설정 불필요
 
 ### Android 설정
 
-#### 1. AndroidManifest.xml 설정
+#### 1. strings.xml 설정 (네이버)
+
+`android/app/src/main/res/values/strings.xml` 파일 생성 또는 수정:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="client_id">{YOUR_NAVER_CLIENT_ID}</string>
+    <string name="client_secret">{YOUR_NAVER_CLIENT_SECRET}</string>
+    <string name="client_name">{YOUR_APP_NAME}</string>
+</resources>
+```
+
+#### 2. AndroidManifest.xml 설정
 
 `android/app/src/main/AndroidManifest.xml`의 `<application>` 태그 안에 추가:
 
 ```xml
+<!-- 네이버 로그인 메타데이터 -->
+<meta-data
+    android:name="com.naver.sdk.clientId"
+    android:value="@string/client_id" />
+<meta-data
+    android:name="com.naver.sdk.clientSecret"
+    android:value="@string/client_secret" />
+<meta-data
+    android:name="com.naver.sdk.clientName"
+    android:value="@string/client_name" />
+
 <!-- 카카오 로그인 -->
 <activity
     android:name="com.kakao.sdk.flutter.AuthCodeCustomTabsActivity"
@@ -253,7 +326,7 @@ AppleConfig()  // 별도 설정 불필요
 </activity>
 ```
 
-#### 2. MainActivity 수정 (네이버 필수)
+#### 3. MainActivity 수정 (네이버 필수)
 
 `android/app/src/main/kotlin/.../MainActivity.kt`:
 
@@ -269,7 +342,7 @@ import io.flutter.embedding.android.FlutterFragmentActivity
 class MainActivity: FlutterFragmentActivity()
 ```
 
-#### 3. 키 해시 등록 (카카오)
+#### 4. 키 해시 등록 (카카오)
 
 디버그/릴리즈 키 해시를 카카오 개발자 콘솔에 등록:
 
