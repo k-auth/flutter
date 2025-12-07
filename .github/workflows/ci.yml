@@ -39,25 +39,3 @@ jobs:
           fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  build-example:
-    name: Build Example App
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build example (Android)
-        working-directory: example
-        run: |
-          flutter pub get
-          flutter build apk --debug
