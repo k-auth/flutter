@@ -1,6 +1,94 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:k_auth/k_auth.dart';
 
+/// 테스트용 Mock Provider
+class MockAuthProvider implements BaseAuthProvider {
+  final AuthProvider provider;
+  bool initializeCalled = false;
+  bool signInCalled = false;
+  bool signOutCalled = false;
+  bool unlinkCalled = false;
+  bool refreshTokenCalled = false;
+
+  AuthResult? signInResult;
+  AuthResult? signOutResult;
+  AuthResult? unlinkResult;
+  AuthResult? refreshTokenResult;
+
+  MockAuthProvider(this.provider);
+
+  @override
+  Future<void> initialize() async {
+    initializeCalled = true;
+  }
+
+  @override
+  Future<AuthResult> signIn() async {
+    signInCalled = true;
+    return signInResult ??
+        AuthResult.success(
+          provider: provider,
+          user: KAuthUser(
+            id: 'mock_user_id',
+            name: 'Mock User',
+            email: 'mock@test.com',
+            provider: provider.name,
+          ),
+          accessToken: 'mock_access_token',
+          refreshToken: 'mock_refresh_token',
+        );
+  }
+
+  @override
+  Future<AuthResult> signOut() async {
+    signOutCalled = true;
+    return signOutResult ??
+        AuthResult.success(
+          provider: provider,
+          user: null,
+        );
+  }
+
+  @override
+  Future<AuthResult> unlink() async {
+    unlinkCalled = true;
+    return unlinkResult ??
+        AuthResult.success(
+          provider: provider,
+          user: null,
+        );
+  }
+
+  @override
+  Future<AuthResult> refreshToken() async {
+    refreshTokenCalled = true;
+    return refreshTokenResult ??
+        AuthResult.success(
+          provider: provider,
+          user: KAuthUser(
+            id: 'mock_user_id',
+            name: 'Mock User',
+            email: 'mock@test.com',
+            provider: provider.name,
+          ),
+          accessToken: 'new_access_token',
+          refreshToken: 'new_refresh_token',
+        );
+  }
+
+  void reset() {
+    initializeCalled = false;
+    signInCalled = false;
+    signOutCalled = false;
+    unlinkCalled = false;
+    refreshTokenCalled = false;
+    signInResult = null;
+    signOutResult = null;
+    unlinkResult = null;
+    refreshTokenResult = null;
+  }
+}
+
 void main() {
   group('AuthResult', () {
     test('성공 결과를 생성한다', () {
@@ -548,6 +636,322 @@ void main() {
       expect(kAuth.configuredProviders, contains(AuthProvider.kakao));
       expect(kAuth.configuredProviders, contains(AuthProvider.google));
       expect(kAuth.configuredProviders.length, 2);
+    });
+  });
+
+  // ============================================
+  // KAuth 핵심 기능 테스트 (Mock Provider 사용)
+  // ============================================
+
+  group('KAuth with Mock Provider', () {
+    late KAuth kAuth;
+    late MockAuthProvider mockKakao;
+    late MockAuthProvider mockGoogle;
+
+    setUp(() {
+      kAuth = KAuth(
+        config: KAuthConfig(
+          kakao: KakaoConfig(appKey: 'test_key'),
+          google: GoogleConfig(),
+        ),
+      );
+      mockKakao = MockAuthProvider(AuthProvider.kakao);
+      mockGoogle = MockAuthProvider(AuthProvider.google);
+    });
+
+    tearDown(() {
+      kAuth.dispose();
+    });
+
+    test('signIn이 성공하면 currentUser가 설정된다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      final result = await kAuth.signIn(AuthProvider.kakao);
+
+      expect(result.success, true);
+      expect(result.user?.id, 'mock_user_id');
+      expect(result.user?.name, 'Mock User');
+      expect(kAuth.currentUser, isNotNull);
+      expect(kAuth.currentUser?.id, 'mock_user_id');
+      expect(kAuth.isSignedIn, true);
+      expect(kAuth.currentProvider, AuthProvider.kakao);
+      expect(mockKakao.signInCalled, true);
+    });
+
+    test('signIn 실패 시 currentUser가 null이다', () async {
+      mockKakao.signInResult = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '로그인 실패',
+        errorCode: ErrorCodes.loginFailed,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      final result = await kAuth.signIn(AuthProvider.kakao);
+
+      expect(result.success, false);
+      expect(result.errorMessage, '로그인 실패');
+      expect(kAuth.currentUser, isNull);
+      expect(kAuth.isSignedIn, false);
+    });
+
+    test('설정되지 않은 Provider로 signIn 시 실패한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      final result = await kAuth.signIn(AuthProvider.naver);
+
+      expect(result.success, false);
+      expect(result.errorCode, ErrorCodes.providerNotConfigured);
+    });
+
+    test('signOut이 성공하면 currentUser가 null이 된다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      // 먼저 로그인
+      await kAuth.signIn(AuthProvider.kakao);
+      expect(kAuth.isSignedIn, true);
+
+      // 로그아웃
+      final result = await kAuth.signOut();
+
+      expect(result.success, true);
+      expect(kAuth.currentUser, isNull);
+      expect(kAuth.isSignedIn, false);
+      expect(kAuth.currentProvider, isNull);
+      expect(mockKakao.signOutCalled, true);
+    });
+
+    test('로그인 상태가 아닐 때 signOut은 성공으로 처리된다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      final result = await kAuth.signOut();
+
+      expect(result.success, true);
+      // Provider.signOut은 호출되지 않아야 함
+      expect(mockKakao.signOutCalled, false);
+    });
+
+    test('특정 Provider로 signOut이 동작한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+      kAuth.setProviderForTesting(AuthProvider.google, mockGoogle);
+
+      // 카카오로 로그인
+      await kAuth.signIn(AuthProvider.kakao);
+
+      // 구글로 로그아웃 시도 (현재 로그인된 provider와 다름)
+      final result = await kAuth.signOut(AuthProvider.google);
+
+      expect(result.success, true);
+      expect(mockGoogle.signOutCalled, true);
+      // 카카오 로그인 상태는 유지됨
+      expect(kAuth.currentProvider, AuthProvider.kakao);
+    });
+
+    test('refreshToken이 성공하면 토큰이 갱신된다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      // 먼저 로그인
+      await kAuth.signIn(AuthProvider.kakao);
+
+      // 토큰 갱신
+      final result = await kAuth.refreshToken();
+
+      expect(result.success, true);
+      expect(result.accessToken, 'new_access_token');
+      expect(mockKakao.refreshTokenCalled, true);
+    });
+
+    test('로그인 상태가 아닐 때 refreshToken은 실패한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      final result = await kAuth.refreshToken();
+
+      expect(result.success, false);
+      expect(result.errorCode, ErrorCodes.refreshFailed);
+    });
+
+    test('Apple Provider로 refreshToken 시 실패한다', () async {
+      final mockApple = MockAuthProvider(AuthProvider.apple);
+      kAuth.setProviderForTesting(AuthProvider.apple, mockApple);
+
+      // 애플로 로그인
+      await kAuth.signIn(AuthProvider.apple);
+
+      // 토큰 갱신 시도
+      final result = await kAuth.refreshToken();
+
+      expect(result.success, false);
+      expect(result.errorCode, ErrorCodes.providerNotSupported);
+      // Apple Provider의 refreshToken은 호출되지 않아야 함
+      expect(mockApple.refreshTokenCalled, false);
+    });
+
+    test('unlink가 성공하면 연결이 해제된다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      // 로그인
+      await kAuth.signIn(AuthProvider.kakao);
+
+      // 연결 해제
+      final result = await kAuth.unlink(AuthProvider.kakao);
+
+      expect(result.success, true);
+      expect(mockKakao.unlinkCalled, true);
+      // 현재 로그인된 Provider면 로그아웃 처리됨
+      expect(kAuth.currentUser, isNull);
+      expect(kAuth.isSignedIn, false);
+    });
+
+    test('authStateChanges 스트림이 상태 변화를 방출한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      final events = <KAuthUser?>[];
+      final subscription = kAuth.authStateChanges.listen(events.add);
+
+      // 로그인
+      await kAuth.signIn(AuthProvider.kakao);
+      // 로그아웃
+      await kAuth.signOut();
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      await subscription.cancel();
+
+      expect(events.length, 2);
+      expect(events[0]?.id, 'mock_user_id'); // 로그인
+      expect(events[1], isNull); // 로그아웃
+    });
+
+    test('onSignIn 콜백이 호출된다', () async {
+      AuthProvider? capturedProvider;
+      KAuthUser? capturedUser;
+
+      final kAuthWithCallback = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+        onSignIn: (provider, tokens, user) async {
+          capturedProvider = provider;
+          capturedUser = user;
+          return 'server_jwt_token';
+        },
+      );
+      kAuthWithCallback.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuthWithCallback.signIn(AuthProvider.kakao);
+
+      expect(capturedProvider, AuthProvider.kakao);
+      expect(capturedUser?.id, 'mock_user_id');
+      expect(kAuthWithCallback.serverToken, 'server_jwt_token');
+
+      kAuthWithCallback.dispose();
+    });
+
+    test('onSignOut 콜백이 호출된다', () async {
+      AuthProvider? capturedProvider;
+
+      final kAuthWithCallback = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+        onSignOut: (provider) async {
+          capturedProvider = provider;
+        },
+      );
+      kAuthWithCallback.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuthWithCallback.signIn(AuthProvider.kakao);
+      await kAuthWithCallback.signOut();
+
+      expect(capturedProvider, AuthProvider.kakao);
+
+      kAuthWithCallback.dispose();
+    });
+
+    test('signInWithKakao 단축 메서드가 동작한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      final result = await kAuth.signInWithKakao();
+
+      expect(result.success, true);
+      expect(result.provider, AuthProvider.kakao);
+    });
+
+    test('signInWithGoogle 단축 메서드가 동작한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.google, mockGoogle);
+
+      final result = await kAuth.signInWithGoogle();
+
+      expect(result.success, true);
+      expect(result.provider, AuthProvider.google);
+    });
+
+    test('signOutAll이 모든 Provider를 로그아웃한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+      kAuth.setProviderForTesting(AuthProvider.google, mockGoogle);
+
+      await kAuth.signIn(AuthProvider.kakao);
+      final results = await kAuth.signOutAll();
+
+      expect(results.length, 2);
+      expect(mockKakao.signOutCalled, true);
+      expect(mockGoogle.signOutCalled, true);
+      expect(kAuth.isSignedIn, false);
+    });
+
+    test('resetForTesting이 상태를 초기화한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.isSignedIn, true);
+
+      kAuth.resetForTesting();
+
+      expect(kAuth.isInitialized, false);
+      expect(kAuth.isSignedIn, false);
+      expect(kAuth.currentUser, isNull);
+    });
+  });
+
+  group('KAuth Session Storage', () {
+    late KAuth kAuth;
+    late MockAuthProvider mockKakao;
+    late InMemorySessionStorage storage;
+
+    setUp(() {
+      storage = InMemorySessionStorage();
+      kAuth = KAuth(
+        config: KAuthConfig(
+          kakao: KakaoConfig(appKey: 'test_key'),
+        ),
+        storage: storage,
+      );
+      mockKakao = MockAuthProvider(AuthProvider.kakao);
+    });
+
+    tearDown(() {
+      kAuth.dispose();
+    });
+
+    test('로그인 성공 시 세션이 저장된다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(storage.containsKey('k_auth_session'), true);
+    });
+
+    test('로그아웃 시 세션이 삭제된다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+      expect(storage.containsKey('k_auth_session'), true);
+
+      await kAuth.signOut();
+      expect(storage.containsKey('k_auth_session'), false);
+    });
+
+    test('clearSession이 세션을 삭제한다', () async {
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+      await kAuth.clearSession();
+
+      expect(storage.containsKey('k_auth_session'), false);
     });
   });
 

@@ -4,13 +4,15 @@
     <strong>한국 앱을 위한 소셜 로그인 SDK</strong>
   </p>
   <p align="center">
-한국 앱을 위한 소셜 로그인 SDK (v0.3.3). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.4.0). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
   </p>
 </p>
 
 <p align="center">
   <a href="https://pub.dev/packages/k_auth"><img src="https://img.shields.io/pub/v/k_auth.svg" alt="pub package"></a>
   <a href="https://pub.dev/packages/k_auth/score"><img src="https://img.shields.io/pub/points/k_auth" alt="pub points"></a>
+  <a href="https://github.com/k-auth/flutter/actions/workflows/ci.yml"><img src="https://github.com/k-auth/flutter/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/k-auth/flutter"><img src="https://codecov.io/gh/k-auth/flutter/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
 </p>
 
