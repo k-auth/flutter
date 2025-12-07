@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2024-12
+
+### Fixed
+
+- **Documentation**: iOS Info.plist `CFBundleURLTypes` 중복 선언 문제 수정
+- **Documentation**: 네이버 iOS 설정 추가 (Info.plist 키, AppDelegate URL 핸들링)
+- **Documentation**: 네이버 Android 설정 추가 (strings.xml, AndroidManifest.xml 메타데이터)
+
 ## [0.4.0] - 2024-12
 
 ### Changed
