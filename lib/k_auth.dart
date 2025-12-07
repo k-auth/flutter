@@ -75,6 +75,7 @@ export 'widgets/login_buttons.dart';
 
 // Main
 import 'dart:async';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'models/auth_config.dart';
 import 'models/auth_result.dart';
 import 'models/k_auth_user.dart';
@@ -86,6 +87,9 @@ import 'providers/kakao_provider.dart';
 import 'providers/naver_provider.dart';
 import 'providers/google_provider.dart';
 import 'providers/apple_provider.dart';
+
+// Provider 내보내기 (테스트용)
+export 'providers/base_auth_provider.dart';
 
 /// 인증 토큰 정보
 ///
@@ -979,5 +983,30 @@ class KAuth {
     if (!_initialized) {
       throw KAuthError.fromCode(ErrorCodes.configNotFound);
     }
+  }
+
+  // ============================================
+  // Testing support
+  // ============================================
+
+  /// 테스트용 Provider 주입
+  ///
+  /// 테스트에서만 사용하세요.
+  /// Mock provider를 주입하여 실제 SDK 호출 없이 테스트할 수 있습니다.
+  @visibleForTesting
+  void setProviderForTesting(AuthProvider provider, BaseAuthProvider impl) {
+    _providers[provider] = impl;
+    _initialized = true;
+  }
+
+  /// 테스트용 상태 리셋
+  ///
+  /// 테스트에서만 사용하세요.
+  @visibleForTesting
+  void resetForTesting() {
+    _providers.clear();
+    _initialized = false;
+    _lastResult = null;
+    _serverToken = null;
   }
 }
