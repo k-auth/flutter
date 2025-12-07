@@ -715,19 +715,29 @@ class KAuth {
   ///
   /// ```dart
   /// // 현재 로그인된 Provider로 로그아웃
-  /// await kAuth.signOut();
+  /// final result = await kAuth.signOut();
+  /// result.fold(
+  ///   onSuccess: (_) => print('로그아웃 성공'),
+  ///   onFailure: (error) => print('로그아웃 실패: $error'),
+  /// );
   ///
   /// // 특정 Provider로 로그아웃
   /// await kAuth.signOut(AuthProvider.kakao);
   /// ```
-  Future<void> signOut([AuthProvider? provider]) async {
+  Future<AuthResult> signOut([AuthProvider? provider]) async {
     _ensureInitialized();
 
     // provider가 없으면 현재 로그인된 provider 사용
     final targetProvider = provider ?? currentProvider;
     if (targetProvider == null) {
       KAuthLogger.debug('로그아웃 스킵: 로그인된 상태가 아님');
-      return;
+      // 로그인된 상태가 아니면 성공으로 처리 (이미 로그아웃 상태)
+      final defaultProvider =
+          configuredProviders.isNotEmpty ? configuredProviders.first : AuthProvider.kakao;
+      return AuthResult.success(
+        provider: defaultProvider,
+        user: null,
+      );
     }
 
     KAuthLogger.info('로그아웃 시작', provider: targetProvider.name);
@@ -736,12 +746,16 @@ class KAuth {
     if (providerImpl == null) {
       KAuthLogger.debug('로그아웃 스킵: Provider 설정 안됨',
           provider: targetProvider.name);
-      return;
+      return AuthResult.failure(
+        provider: targetProvider,
+        errorMessage: '${targetProvider.displayName} Provider가 설정되지 않았습니다.',
+        errorCode: ErrorCodes.providerNotConfigured,
+      );
     }
 
-    await providerImpl.signOut();
+    final result = await providerImpl.signOut();
 
-    if (_lastResult?.provider == targetProvider) {
+    if (result.success && _lastResult?.provider == targetProvider) {
       // 로그아웃 콜백 호출
       if (onSignOut != null) {
         try {
@@ -761,15 +775,38 @@ class KAuth {
       await clearSession();
     }
 
-    KAuthLogger.info('로그아웃 완료', provider: targetProvider.name);
+    if (result.success) {
+      KAuthLogger.info('로그아웃 완료', provider: targetProvider.name);
+    } else {
+      KAuthLogger.error('로그아웃 실패',
+          provider: targetProvider.name, error: result.errorMessage);
+    }
+
+    return result;
   }
 
   /// 모든 Provider 로그아웃
-  Future<void> signOutAll() async {
+  ///
+  /// 설정된 모든 Provider에서 로그아웃합니다.
+  /// 일부 Provider에서 실패해도 계속 진행합니다.
+  ///
+  /// ```dart
+  /// final results = await kAuth.signOutAll();
+  /// for (final result in results) {
+  ///   if (!result.success) {
+  ///     print('${result.provider.displayName} 로그아웃 실패');
+  ///   }
+  /// }
+  /// ```
+  Future<List<AuthResult>> signOutAll() async {
     _ensureInitialized();
 
-    final futures = _providers.values.map((p) => p.signOut());
-    await Future.wait(futures);
+    final results = await Future.wait(
+      _providers.entries.map((e) async {
+        final result = await e.value.signOut();
+        return result;
+      }),
+    );
 
     _lastResult = null;
     _serverToken = null;
@@ -777,6 +814,8 @@ class KAuth {
 
     // 세션 삭제
     await clearSession();
+
+    return results;
   }
 
   /// 연결 해제 (탈퇴)
@@ -786,28 +825,46 @@ class KAuth {
   ///
   /// ⚠️ 주의: Apple은 클라이언트에서 연결 해제를 지원하지 않습니다.
   /// Apple 계정 연결 해제는 서버에서 처리해야 합니다.
-  Future<void> unlink(AuthProvider provider) async {
+  ///
+  /// ```dart
+  /// final result = await kAuth.unlink(AuthProvider.kakao);
+  /// result.fold(
+  ///   onSuccess: (_) => print('연결 해제 성공'),
+  ///   onFailure: (error) => print('연결 해제 실패: $error'),
+  /// );
+  /// ```
+  Future<AuthResult> unlink(AuthProvider provider) async {
     _ensureInitialized();
-
-    if (!provider.supportsUnlink) {
-      throw KAuthError.fromCode(
-        ErrorCodes.providerNotSupported,
-        details: {
-          'provider': provider.name,
-          'reason': '${provider.displayName}은(는) 클라이언트에서 연결 해제를 지원하지 않습니다.',
-        },
-      );
-    }
 
     final providerImpl = _providers[provider];
     if (providerImpl == null) {
-      throw KAuthError.fromCode(
-        ErrorCodes.providerNotConfigured,
-        details: {'provider': provider.name},
+      return AuthResult.failure(
+        provider: provider,
+        errorMessage: '${provider.displayName} Provider가 설정되지 않았습니다.',
+        errorCode: ErrorCodes.providerNotConfigured,
       );
     }
 
-    await providerImpl.unlink();
+    KAuthLogger.info('연결 해제 시작', provider: provider.name);
+
+    final result = await providerImpl.unlink();
+
+    if (result.success) {
+      KAuthLogger.info('연결 해제 완료', provider: provider.name);
+
+      // 현재 로그인된 Provider면 상태 정리
+      if (_lastResult?.provider == provider) {
+        _lastResult = null;
+        _serverToken = null;
+        _authStateController.add(null);
+        await clearSession();
+      }
+    } else {
+      KAuthLogger.error('연결 해제 실패',
+          provider: provider.name, error: result.errorMessage);
+    }
+
+    return result;
   }
 
   /// Provider가 설정되어 있는지 확인
@@ -839,12 +896,14 @@ class KAuth {
 
     final targetProvider = provider ?? currentProvider;
     if (targetProvider == null) {
-      final error = KAuthError.fromCode(ErrorCodes.providerNotConfigured);
+      final error = KAuthError.fromCode(ErrorCodes.refreshFailed);
+      final defaultProvider =
+          configuredProviders.isNotEmpty ? configuredProviders.first : AuthProvider.kakao;
       return AuthResult.failure(
-        provider: AuthProvider.kakao, // 기본값
-        errorMessage: error.message,
+        provider: defaultProvider,
+        errorMessage: '토큰을 갱신할 수 없습니다.',
         errorCode: error.code,
-        errorHint: '로그인된 상태가 아닙니다.',
+        errorHint: '로그인된 상태가 아닙니다. 먼저 로그인해주세요.',
       );
     }
 

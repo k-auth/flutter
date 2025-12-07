@@ -133,7 +133,10 @@ class ErrorCodes {
   // ============================================
   static const String userCancelled = 'USER_CANCELLED';
   static const String loginFailed = 'LOGIN_FAILED';
+  static const String signOutFailed = 'SIGN_OUT_FAILED';
+  static const String unlinkFailed = 'UNLINK_FAILED';
   static const String tokenExpired = 'TOKEN_EXPIRED';
+  static const String refreshFailed = 'REFRESH_FAILED';
   static const String networkError = 'NETWORK_ERROR';
   static const String accessTokenError = 'ACCESS_TOKEN_ERROR';
   static const String userInfoError = 'USER_INFO_ERROR';
@@ -230,9 +233,21 @@ class ErrorCodes {
       message: '로그인에 실패했습니다.',
       hint: '네트워크 연결 상태와 설정을 확인해주세요.',
     ),
+    signOutFailed: ErrorInfo(
+      message: '로그아웃에 실패했습니다.',
+      hint: '네트워크 연결 상태를 확인하고 다시 시도해주세요.',
+    ),
+    unlinkFailed: ErrorInfo(
+      message: '연결 해제에 실패했습니다.',
+      hint: '네트워크 연결 상태를 확인하고 다시 시도해주세요.',
+    ),
     tokenExpired: ErrorInfo(
       message: '토큰이 만료되었습니다.',
       hint: '다시 로그인하거나 토큰을 갱신해주세요.',
+    ),
+    refreshFailed: ErrorInfo(
+      message: '토큰 갱신에 실패했습니다.',
+      hint: '다시 로그인해주세요.',
     ),
     networkError: ErrorInfo(
       message: '네트워크 오류가 발생했습니다.',

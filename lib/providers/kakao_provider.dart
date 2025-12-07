@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 
 import '../models/auth_config.dart';
@@ -92,7 +93,7 @@ class KakaoProvider implements BaseAuthProvider {
       );
       return AuthResult.failure(
         provider: AuthProvider.kakao,
-        errorMessage: '카카오 로그인 중 오류 발생: $e',
+        errorMessage: kDebugMode ? '카카오 로그인 실패: $e' : '카카오 로그인 실패',
         errorCode: error.code,
         errorHint: error.hint,
       );
@@ -101,28 +102,36 @@ class KakaoProvider implements BaseAuthProvider {
 
   /// 카카오 로그아웃
   @override
-  Future<void> signOut() async {
+  Future<AuthResult> signOut() async {
     try {
       await kakao.UserApi.instance.logout();
+      return AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: null,
+      );
     } catch (e) {
-      throw KAuthError(
-        code: ErrorCodes.loginFailed,
-        message: '카카오 로그아웃 실패: $e',
-        originalError: e,
+      return AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: kDebugMode ? '카카오 로그아웃 실패: $e' : '카카오 로그아웃 실패',
+        errorCode: ErrorCodes.signOutFailed,
       );
     }
   }
 
   /// 카카오 연결 해제 (탈퇴)
   @override
-  Future<void> unlink() async {
+  Future<AuthResult> unlink() async {
     try {
       await kakao.UserApi.instance.unlink();
+      return AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: null,
+      );
     } catch (e) {
-      throw KAuthError(
-        code: ErrorCodes.loginFailed,
-        message: '카카오 연결 해제 실패: $e',
-        originalError: e,
+      return AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: kDebugMode ? '카카오 연결 해제 실패: $e' : '카카오 연결 해제 실패',
+        errorCode: ErrorCodes.unlinkFailed,
       );
     }
   }
@@ -186,7 +195,7 @@ class KakaoProvider implements BaseAuthProvider {
       );
       return AuthResult.failure(
         provider: AuthProvider.kakao,
-        errorMessage: '카카오 토큰 갱신 중 오류 발생: $e',
+        errorMessage: kDebugMode ? '카카오 토큰 갱신 실패: $e' : '카카오 토큰 갱신 실패',
         errorCode: error.code,
         errorHint: error.hint,
       );

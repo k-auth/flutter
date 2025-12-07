@@ -125,9 +125,11 @@ class AuthResult {
   });
 
   /// 성공 결과 생성
+  ///
+  /// [user]는 로그인 성공 시 필수이며, 로그아웃/연결해제 성공 시 null입니다.
   factory AuthResult.success({
     required AuthProvider provider,
-    required KAuthUser user,
+    KAuthUser? user,
     String? accessToken,
     String? refreshToken,
     String? idToken,

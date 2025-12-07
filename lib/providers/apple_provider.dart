@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../models/auth_config.dart';
@@ -97,7 +98,7 @@ class AppleProvider implements BaseAuthProvider {
       );
       return AuthResult.failure(
         provider: AuthProvider.apple,
-        errorMessage: '애플 로그인 중 오류 발생: $e',
+        errorMessage: kDebugMode ? '애플 로그인 실패: $e' : '애플 로그인 실패',
         errorCode: error.code,
         errorHint: error.hint,
       );
@@ -106,20 +107,25 @@ class AppleProvider implements BaseAuthProvider {
 
   /// 애플 로그아웃 (클라이언트에서 세션만 정리)
   @override
-  Future<void> signOut() async {
+  Future<AuthResult> signOut() async {
     // 애플은 별도의 로그아웃 API가 없음
     // 앱에서 저장된 토큰/세션만 정리하면 됨
+    return AuthResult.success(
+      provider: AuthProvider.apple,
+      user: null,
+    );
   }
 
   /// 애플 연결 해제 (서버사이드에서만 가능)
   @override
-  Future<void> unlink() async {
+  Future<AuthResult> unlink() async {
     // Apple은 클라이언트에서 연결 해제를 지원하지 않음
     // 서버에서 Apple REST API를 통해 처리해야 함
-    throw KAuthError(
-      code: ErrorCodes.providerNotSupported,
-      message: 'Apple은 클라이언트에서 연결 해제를 지원하지 않습니다. 서버에서 Apple REST API를 통해 처리하세요.',
-      hint: 'https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens',
+    return AuthResult.failure(
+      provider: AuthProvider.apple,
+      errorMessage: 'Apple은 클라이언트에서 연결 해제를 지원하지 않습니다. 서버에서 Apple REST API를 통해 처리하세요.',
+      errorCode: ErrorCodes.providerNotSupported,
+      errorHint: 'https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens',
     );
   }
 

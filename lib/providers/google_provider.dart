@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/auth_config.dart';
@@ -111,7 +112,7 @@ class GoogleProvider implements BaseAuthProvider {
       );
       return AuthResult.failure(
         provider: AuthProvider.google,
-        errorMessage: '구글 로그인 중 오류 발생: $e',
+        errorMessage: kDebugMode ? '구글 로그인 실패: $e' : '구글 로그인 실패',
         errorCode: error.code,
         errorHint: error.hint,
       );
@@ -120,28 +121,36 @@ class GoogleProvider implements BaseAuthProvider {
 
   /// 구글 로그아웃
   @override
-  Future<void> signOut() async {
+  Future<AuthResult> signOut() async {
     try {
       await GoogleSignIn.instance.signOut();
+      return AuthResult.success(
+        provider: AuthProvider.google,
+        user: null,
+      );
     } catch (e) {
-      throw KAuthError(
-        code: ErrorCodes.loginFailed,
-        message: '구글 로그아웃 실패: $e',
-        originalError: e,
+      return AuthResult.failure(
+        provider: AuthProvider.google,
+        errorMessage: kDebugMode ? '구글 로그아웃 실패: $e' : '구글 로그아웃 실패',
+        errorCode: ErrorCodes.signOutFailed,
       );
     }
   }
 
   /// 구글 연결 해제 (탈퇴)
   @override
-  Future<void> unlink() async {
+  Future<AuthResult> unlink() async {
     try {
       await GoogleSignIn.instance.disconnect();
+      return AuthResult.success(
+        provider: AuthProvider.google,
+        user: null,
+      );
     } catch (e) {
-      throw KAuthError(
-        code: ErrorCodes.loginFailed,
-        message: '구글 연결 해제 실패: $e',
-        originalError: e,
+      return AuthResult.failure(
+        provider: AuthProvider.google,
+        errorMessage: kDebugMode ? '구글 연결 해제 실패: $e' : '구글 연결 해제 실패',
+        errorCode: ErrorCodes.unlinkFailed,
       );
     }
   }
@@ -206,7 +215,7 @@ class GoogleProvider implements BaseAuthProvider {
       );
       return AuthResult.failure(
         provider: AuthProvider.google,
-        errorMessage: '구글 토큰 갱신 중 오류 발생: $e',
+        errorMessage: kDebugMode ? '구글 토큰 갱신 실패: $e' : '구글 토큰 갱신 실패',
         errorCode: error.code,
         errorHint: error.hint,
       );

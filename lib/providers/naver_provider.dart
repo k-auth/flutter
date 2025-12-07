@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
 
@@ -92,7 +93,7 @@ class NaverProvider implements BaseAuthProvider {
       );
       return AuthResult.failure(
         provider: AuthProvider.naver,
-        errorMessage: '네이버 로그인 중 오류 발생: $e',
+        errorMessage: kDebugMode ? '네이버 로그인 실패: $e' : '네이버 로그인 실패',
         errorCode: error.code,
         errorHint: error.hint,
       );
@@ -101,28 +102,36 @@ class NaverProvider implements BaseAuthProvider {
 
   /// 네이버 로그아웃
   @override
-  Future<void> signOut() async {
+  Future<AuthResult> signOut() async {
     try {
       await FlutterNaverLogin.logOut();
+      return AuthResult.success(
+        provider: AuthProvider.naver,
+        user: null,
+      );
     } catch (e) {
-      throw KAuthError(
-        code: ErrorCodes.loginFailed,
-        message: '네이버 로그아웃 실패: $e',
-        originalError: e,
+      return AuthResult.failure(
+        provider: AuthProvider.naver,
+        errorMessage: kDebugMode ? '네이버 로그아웃 실패: $e' : '네이버 로그아웃 실패',
+        errorCode: ErrorCodes.signOutFailed,
       );
     }
   }
 
   /// 네이버 연결 해제 (탈퇴)
   @override
-  Future<void> unlink() async {
+  Future<AuthResult> unlink() async {
     try {
       await FlutterNaverLogin.logOutAndDeleteToken();
+      return AuthResult.success(
+        provider: AuthProvider.naver,
+        user: null,
+      );
     } catch (e) {
-      throw KAuthError(
-        code: ErrorCodes.loginFailed,
-        message: '네이버 연결 해제 실패: $e',
-        originalError: e,
+      return AuthResult.failure(
+        provider: AuthProvider.naver,
+        errorMessage: kDebugMode ? '네이버 연결 해제 실패: $e' : '네이버 연결 해제 실패',
+        errorCode: ErrorCodes.unlinkFailed,
       );
     }
   }
@@ -189,7 +198,7 @@ class NaverProvider implements BaseAuthProvider {
       );
       return AuthResult.failure(
         provider: AuthProvider.naver,
-        errorMessage: '네이버 토큰 갱신 중 오류 발생: $e',
+        errorMessage: kDebugMode ? '네이버 토큰 갱신 실패: $e' : '네이버 토큰 갱신 실패',
         errorCode: error.code,
         errorHint: error.hint,
       );
