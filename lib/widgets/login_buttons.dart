@@ -112,9 +112,9 @@ class KakaoLoginButton extends StatelessWidget {
           backgroundColor: const Color(0xFFFEE500),
           foregroundColor: const Color(0xFF000000),
           disabledBackgroundColor:
-              const Color(0xFFFEE500).withOpacity(0.6),
+              const Color(0xFFFEE500).withValues(alpha: 0.6),
           disabledForegroundColor:
-              const Color(0xFF000000).withOpacity(0.6),
+              const Color(0xFF000000).withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -200,8 +200,8 @@ class NaverLoginButton extends StatelessWidget {
           backgroundColor: const Color(0xFF03C75A),
           foregroundColor: Colors.white,
           disabledBackgroundColor:
-              const Color(0xFF03C75A).withOpacity(0.6),
-          disabledForegroundColor: Colors.white.withOpacity(0.6),
+              const Color(0xFF03C75A).withValues(alpha: 0.6),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -286,12 +286,12 @@ class GoogleLoginButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF1F1F1F),
-          disabledBackgroundColor: Colors.white.withOpacity(0.6),
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.6),
           disabledForegroundColor:
-              const Color(0xFF1F1F1F).withOpacity(0.6),
+              const Color(0xFF1F1F1F).withValues(alpha: 0.6),
           side: BorderSide(
             color: disabled
-                ? const Color(0xFFDADCE0).withOpacity(0.6)
+                ? const Color(0xFFDADCE0).withValues(alpha: 0.6)
                 : const Color(0xFFDADCE0),
           ),
           shape: RoundedRectangleBorder(
@@ -383,8 +383,8 @@ class AppleLoginButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: bgColor,
           foregroundColor: fgColor,
-          disabledBackgroundColor: bgColor.withOpacity(0.6),
-          disabledForegroundColor: fgColor.withOpacity(0.6),
+          disabledBackgroundColor: bgColor.withValues(alpha: 0.6),
+          disabledForegroundColor: fgColor.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
             side: isDark

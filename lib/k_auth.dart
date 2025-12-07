@@ -812,7 +812,7 @@ class KAuth {
 
   /// Provider가 설정되어 있는지 확인
   bool isConfigured(AuthProvider provider) {
-    return _providers.containsKey(provider);
+    return configuredProviders.contains(provider);
   }
 
   /// 토큰 갱신
