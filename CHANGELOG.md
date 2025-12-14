@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2] - 2024-12
+
+### Fixed
+
+- **Documentation**: README에서 `scopes` 파라미터를 `collect` 옵션으로 수정 (실제 API와 일치)
+
 ## [0.4.1] - 2024-12
 
 ### Fixed

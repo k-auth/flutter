@@ -4,7 +4,7 @@
     <strong>한국 앱을 위한 소셜 로그인 SDK</strong>
   </p>
   <p align="center">
-한국 앱을 위한 소셜 로그인 SDK (v0.4.1). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.4.2). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
   </p>
 </p>
 
@@ -126,7 +126,13 @@ LoginButtonGroup(
 ```dart
 KakaoConfig(
   appKey: 'YOUR_NATIVE_APP_KEY',  // 네이티브 앱 키 (필수)
-  scopes: ['profile_nickname', 'profile_image', 'account_email'],  // 선택
+  collect: KakaoCollectOptions(   // 선택 (기본값: email, profile만 수집)
+    email: true,
+    profile: true,
+    phone: false,      // 개발자센터에서 활성화 필요
+    birthday: false,
+    gender: false,
+  ),
 )
 ```
 
@@ -161,7 +167,11 @@ NaverConfig(
 GoogleConfig(
   iosClientId: 'YOUR_IOS_CLIENT_ID',  // iOS 필수
   serverClientId: 'YOUR_SERVER_CLIENT_ID',  // 백엔드 연동 시
-  scopes: ['email', 'profile'],  // 선택
+  collect: GoogleCollectOptions(  // 선택 (기본값: openid, email, profile)
+    openid: true,
+    email: true,
+    profile: true,
+  ),
 )
 ```
 
@@ -944,7 +954,10 @@ GoogleConfig(
 
 ```dart
 GoogleConfig(
-  scopes: ['email', 'profile'],  // 필요한 scope 추가
+  collect: GoogleCollectOptions(
+    email: true,
+    profile: true,
+  ),
 )
 ```
 
