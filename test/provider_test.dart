@@ -30,7 +30,7 @@ void main() {
       expect(user.provider, 'kakao');
       expect(user.name, '홍길동');
       expect(user.email, 'test@kakao.com');
-      expect(user.image, 'https://k.kakaocdn.net/profile.jpg');
+      expect(user.avatar, 'https://k.kakaocdn.net/profile.jpg');
       expect(user.phone, '+82 10-1234-5678');
       expect(user.birthday, '0315');
       expect(user.birthyear, '1990');
@@ -114,7 +114,7 @@ void main() {
       expect(user.provider, 'naver');
       expect(user.name, '김철수');
       expect(user.email, 'test@naver.com');
-      expect(user.image, 'https://phinf.naver.net/profile.jpg');
+      expect(user.avatar, 'https://phinf.naver.net/profile.jpg');
       expect(user.phone, '010-1234-5678');
       expect(user.birthday, '03-15');
       expect(user.birthyear, '1990');
@@ -177,7 +177,7 @@ void main() {
       expect(user.provider, 'google');
       expect(user.name, '박영희');
       expect(user.email, 'test@gmail.com');
-      expect(user.image, 'https://lh3.googleusercontent.com/photo.jpg');
+      expect(user.avatar, 'https://lh3.googleusercontent.com/photo.jpg');
     });
 
     test('name 필드도 지원한다', () {
@@ -197,7 +197,7 @@ void main() {
       };
 
       final user = KAuthUser.fromGoogle(data);
-      expect(user.image, 'https://picture.url');
+      expect(user.avatar, 'https://picture.url');
     });
 
     test('sub 필드를 id로 사용할 수 있다 (JWT)', () {
@@ -351,7 +351,7 @@ void main() {
         provider: 'kakao',
         name: '홍길동',
         email: 'hong@kakao.com',
-        image: 'https://image.url',
+        avatar: 'https://image.url',
         phone: '010-1234-5678',
         birthday: '0315',
         birthyear: '1990',
@@ -367,7 +367,7 @@ void main() {
       expect(restored.provider, original.provider);
       expect(restored.name, original.name);
       expect(restored.email, original.email);
-      expect(restored.image, original.image);
+      expect(restored.avatar, original.avatar);
       expect(restored.phone, original.phone);
       expect(restored.birthday, original.birthday);
       expect(restored.birthyear, original.birthyear);

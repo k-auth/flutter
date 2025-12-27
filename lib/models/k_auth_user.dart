@@ -12,7 +12,7 @@ class KAuthUser {
   final String? email;
 
   /// 프로필 이미지 URL
-  final String? image;
+  final String? avatar;
 
   /// 전화번호
   final String? phone;
@@ -43,7 +43,7 @@ class KAuthUser {
     required this.provider,
     this.name,
     this.email,
-    this.image,
+    this.avatar,
     this.phone,
     this.birthday,
     this.birthyear,
@@ -68,7 +68,7 @@ class KAuthUser {
       provider: 'kakao',
       name: profile['nickname'] as String?,
       email: account['email'] as String?,
-      image: profile['profile_image_url'] as String?,
+      avatar: profile['profile_image_url'] as String?,
       phone: account['phone_number'] as String?,
       birthday: account['birthday'] as String?,
       birthyear: account['birthyear'] as String?,
@@ -93,7 +93,7 @@ class KAuthUser {
       provider: 'naver',
       name: response['name'] as String? ?? response['nickname'] as String?,
       email: response['email'] as String?,
-      image: response['profile_image'] as String?,
+      avatar: response['profile_image'] as String?,
       phone: response['mobile'] as String?,
       birthday: response['birthday'] as String?,
       birthyear: response['birthyear'] as String?,
@@ -110,7 +110,7 @@ class KAuthUser {
       provider: 'google',
       name: data['name'] as String? ?? data['displayName'] as String?,
       email: data['email'] as String?,
-      image: data['picture'] as String? ?? data['photoUrl'] as String?,
+      avatar: data['picture'] as String? ?? data['photoUrl'] as String?,
       rawData: data,
     );
   }
@@ -141,7 +141,7 @@ class KAuthUser {
         'provider': provider,
         if (name != null) 'name': name,
         if (email != null) 'email': email,
-        if (image != null) 'image': image,
+        if (avatar != null) 'avatar': avatar,
         if (phone != null) 'phone': phone,
         if (birthday != null) 'birthday': birthday,
         if (birthyear != null) 'birthyear': birthyear,
@@ -157,7 +157,7 @@ class KAuthUser {
       provider: json['provider'] as String,
       name: json['name'] as String?,
       email: json['email'] as String?,
-      image: json['image'] as String?,
+      avatar: json['avatar'] as String?,
       phone: json['phone'] as String?,
       birthday: json['birthday'] as String?,
       birthyear: json['birthyear'] as String?,
@@ -206,7 +206,7 @@ class KAuthUser {
     String? provider,
     String? name,
     String? email,
-    String? image,
+    String? avatar,
     String? phone,
     String? birthday,
     String? birthyear,
@@ -220,7 +220,7 @@ class KAuthUser {
       provider: provider ?? this.provider,
       name: name ?? this.name,
       email: email ?? this.email,
-      image: image ?? this.image,
+      avatar: avatar ?? this.avatar,
       phone: phone ?? this.phone,
       birthday: birthday ?? this.birthday,
       birthyear: birthyear ?? this.birthyear,

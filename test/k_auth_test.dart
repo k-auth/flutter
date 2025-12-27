@@ -1061,7 +1061,7 @@ void main() {
       expect(user.provider, 'kakao');
       expect(user.name, '카카오유저');
       expect(user.email, 'test@kakao.com');
-      expect(user.image, 'https://kakao.com/profile.jpg');
+      expect(user.avatar, 'https://kakao.com/profile.jpg');
       expect(user.phone, '+82 10-1234-5678');
       expect(user.birthday, '0101');
       expect(user.birthyear, '1990');
@@ -1102,7 +1102,7 @@ void main() {
       expect(user.provider, 'naver');
       expect(user.name, '네이버유저');
       expect(user.email, 'test@naver.com');
-      expect(user.image, 'https://naver.com/profile.jpg');
+      expect(user.avatar, 'https://naver.com/profile.jpg');
       expect(user.phone, '010-1234-5678');
       expect(user.gender, 'female');
       expect(user.ageRange, '25-29');
@@ -1134,7 +1134,7 @@ void main() {
       expect(user.provider, 'google');
       expect(user.name, '구글유저');
       expect(user.email, 'test@gmail.com');
-      expect(user.image, 'https://google.com/profile.jpg');
+      expect(user.avatar, 'https://google.com/profile.jpg');
     });
 
     test('fromGoogle이 sub을 id로 fallback한다', () {
@@ -1752,7 +1752,7 @@ void main() {
       expect(user.id, 'minimal');
       expect(user.name, isNull);
       expect(user.email, isNull);
-      expect(user.image, isNull);
+      expect(user.avatar, isNull);
       expect(user.phone, isNull);
       expect(user.displayName, isNull);
     });
@@ -1842,7 +1842,7 @@ void main() {
       };
 
       final user = KAuthUser.fromGoogle(googleData);
-      expect(user.image, 'https://photo.url');
+      expect(user.avatar, 'https://photo.url');
     });
   });
 
