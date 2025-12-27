@@ -2,10 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
 
+import '../errors/error_mapper.dart';
+import '../errors/k_auth_error.dart';
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
-import '../errors/k_auth_error.dart';
 import 'base_auth_provider.dart';
 
 /// 네이버 로그인 Provider
@@ -25,16 +26,12 @@ class NaverProvider implements BaseAuthProvider {
       final result = await FlutterNaverLogin.logIn();
 
       if (result.status == NaverLoginStatus.error) {
-        final errorMsg = result.errorMessage ?? '네이버 로그인 실패';
-        final error = KAuthError.fromCode(
-          ErrorCodes.loginFailed,
-          details: {'naverError': errorMsg},
-        );
+        final err = ErrorMapper.naver(result.errorMessage ?? '');
         return AuthResult.failure(
           provider: AuthProvider.naver,
-          errorMessage: errorMsg,
-          errorCode: error.code,
-          errorHint: error.hint,
+          errorMessage: err.message,
+          errorCode: err.code,
+          errorHint: err.hint,
         );
       }
 

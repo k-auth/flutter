@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 
+import '../errors/error_mapper.dart';
+import '../errors/k_auth_error.dart';
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
-import '../errors/k_auth_error.dart';
 import 'base_auth_provider.dart';
 
 /// 카카오 로그인 Provider
@@ -66,36 +67,26 @@ class KakaoProvider implements BaseAuthProvider {
         rawData: rawData,
       );
     } on kakao.KakaoAuthException catch (e) {
-      if (e.error == kakao.AuthErrorCause.accessDenied) {
-        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
-        return AuthResult.failure(
-          provider: AuthProvider.kakao,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: error.hint,
-        );
-      }
-      final error = KAuthError.fromCode(
-        ErrorCodes.loginFailed,
-        details: {'kakaoError': e.message},
-        originalError: e,
-      );
+      final err = ErrorMapper.kakaoAuth(e);
       return AuthResult.failure(
         provider: AuthProvider.kakao,
-        errorMessage: '카카오 로그인 실패: ${e.message}',
-        errorCode: error.code,
-        errorHint: error.hint,
+        errorMessage: err.message,
+        errorCode: err.code,
+        errorHint: err.hint,
+      );
+    } on kakao.KakaoApiException catch (e) {
+      final err = ErrorMapper.kakaoApi(e);
+      return AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: err.message,
+        errorCode: err.code,
+        errorHint: err.hint,
       );
     } catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.loginFailed,
-        originalError: e,
-      );
       return AuthResult.failure(
         provider: AuthProvider.kakao,
         errorMessage: kDebugMode ? '카카오 로그인 실패: $e' : '카카오 로그인 실패',
-        errorCode: error.code,
-        errorHint: error.hint,
+        errorCode: ErrorCodes.loginFailed,
       );
     }
   }

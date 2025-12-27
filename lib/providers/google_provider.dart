@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../errors/error_mapper.dart';
+import '../errors/k_auth_error.dart';
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
-import '../errors/k_auth_error.dart';
 import 'base_auth_provider.dart';
 
 /// 구글 로그인 Provider
@@ -85,36 +86,18 @@ class GoogleProvider implements BaseAuthProvider {
         rawData: rawData,
       );
     } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
-        return AuthResult.failure(
-          provider: AuthProvider.google,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: error.hint,
-        );
-      }
-
-      final error = KAuthError.fromCode(
-        ErrorCodes.googleSignInFailed,
-        originalError: e,
-      );
+      final err = ErrorMapper.google(e);
       return AuthResult.failure(
         provider: AuthProvider.google,
-        errorMessage: '구글 로그인 중 오류 발생: ${e.description ?? e.code}',
-        errorCode: error.code,
-        errorHint: error.hint,
+        errorMessage: err.message,
+        errorCode: err.code,
+        errorHint: err.hint,
       );
     } catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.googleSignInFailed,
-        originalError: e,
-      );
       return AuthResult.failure(
         provider: AuthProvider.google,
         errorMessage: kDebugMode ? '구글 로그인 실패: $e' : '구글 로그인 실패',
-        errorCode: error.code,
-        errorHint: error.hint,
+        errorCode: ErrorCodes.googleSignInFailed,
       );
     }
   }
