@@ -163,7 +163,7 @@ if (result.success) {
 final result = await kAuth.signIn(AuthProvider.kakao);
 result.fold(
   onSuccess: (user) => navigateToHome(user),
-  onFailure: (error) => showError(error),
+  onFailure: (failure) => showError(failure.message),
 );
 ```
 
@@ -173,7 +173,18 @@ final result = await kAuth.signIn(AuthProvider.kakao);
 result.when(
   success: (user) => navigateToHome(user),
   cancelled: () => showSnackBar('로그인이 취소되었습니다'),
-  failure: (code, message) => showErrorDialog(message),
+  failure: (failure) => showErrorDialog(failure.message),
+);
+```
+
+**KAuthFailure 편의 메서드**
+```dart
+result.fold(
+  onSuccess: (user) => navigateToHome(user),
+  onFailure: (failure) {
+    if (failure.isCancelled) return;  // 취소는 무시
+    showError(failure.displayMessage);
+  },
 );
 ```
 
@@ -252,11 +263,12 @@ final kAuth = KAuth(config: config);
 await kAuth.initialize();
 await kAuth.signIn(AuthProvider.kakao); // ✅
 
-// 2. 항상 null 체크 또는 fold/when 사용
+// 2. 항상 fold/when 사용 (타입 안전)
 final result = await kAuth.signIn(AuthProvider.kakao);
-if (result.success && result.user != null) {
-  print(result.user!.displayName); // ✅
-}
+result.fold(
+  onSuccess: (user) => print(user.displayName), // ✅
+  onFailure: (failure) => print(failure.message),
+);
 
 // 3. 토큰 갱신 가능 여부 확인
 if (kAuth.currentProvider?.supportsTokenRefresh ?? false) {

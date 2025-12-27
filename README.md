@@ -87,7 +87,7 @@ final result = await kAuth.signIn(AuthProvider.kakao);
 
 result.fold(
   onSuccess: (user) => print('환영합니다, ${user.displayName}!'),
-  onFailure: (error) => print('로그인 실패: $error'),
+  onFailure: (failure) => print('로그인 실패: ${failure.message}'),
 );
 ```
 
@@ -398,20 +398,29 @@ keytool -exportcert -alias {YOUR_ALIAS} -keystore {YOUR_KEYSTORE_PATH} | openssl
 // fold: 성공/실패 분기
 result.fold(
   onSuccess: (user) => navigateToHome(user),
-  onFailure: (error) => showError(error),
+  onFailure: (failure) => showError(failure.message),
 );
 
 // when: 성공/취소/실패 세분화
 result.when(
   success: (user) => navigateToHome(user),
   cancelled: () => showToast('로그인이 취소되었습니다'),
-  failure: (code, message) => showError(message),
+  failure: (failure) => showError(failure.message),
 );
 
 // 체이닝
 result
   .onSuccess((user) => saveUser(user))
-  .onFailure((code, message) => logError(code, message));
+  .onFailure((failure) => logError(failure.code, failure.message));
+
+// KAuthFailure 편의 메서드
+result.fold(
+  onSuccess: (user) => navigateToHome(user),
+  onFailure: (failure) {
+    if (failure.isCancelled) return;  // 취소는 무시
+    showError(failure.displayMessage);
+  },
+);
 
 // 사용자 정보 변환
 final customUser = result.mapUser((user) => MyUser.fromKAuth(user));
@@ -520,7 +529,7 @@ if (kAuth.isExpired) {
   final result = await kAuth.refreshToken();
   result.fold(
     onSuccess: (user) => print('토큰 갱신 성공'),
-    onFailure: (error) => print('토큰 갱신 실패, 재로그인 필요'),
+    onFailure: (failure) => print('토큰 갱신 실패: ${failure.message}'),
   );
 }
 
@@ -707,10 +716,10 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(content: Text('로그인이 취소되었습니다')),
         );
       },
-      failure: (code, message) {
+      failure: (failure) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text(failure.displayMessage),
             backgroundColor: Colors.red,
           ),
         );

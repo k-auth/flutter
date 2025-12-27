@@ -325,9 +325,9 @@ result.fold(
     print('로그인 성공: ${user.displayName}');
     navigateToHome();
   },
-  onFailure: (error) {
-    print('로그인 실패: $error');
-    showErrorDialog(error);
+  onFailure: (failure) {
+    print('로그인 실패: ${failure.message}');
+    showErrorDialog(failure.displayMessage);
   },
 );
 ```
@@ -346,9 +346,9 @@ result.when(
     print('사용자가 로그인을 취소했습니다');
     showSnackBar('로그인이 취소되었습니다');
   },
-  failure: (code, message) {
-    print('로그인 실패 [$code]: $message');
-    showErrorDialog(message);
+  failure: (failure) {
+    print('로그인 실패 [${failure.code}]: ${failure.message}');
+    showErrorDialog(failure.displayMessage);
   },
 );
 ```
@@ -377,10 +377,33 @@ result
     print('로그인 성공: ${user.displayName}');
     saveUserToDatabase(user);
   })
-  .onFailure((code, message) {
-    print('로그인 실패 [$code]: $message');
-    logError(code, message);
+  .onFailure((failure) {
+    print('로그인 실패 [${failure.code}]: ${failure.message}');
+    logError(failure.code, failure.message);
   });
+```
+
+### 방법 5: KAuthFailure 편의 메서드
+
+```dart
+final result = await kAuth.signIn(AuthProvider.kakao);
+
+result.fold(
+  onSuccess: (user) => navigateToHome(),
+  onFailure: (failure) {
+    // 취소는 에러가 아니므로 무시
+    if (failure.isCancelled) return;
+
+    // 네트워크 에러면 재시도 안내
+    if (failure.isNetworkError) {
+      showRetryDialog();
+      return;
+    }
+
+    // 그 외 에러
+    showError(failure.displayMessage);
+  },
+);
 ```
 
 ---
@@ -454,7 +477,7 @@ class _LoginScreenState extends State<LoginScreen> {
     result.when(
       success: (user) => print('로그인 성공!'),
       cancelled: () => print('취소됨'),
-      failure: (code, msg) => print('실패: $msg'),
+      failure: (failure) => print('실패: ${failure.message}'),
     );
   }
 
@@ -544,7 +567,7 @@ if (kAuth.currentProvider?.supportsTokenRefresh ?? false) {
 final result = await kAuth.signIn(AuthProvider.kakao);
 result.fold(
   onSuccess: (user) => print('성공'),
-  onFailure: (error) => print('실패: $error'), // ✅
+  onFailure: (failure) => print('실패: ${failure.message}'), // ✅
 );
 ```
 

@@ -8,12 +8,18 @@ All notable changes to this project will be documented in this file.
 
 - **API**: `KAuth.init()` 팩토리 메서드 - 한 줄 초기화 + 자동 세션 복원
 - **API**: 편의 getter 추가 - `userId`, `name`, `email`, `avatar`
+- **Model**: `KAuthFailure` 클래스 - 실패 정보를 담는 데이터 클래스
+  - `isCancelled`, `isNetworkError`, `isTokenExpired` 등 편의 getter
+  - `displayMessage` - 기본 메시지 fallback
 - **Widget**: `KAuthBuilder` - StreamBuilder 래퍼 위젯
 - **Storage**: `SecureSessionStorage` - flutter_secure_storage 기반 기본 저장소
 
 ### Changed
 
 - **Breaking**: `KAuthUser.image` → `avatar`로 필드명 변경
+- **Breaking**: `fold`, `when`, `onFailure` 콜백 시그니처 변경
+  - `onFailure((error) => ...)` → `onFailure((failure) => ...)`
+  - `when(failure: (code, message) => ...)` → `when(failure: (failure) => ...)`
 
 ### Removed
 
@@ -21,12 +27,33 @@ All notable changes to this project will be documented in this file.
 
 ### Migration Guide (0.4.x → 0.5.0)
 
+**1. avatar 필드명 변경**
 ```dart
-// Before (0.4.x)
+// Before
 user.image
 
-// After (0.5.0)
+// After
 user.avatar
+```
+
+**2. 콜백 시그니처 변경**
+```dart
+// Before
+result.fold(
+  onSuccess: (user) => ...,
+  onFailure: (error) => print(error),
+);
+result.onFailure((code, message) => print(message));
+
+// After
+result.fold(
+  onSuccess: (user) => ...,
+  onFailure: (failure) => print(failure.message),
+);
+result.onFailure((failure) {
+  if (failure.isCancelled) return;  // 취소 처리 간편화
+  print(failure.displayMessage);
+});
 ```
 
 ## [0.4.3] - 2024-12
