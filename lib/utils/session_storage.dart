@@ -122,7 +122,7 @@ class InMemorySessionStorage implements KAuthSessionStorage {
 ///
 /// ```dart
 /// final kAuth = await KAuth.init(
-///   kakao: 'YOUR_APP_KEY',
+///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
 /// );
 /// // SecureSessionStorage가 자동으로 사용됨
 /// ```
