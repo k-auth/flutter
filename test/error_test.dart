@@ -127,7 +127,7 @@ void main() {
       result.when(
         success: (user) => handledCase = 'success',
         cancelled: () => handledCase = 'cancelled',
-        failure: (code, message) => handledCase = 'failure',
+        failure: (failure) => handledCase = 'failure',
       );
 
       expect(handledCase, 'cancelled');
@@ -489,7 +489,7 @@ void main() {
       String? errorMessage;
       result.fold(
         onSuccess: (user) {},
-        onFailure: (error) => errorMessage = error,
+        onFailure: (failure) => errorMessage = failure.message,
       );
 
       expect(errorMessage, '로그인 실패');
@@ -504,9 +504,9 @@ void main() {
 
       String? capturedCode;
       String? capturedMessage;
-      result.onFailure((code, message) {
-        capturedCode = code;
-        capturedMessage = message;
+      result.onFailure((failure) {
+        capturedCode = failure.code;
+        capturedMessage = failure.message;
       });
 
       expect(capturedCode, ErrorCodes.loginFailed);

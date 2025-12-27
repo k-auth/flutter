@@ -189,7 +189,7 @@ void main() {
 
       final message = result.fold(
         onSuccess: (u) => '환영합니다, ${u.name}!',
-        onFailure: (e) => '실패: $e',
+        onFailure: (failure) => '실패: ${failure.message}',
       );
 
       expect(message, '환영합니다, 홍길동!');
@@ -203,7 +203,7 @@ void main() {
 
       final message = result.fold(
         onSuccess: (u) => '환영합니다!',
-        onFailure: (e) => '에러: $e',
+        onFailure: (failure) => '에러: ${failure.message}',
       );
 
       expect(message, '에러: 로그인 실패');
@@ -231,7 +231,7 @@ void main() {
         successResult.when(
           success: (_) => 'success',
           cancelled: () => 'cancelled',
-          failure: (_, __) => 'failure',
+          failure: (_) => 'failure',
         ),
         'success',
       );
@@ -240,7 +240,7 @@ void main() {
         cancelledResult.when(
           success: (_) => 'success',
           cancelled: () => 'cancelled',
-          failure: (_, __) => 'failure',
+          failure: (_) => 'failure',
         ),
         'cancelled',
       );
@@ -249,7 +249,7 @@ void main() {
         failureResult.when(
           success: (_) => 'success',
           cancelled: () => 'cancelled',
-          failure: (_, __) => 'failure',
+          failure: (_) => 'failure',
         ),
         'failure',
       );
@@ -267,7 +267,7 @@ void main() {
 
       result
           .onSuccess((u) => capturedName = u.name)
-          .onFailure((_, msg) => capturedError = msg);
+          .onFailure((failure) => capturedError = failure.message);
 
       expect(capturedName, '홍길동');
       expect(capturedError, isNull);
@@ -284,7 +284,7 @@ void main() {
 
       result
           .onSuccess((u) => capturedName = u.name)
-          .onFailure((_, msg) => capturedError = msg);
+          .onFailure((failure) => capturedError = failure.message);
 
       expect(capturedName, isNull);
       expect(capturedError, '실패');
@@ -482,6 +482,90 @@ void main() {
 
       expect(
           errors.any((e) => e.code == ErrorCodes.noProviderConfigured), true);
+    });
+  });
+
+  group('KAuthFailure', () {
+    test('기본 생성자로 생성한다', () {
+      const failure = KAuthFailure(
+        code: 'LOGIN_FAILED',
+        message: '로그인 실패',
+        hint: '다시 시도하세요',
+      );
+
+      expect(failure.code, 'LOGIN_FAILED');
+      expect(failure.message, '로그인 실패');
+      expect(failure.hint, '다시 시도하세요');
+    });
+
+    test('fromCode로 생성한다', () {
+      final failure = KAuthFailure.fromCode(ErrorCodes.userCancelled);
+
+      expect(failure.code, ErrorCodes.userCancelled);
+      expect(failure.message, isNotEmpty);
+      expect(failure.hint, isNotNull);
+    });
+
+    test('isCancelled가 올바르게 동작한다', () {
+      final cancelled = KAuthFailure.fromCode(ErrorCodes.userCancelled);
+      final failed = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+
+      expect(cancelled.isCancelled, true);
+      expect(failed.isCancelled, false);
+    });
+
+    test('displayMessage가 올바르게 동작한다', () {
+      const withMessage = KAuthFailure(message: '에러 메시지');
+      const withoutMessage = KAuthFailure();
+
+      expect(withMessage.displayMessage, '에러 메시지');
+      expect(withoutMessage.displayMessage, '알 수 없는 오류가 발생했습니다.');
+    });
+
+    test('JSON 직렬화가 동작한다', () {
+      const original = KAuthFailure(
+        code: 'TEST_CODE',
+        message: '테스트 메시지',
+        hint: '테스트 힌트',
+      );
+
+      final json = original.toJson();
+      final restored = KAuthFailure.fromJson(json);
+
+      expect(restored.code, 'TEST_CODE');
+      expect(restored.message, '테스트 메시지');
+      expect(restored.hint, '테스트 힌트');
+    });
+
+    test('equality가 동작한다', () {
+      const failure1 = KAuthFailure(code: 'A', message: 'B');
+      const failure2 = KAuthFailure(code: 'A', message: 'B');
+      const failure3 = KAuthFailure(code: 'A', message: 'C');
+
+      expect(failure1 == failure2, true);
+      expect(failure1 == failure3, false);
+    });
+
+    test('toString이 올바른 형식을 반환한다', () {
+      const failure = KAuthFailure(code: 'CODE', message: '메시지');
+      expect(failure.toString(), 'KAuthFailure[CODE]: 메시지');
+    });
+  });
+
+  group('AuthResult.failure getter', () {
+    test('실패 결과에서 KAuthFailure를 반환한다', () {
+      final result = AuthResult.failure(
+        provider: AuthProvider.kakao,
+        errorMessage: '에러',
+        errorCode: 'ERROR_CODE',
+        errorHint: '힌트',
+      );
+
+      final failure = result.failure;
+
+      expect(failure.code, 'ERROR_CODE');
+      expect(failure.message, '에러');
+      expect(failure.hint, '힌트');
     });
   });
 
