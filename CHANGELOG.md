@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3] - 2024-12
+
+### Added
+
+- **Error**: `ErrorMapper` 클래스 추가 - Provider별 네이티브 에러를 한글 메시지로 변환
+  - Kakao: `KakaoAuthException`, `KakaoApiException` 에러 매핑
+  - Google: `GoogleSignInException` 에러 매핑
+  - Naver: 에러 메시지 키워드 기반 매핑
+- **Validation**: `GoogleConfig.validate()` - iOS에서 `iosClientId` 필수 검증 추가
+- **Test**: `ErrorMapper` 테스트 42개 추가
+
+### Changed
+
+- **Refactor**: Provider별 에러 매핑 로직을 `ErrorMapper` 클래스로 분리
+- **Error**: 에러 메시지에 해결 방법(hint)과 문서 링크(docs) 포함
+
 ## [0.4.2] - 2024-12
 
 ### Fixed
