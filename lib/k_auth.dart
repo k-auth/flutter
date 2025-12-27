@@ -152,76 +152,48 @@ typedef OnSignOutCallback = Future<void> Function(AuthProvider provider);
 ///
 /// 모든 소셜 로그인을 통합 관리합니다.
 ///
-/// ## 사용 예시
+/// ## 간단한 사용법 (권장)
 ///
 /// ```dart
-/// // 1. 인스턴스 생성
+/// // 한 줄로 초기화 + 자동 로그인
+/// final kAuth = await KAuth.init(
+///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+///   google: GoogleConfig(),
+/// );
+///
+/// // 로그인
+/// await kAuth.signIn(AuthProvider.kakao);
+///
+/// // 사용자 정보 접근
+/// print('환영합니다, ${kAuth.name}님!');
+/// print('이메일: ${kAuth.email}');
+/// print('프로필: ${kAuth.avatar}');
+/// ```
+///
+/// ## 기존 사용법
+///
+/// ```dart
 /// final kAuth = KAuth(
 ///   config: KAuthConfig(
 ///     kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
-///     google: GoogleConfig(),
 ///   ),
 /// );
-///
-/// // 2. 초기화 (앱 시작 시 1회)
-/// kAuth.initialize();
-///
-/// // 3. 로그인
-/// final result = await kAuth.signIn(AuthProvider.kakao);
-///
-/// // 4. 결과 처리
-/// if (result.success) {
-///   print('환영합니다, ${result.user?.displayName}님!');
-/// } else {
-///   print('로그인 실패: ${result.errorMessage}');
-/// }
+/// await kAuth.initialize();
 /// ```
 ///
 /// ## 백엔드 연동
 ///
 /// ```dart
-/// final kAuth = KAuth(
-///   config: config,
+/// final kAuth = await KAuth.init(
+///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
 ///   onSignIn: (provider, tokens, user) async {
-///     // 백엔드에 토큰 전송
 ///     final jwt = await myApi.socialLogin(
 ///       provider: provider.name,
 ///       accessToken: tokens.accessToken,
 ///     );
 ///     return jwt;  // serverToken으로 저장됨
 ///   },
-///   onSignOut: (provider) async {
-///     // 백엔드 JWT 무효화
-///     await myApi.logout();
-///   },
 /// );
-/// ```
-///
-/// ## 자동 로그인 (세션 복원)
-///
-/// ```dart
-/// // SecureStorage 구현
-/// class SecureSessionStorage implements KAuthSessionStorage {
-///   final storage = FlutterSecureStorage();
-///   Future<void> save(String key, String value) => storage.write(key: key, value: value);
-///   Future<String?> read(String key) => storage.read(key: key);
-///   Future<void> delete(String key) => storage.delete(key: key);
-///   Future<void> clear() => storage.deleteAll();
-/// }
-///
-/// // KAuth에 storage 설정
-/// final kAuth = KAuth(
-///   config: config,
-///   storage: SecureSessionStorage(),
-/// );
-///
-/// // 초기화 시 자동 복원
-/// await kAuth.initialize(autoRestore: true);
-///
-/// if (kAuth.isSignedIn) {
-///   // 이전 세션 복원됨!
-///   print('자동 로그인: ${kAuth.currentUser?.displayName}');
-/// }
 /// ```
 class KAuth {
   /// 설정
@@ -275,11 +247,107 @@ class KAuth {
     this.storage,
   });
 
+  /// KAuth 초기화 (권장)
+  ///
+  /// 인스턴스 생성과 초기화를 한 번에 수행합니다.
+  /// SecureStorage를 기본으로 사용하여 자동 로그인을 지원합니다.
+  ///
+  /// ## 간단한 사용법
+  ///
+  /// ```dart
+  /// final kAuth = await KAuth.init(
+  ///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  ///   google: GoogleConfig(),
+  /// );
+  ///
+  /// if (kAuth.isSignedIn) {
+  ///   print('자동 로그인됨: ${kAuth.name}');
+  /// }
+  /// ```
+  ///
+  /// ## 백엔드 연동
+  ///
+  /// ```dart
+  /// final kAuth = await KAuth.init(
+  ///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  ///   onSignIn: (provider, tokens, user) async {
+  ///     return await myApi.socialLogin(tokens.accessToken);
+  ///   },
+  /// );
+  /// ```
+  ///
+  /// ## 기존 config 사용
+  ///
+  /// ```dart
+  /// final kAuth = await KAuth.init(
+  ///   config: KAuthConfig(
+  ///     kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  ///   ),
+  /// );
+  /// ```
+  static Future<KAuth> init({
+    // 개별 Provider 설정 (간단한 방식)
+    KakaoConfig? kakao,
+    NaverConfig? naver,
+    GoogleConfig? google,
+    AppleConfig? apple,
+    // 기존 config 방식
+    KAuthConfig? config,
+    // 콜백
+    OnSignInCallback? onSignIn,
+    OnSignOutCallback? onSignOut,
+    // 옵션
+    bool autoRestore = true,
+    bool validateOnInitialize = true,
+  }) async {
+    // config가 있으면 그대로 사용, 없으면 개별 설정으로 생성
+    final effectiveConfig = config ??
+        KAuthConfig(
+          kakao: kakao,
+          naver: naver,
+          google: google,
+          apple: apple,
+        );
+
+    final kAuth = KAuth(
+      config: effectiveConfig,
+      validateOnInitialize: validateOnInitialize,
+      onSignIn: onSignIn,
+      onSignOut: onSignOut,
+      storage: SecureSessionStorage(),
+    );
+
+    await kAuth.initialize(autoRestore: autoRestore);
+
+    return kAuth;
+  }
+
   /// 초기화 여부
   bool get isInitialized => _initialized;
 
   /// 현재 로그인된 사용자
   KAuthUser? get currentUser => _lastResult?.user;
+
+  /// 현재 사용자 ID (편의 getter)
+  ///
+  /// `currentUser?.id`와 동일합니다.
+  String? get userId => currentUser?.id;
+
+  /// 현재 사용자 이름 (편의 getter)
+  ///
+  /// `currentUser?.displayName`와 동일합니다.
+  /// name이 없으면 email의 @ 앞부분을 반환합니다.
+  String? get name => currentUser?.displayName;
+
+  /// 현재 사용자 이메일 (편의 getter)
+  ///
+  /// `currentUser?.email`와 동일합니다.
+  String? get email => currentUser?.email;
+
+  /// 현재 사용자 프로필 이미지 (편의 getter)
+  ///
+  /// `currentUser?.avatar`와 동일합니다.
+  String? get avatar => currentUser?.avatar;
 
   /// 로그인 여부
   bool get isSignedIn =>
