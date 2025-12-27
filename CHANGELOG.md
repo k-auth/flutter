@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2024-12
+
+### Added
+
+- **API**: `KAuth.init()` 팩토리 메서드 - 한 줄 초기화 + 자동 세션 복원
+- **API**: 편의 getter 추가 - `userId`, `name`, `email`, `avatar`
+- **Widget**: `KAuthBuilder` - StreamBuilder 래퍼 위젯
+- **Storage**: `SecureSessionStorage` - flutter_secure_storage 기반 기본 저장소
+
+### Changed
+
+- **Breaking**: `KAuthUser.image` → `avatar`로 필드명 변경
+
+### Removed
+
+- `llms.txt` 삭제 (CLAUDE.md로 대체)
+
+### Migration Guide (0.4.x → 0.5.0)
+
+```dart
+// Before (0.4.x)
+user.image
+
+// After (0.5.0)
+user.avatar
+```
+
 ## [0.4.3] - 2024-12
 
 ### Added
