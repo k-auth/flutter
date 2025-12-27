@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Breaking**: `KAuthUser.provider` 타입 변경: `String` → `AuthProvider` enum
+  - 타입 안전성 향상
+  - `user.provider == AuthProvider.kakao` 비교 가능
+- **Refactor**: Provider 코드 개선 - `_buildResult` 헬퍼 메서드로 중복 제거
+- **Refactor**: 버튼 위젯 리팩토링 - `_SocialButton` 베이스 클래스로 745→589 라인
 - **Dependencies**: 의존성 업그레이드
   - `flutter_secure_storage`: 9.2.0 → 10.0.0 (보안 개선)
   - `flutter_lints`: 5.0.0 → 6.0.0
@@ -13,9 +18,29 @@ All notable changes to this project will be documented in this file.
   - Dart SDK: ^3.4.0 (기존 ^3.0.0)
   - Flutter: >=3.22.0 (기존 >=3.0.0)
 
+### Added
+
+- **API**: `signIn()` 동시성 제어 - 중복 호출 시 동일 Future 반환
+- **Error**: Naver ErrorMapper 개선 - 더 많은 에러 패턴 지원
+  - 한글 키워드: `거부`, `연결`, `시간 초과`, `만료`, `세션`, `권한`
+  - 영문 키워드: `denied`, `timeout`, `oauth`, `permission`, `redirect`
+
 ### Fixed
 
 - **Storage**: `SecureSessionStorage`에서 deprecated된 `encryptedSharedPreferences` 옵션 제거
+
+### Migration Guide (0.5.0 → 0.5.1)
+
+**KAuthUser.provider 타입 변경**
+```dart
+// Before (0.5.0)
+if (user.provider == 'kakao') { ... }
+print(user.provider.toUpperCase());
+
+// After (0.5.1)
+if (user.provider == AuthProvider.kakao) { ... }
+print(user.provider.name.toUpperCase());
+```
 
 ## [0.5.0] - 2024-12
 
