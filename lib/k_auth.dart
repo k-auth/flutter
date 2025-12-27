@@ -64,6 +64,7 @@ export 'models/k_auth_user.dart';
 
 // Errors
 export 'errors/k_auth_error.dart';
+export 'errors/error_mapper.dart';
 
 // Utils
 export 'utils/logger.dart';
