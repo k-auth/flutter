@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2025-12
+
+### Changed
+
+- **Dependencies**: 의존성 업그레이드
+  - `flutter_secure_storage`: 9.2.0 → 10.0.0 (보안 개선)
+  - `flutter_lints`: 5.0.0 → 6.0.0
+- **Environment**: SDK 버전 요구사항 명확화
+  - Dart SDK: ^3.4.0 (기존 ^3.0.0)
+  - Flutter: >=3.22.0 (기존 >=3.0.0)
+
+### Fixed
+
+- **Storage**: `SecureSessionStorage`에서 deprecated된 `encryptedSharedPreferences` 옵션 제거
+
 ## [0.5.0] - 2024-12
 
 ### Added
