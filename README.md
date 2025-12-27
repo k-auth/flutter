@@ -425,13 +425,12 @@ final customUserOrNull = result.mapUserOr((user) => MyUser.fromKAuth(user), null
 | `id`          | `String`  | Provider 고유 ID                              |
 | `email`       | `String?` | 이메일                                        |
 | `name`        | `String?` | 이름                                          |
-| `nickname`    | `String?` | 닉네임                                        |
-| `image`       | `String?` | 프로필 이미지 URL                             |
+| `avatar`      | `String?` | 프로필 이미지 URL                             |
 | `phone`       | `String?` | 전화번호                                      |
 | `gender`      | `String?` | 성별                                          |
 | `birthday`    | `String?` | 생일                                          |
 | `birthyear`   | `String?` | 출생연도                                      |
-| `displayName` | `String`  | 표시용 이름 (name ?? nickname ?? email ?? id) |
+| `displayName` | `String`  | 표시용 이름 (name ?? email의 앞부분)          |
 
 ---
 
@@ -785,10 +784,10 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (user.image != null)
+            if (user.avatar != null)
               CircleAvatar(
                 radius: 50,
-                backgroundImage: NetworkImage(user.image!),
+                backgroundImage: NetworkImage(user.avatar!),
               ),
             SizedBox(height: 16),
             Text(

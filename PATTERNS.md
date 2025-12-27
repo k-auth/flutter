@@ -18,13 +18,19 @@
 
 **사용 케이스**: 빠른 프로토타입, 간단한 앱
 
+### 권장: KAuth.init() 사용
+
 ```dart
 import 'package:flutter/material.dart';
 import 'package:k_auth/k_auth.dart';
 
-// 1. 전역 인스턴스 생성
-final kAuth = KAuth(
-  config: KAuthConfig(
+late final KAuth kAuth;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 한 줄로 초기화 + SecureStorage + 자동 로그인
+  kAuth = await KAuth.init(
     kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
     naver: NaverConfig(
       clientId: 'YOUR_NAVER_CLIENT_ID',
@@ -33,14 +39,7 @@ final kAuth = KAuth(
     ),
     google: GoogleConfig(),
     apple: AppleConfig(),
-  ),
-);
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 2. 초기화
-  await kAuth.initialize();
+  );
 
   runApp(MyApp());
 }
@@ -53,12 +52,13 @@ class MyApp extends StatelessWidget {
         body: Center(
           child: ElevatedButton(
             onPressed: () async {
-              // 3. 로그인
               final result = await kAuth.signIn(AuthProvider.kakao);
 
-              // 4. 결과 확인
               if (result.success) {
-                print('로그인 성공: ${result.user?.displayName}');
+                // 편의 getter 사용
+                print('로그인 성공: ${kAuth.name}');
+                print('이메일: ${kAuth.email}');
+                print('프로필: ${kAuth.avatar}');
               } else {
                 print('로그인 실패: ${result.errorMessage}');
               }
@@ -70,6 +70,18 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+```
+
+### 기존 방식 (더 세밀한 제어)
+
+```dart
+final kAuth = KAuth(
+  config: KAuthConfig(
+    kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
+  ),
+);
+
+await kAuth.initialize();
 ```
 
 ---
@@ -155,69 +167,73 @@ void example() async {
 
 **사용 케이스**: 앱 재시작 시 자동으로 로그인 상태 복원
 
+### 권장: KAuth.init() 사용 (기본 SecureStorage 포함)
+
 ```dart
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-// 1. 세션 저장소 구현
-class SecureSessionStorage implements KAuthSessionStorage {
-  final _storage = FlutterSecureStorage();
-
-  @override
-  Future<void> save(String key, String value) async {
-    await _storage.write(key: key, value: value);
-  }
-
-  @override
-  Future<String?> read(String key) async {
-    return await _storage.read(key: key);
-  }
-
-  @override
-  Future<void> delete(String key) async {
-    await _storage.delete(key: key);
-  }
-
-  @override
-  Future<void> clear() async {
-    await _storage.deleteAll();
-  }
-}
-
-// 2. KAuth에 storage 설정
-final kAuth = KAuth(
-  config: KAuthConfig(
-    kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
-  ),
-  storage: SecureSessionStorage(),
-);
+late final KAuth kAuth;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 3. autoRestore: true로 초기화
-  await kAuth.initialize(autoRestore: true);
+  // KAuth.init()은 자동으로:
+  // - SecureStorage 사용 (암호화된 저장)
+  // - 세션 자동 복원
+  kAuth = await KAuth.init(
+    kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  );
 
-  // 4. 자동 로그인 확인
+  // 자동 로그인 확인
   if (kAuth.isSignedIn) {
-    print('자동 로그인 성공: ${kAuth.currentUser?.displayName}');
-    print('Provider: ${kAuth.currentProvider?.name}');
-  } else {
-    print('저장된 세션 없음');
+    print('자동 로그인 성공: ${kAuth.name}');
   }
 
   runApp(MyApp());
 }
 ```
 
+### 기존 방식 (직접 Storage 설정)
+
+```dart
+final kAuth = KAuth(
+  config: KAuthConfig(
+    kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  ),
+  storage: SecureSessionStorage(),  // 기본 제공
+);
+
+await kAuth.initialize(autoRestore: true);
+```
+
 ---
 
-## 패턴 4: StreamBuilder 통합
+## 패턴 4: 화면 전환
 
 **사용 케이스**: 로그인 상태에 따라 자동으로 화면 전환
 
+### 권장: KAuthBuilder 사용
+
 ```dart
 import 'package:flutter/material.dart';
+import 'package:k_auth/k_auth.dart';
 
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: KAuthBuilder(
+        stream: kAuth.authStateChanges,
+        signedIn: (user) => HomeScreen(user: user),
+        signedOut: () => LoginScreen(),
+        loading: () => SplashScreen(),  // 선택
+      ),
+    );
+  }
+}
+```
+
+### 기존 방식: StreamBuilder 직접 사용
+
+```dart
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -225,17 +241,12 @@ class MyApp extends StatelessWidget {
       home: StreamBuilder<KAuthUser?>(
         stream: kAuth.authStateChanges,
         builder: (context, snapshot) {
-          // 로딩 중
           if (snapshot.connectionState == ConnectionState.waiting) {
             return SplashScreen();
           }
-
-          // 로그인됨
           if (snapshot.hasData && snapshot.data != null) {
             return HomeScreen(user: snapshot.data!);
           }
-
-          // 로그인 안됨
           return LoginScreen();
         },
       ),
@@ -284,10 +295,10 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (user.image != null)
+            if (user.avatar != null)
               CircleAvatar(
                 radius: 50,
-                backgroundImage: NetworkImage(user.image!),
+                backgroundImage: NetworkImage(user.avatar!),
               ),
             SizedBox(height: 16),
             Text(user.displayName, style: TextStyle(fontSize: 24)),
@@ -604,20 +615,28 @@ kAuth.isConfigured(provider)      // 특정 Provider 설정 여부
 | google   | O | O | iOS는 iosClientId 필요 |
 | apple    | X | X | iOS 13+/macOS만 |
 
+### KAuth 편의 Getter (짧고 간결)
+
+```dart
+kAuth.userId      // currentUser?.id
+kAuth.name        // currentUser?.displayName
+kAuth.email       // currentUser?.email
+kAuth.avatar      // currentUser?.avatar
+```
+
 ### KAuthUser 필드
 
 ```dart
 user.id           // Provider 고유 ID (항상 존재)
 user.email        // 이메일 (nullable)
 user.name         // 이름 (nullable)
-user.nickname     // 닉네임 (nullable)
-user.image        // 프로필 이미지 URL (nullable)
+user.avatar       // 프로필 이미지 URL (nullable)
 user.phone        // 전화번호 (nullable)
 user.gender       // 성별 (nullable)
 user.birthday     // 생일 (nullable)
 user.birthyear    // 출생연도 (nullable)
 user.age          // 나이 (nullable)
-user.displayName  // 표시용 이름 (항상 존재, fallback 있음)
+user.displayName  // 표시용 이름 (name ?? email 앞부분)
 user.provider     // Provider 이름 (kakao, naver, google, apple)
 ```
 

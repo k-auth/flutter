@@ -1,6 +1,6 @@
 # K-Auth Flutter
 
-한국 앱을 위한 소셜 로그인 SDK (v0.4.3). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK. 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
 
 ## 프로젝트 구조
 
@@ -35,10 +35,18 @@ test/
 ## 핵심 개념
 
 ### 메인 클래스
-- **KAuth**: 메인 클래스. initialize(), signIn(), signOut(), refreshToken() 제공
+- **KAuth**: 메인 클래스. `KAuth.init()` 또는 `initialize()`, `signIn()`, `signOut()`, `refreshToken()` 제공
+- **KAuth.init()**: 팩토리 메서드. 초기화 + SecureStorage + 자동 로그인을 한 번에
 - **AuthResult**: 로그인 결과. fold/when/onSuccess/onFailure 함수형 패턴
 - **KAuthUser**: Provider별로 다른 응답을 표준화한 사용자 모델
 - **AuthProvider**: enum (kakao, naver, google, apple)
+- **KAuthBuilder**: 인증 상태에 따른 화면 전환 위젯
+
+### 편의 Getter (KAuth)
+- `kAuth.userId` → `currentUser?.id`
+- `kAuth.name` → `currentUser?.displayName`
+- `kAuth.email` → `currentUser?.email`
+- `kAuth.avatar` → `currentUser?.avatar`
 
 ### 백엔드 연동
 - **AuthTokens**: 액세스/리프레시/ID 토큰 및 만료시간
@@ -46,7 +54,8 @@ test/
 - **OnSignOutCallback**: 로그아웃 콜백 (JWT 무효화용)
 
 ### 자동 로그인
-- **KAuthSessionStorage**: 세션 저장소 인터페이스
+- **SecureSessionStorage**: 기본 암호화 저장소 (flutter_secure_storage 기반)
+- **KAuthSessionStorage**: 세션 저장소 인터페이스 (커스텀 구현용)
 - **InMemorySessionStorage**: 테스트용 메모리 저장소
 - **KAuthSession**: 저장된 세션 데이터
 
@@ -88,6 +97,7 @@ flutter pub publish --dry-run  # 배포 검증
 - `google_sign_in`: 구글 로그인
 - `sign_in_with_apple`: 애플 로그인
 - `flutter_svg`: SVG 아이콘 렌더링
+- `flutter_secure_storage`: 암호화된 세션 저장 (자동 로그인)
 
 ## 테스트
 
@@ -103,19 +113,33 @@ flutter test test/widgets_test.dart  # 위젯 테스트
 
 ### 가장 많이 사용되는 코드 패턴 (복사해서 사용)
 
-#### 1. 기본 초기화 (90% 케이스)
+#### 1. 기본 초기화 (권장 - KAuth.init)
+
+```dart
+// 한 줄로 초기화 + SecureStorage + 자동 로그인
+final kAuth = await KAuth.init(
+  kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
+  naver: NaverConfig(
+    clientId: 'YOUR_NAVER_CLIENT_ID',
+    clientSecret: 'YOUR_NAVER_CLIENT_SECRET',
+    appName: 'My App',
+  ),
+  google: GoogleConfig(),
+  apple: AppleConfig(),
+);
+
+// 이미 로그인되어 있으면 바로 사용자 정보 접근 가능
+if (kAuth.isSignedIn) {
+  print('환영합니다, ${kAuth.name}!');
+}
+```
+
+#### 1-1. 기존 방식 (더 세밀한 제어가 필요할 때)
 
 ```dart
 final kAuth = KAuth(
   config: KAuthConfig(
     kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
-    naver: NaverConfig(
-      clientId: 'YOUR_NAVER_CLIENT_ID',
-      clientSecret: 'YOUR_NAVER_CLIENT_SECRET',
-      appName: 'My App',
-    ),
-    google: GoogleConfig(),
-    apple: AppleConfig(),
   ),
 );
 
@@ -153,7 +177,19 @@ result.when(
 );
 ```
 
-#### 3. StreamBuilder 통합 (자동 화면 전환)
+#### 3. 화면 전환 (KAuthBuilder 사용 - 권장)
+
+```dart
+// KAuthBuilder로 간단하게
+KAuthBuilder(
+  stream: kAuth.authStateChanges,
+  signedIn: (user) => HomeScreen(user: user),
+  signedOut: () => LoginScreen(),
+  loading: () => SplashScreen(),  // 선택
+)
+```
+
+#### 3-1. StreamBuilder 직접 사용
 
 ```dart
 StreamBuilder<KAuthUser?>(
@@ -231,7 +267,10 @@ if (kAuth.currentProvider?.supportsTokenRefresh ?? false) {
 ### 자주 사용하는 메서드 체크리스트
 
 ```dart
-// 초기화
+// 초기화 (권장)
+final kAuth = await KAuth.init(kakao: KakaoConfig(appKey: 'xxx'));
+
+// 초기화 (기존 방식)
 await kAuth.initialize();
 await kAuth.initialize(autoRestore: true);
 
@@ -250,6 +289,12 @@ await kAuth.refreshToken();
 
 // 연결 해제
 await kAuth.unlink(AuthProvider.kakao);
+
+// 편의 getter (짧고 간결)
+kAuth.userId      // 사용자 ID
+kAuth.name        // 표시 이름
+kAuth.email       // 이메일
+kAuth.avatar      // 프로필 이미지
 
 // 상태 확인
 kAuth.isSignedIn
