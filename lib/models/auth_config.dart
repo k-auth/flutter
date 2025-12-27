@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+
 import '../errors/k_auth_error.dart';
 
 /// KAuth 설정
@@ -25,8 +27,15 @@ class KAuthConfig {
   ///
   /// [throwOnError]가 true이면 에러 시 예외를 던지고,
   /// false이면 에러 목록을 반환합니다.
-  List<KAuthError> validate({bool throwOnError = false}) {
+  ///
+  /// [targetPlatform]을 지정하면 해당 플랫폼 기준으로 검증합니다.
+  /// 지정하지 않으면 현재 플랫폼([defaultTargetPlatform])을 사용합니다.
+  List<KAuthError> validate({
+    bool throwOnError = false,
+    TargetPlatform? targetPlatform,
+  }) {
     final errors = <KAuthError>[];
+    final platform = targetPlatform ?? defaultTargetPlatform;
 
     // 최소 하나의 Provider가 설정되어 있어야 함
     if (kakao == null && naver == null && google == null && apple == null) {
@@ -43,7 +52,7 @@ class KAuthConfig {
     }
 
     if (google != null) {
-      errors.addAll(google!.validate());
+      errors.addAll(google!.validate(targetPlatform: platform));
     }
 
     if (apple != null) {
@@ -378,8 +387,24 @@ class GoogleConfig {
   }
 
   /// 설정 검증
-  List<KAuthError> validate() {
-    return [];
+  ///
+  /// iOS 플랫폼에서는 [iosClientId]가 필수입니다.
+  /// [targetPlatform]을 지정하면 해당 플랫폼 기준으로 검증합니다.
+  List<KAuthError> validate({TargetPlatform? targetPlatform}) {
+    final errors = <KAuthError>[];
+
+    // iOS 플랫폼 체크
+    final isIOS = targetPlatform == TargetPlatform.iOS ||
+        targetPlatform == TargetPlatform.macOS;
+
+    if (isIOS && (iosClientId == null || iosClientId!.isEmpty)) {
+      errors.add(KAuthError.fromCode(
+        ErrorCodes.googleMissingIosClientId,
+        details: {'provider': 'google'},
+      ));
+    }
+
+    return errors;
   }
 }
 
