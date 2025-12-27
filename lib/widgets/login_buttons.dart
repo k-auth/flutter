@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/auth_result.dart';
+import '../models/k_auth_user.dart';
 
 /// 버튼 사이즈
 enum ButtonSize {
@@ -653,6 +656,89 @@ class _AppleIcon extends StatelessWidget {
         height: adjustedSize,
         fit: BoxFit.contain,
       ),
+    );
+  }
+}
+
+// ============================================
+// KAuthBuilder 위젯
+// ============================================
+
+/// 인증 상태에 따라 화면을 자동으로 전환하는 위젯
+///
+/// StreamBuilder를 래핑하여 더 간단하게 사용할 수 있습니다.
+///
+/// ## 사용 예시
+///
+/// ```dart
+/// KAuthBuilder(
+///   stream: kAuth.authStateChanges,
+///   signedIn: (user) => HomeScreen(user: user),
+///   signedOut: () => LoginScreen(),
+/// )
+/// ```
+///
+/// ## 로딩 상태 처리
+///
+/// ```dart
+/// KAuthBuilder(
+///   stream: kAuth.authStateChanges,
+///   signedIn: (user) => HomeScreen(user: user),
+///   signedOut: () => LoginScreen(),
+///   loading: () => SplashScreen(),
+/// )
+/// ```
+class KAuthBuilder extends StatelessWidget {
+  /// 인증 상태 변화 스트림
+  final Stream<KAuthUser?> stream;
+
+  /// 로그인 상태일 때 표시할 위젯
+  final Widget Function(KAuthUser user) signedIn;
+
+  /// 로그아웃 상태일 때 표시할 위젯
+  final Widget Function() signedOut;
+
+  /// 로딩 중일 때 표시할 위젯 (선택)
+  final Widget Function()? loading;
+
+  /// 초기 사용자 (스트림 연결 전)
+  final KAuthUser? initialUser;
+
+  const KAuthBuilder({
+    super.key,
+    required this.stream,
+    required this.signedIn,
+    required this.signedOut,
+    this.loading,
+    this.initialUser,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<KAuthUser?>(
+      stream: stream,
+      initialData: initialUser,
+      builder: (context, snapshot) {
+        // 로딩 상태
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          if (loading != null) {
+            return loading!();
+          }
+          // 기본 로딩 UI
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        // 로그인 상태
+        final user = snapshot.data;
+        if (user != null) {
+          return signedIn(user);
+        }
+
+        // 로그아웃 상태
+        return signedOut();
+      },
     );
   }
 }
