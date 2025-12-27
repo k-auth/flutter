@@ -1,19 +1,31 @@
 # K-Auth Flutter
 
-한국 앱을 위한 소셜 로그인 SDK. 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.5.0). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+
+## CLI 도구
+
+```bash
+dart run k_auth          # 초기 설정 (대화형)
+dart run k_auth doctor   # 설정 진단
+```
 
 ## 프로젝트 구조
 
 ```
+bin/
+└── k_auth.dart              # CLI 도구 (dart run k_auth)
+
 lib/
 ├── k_auth.dart              # 메인 엔트리포인트 (KAuth, AuthTokens)
 ├── assets/
 │   └── icons/               # SVG 아이콘 (kakao, naver, google)
 ├── errors/
+│   ├── error_mapper.dart    # Provider별 에러 → 표준 에러 변환
 │   └── k_auth_error.dart    # 한글 에러 메시지 및 에러 코드 (ErrorCodes)
 ├── models/
 │   ├── auth_config.dart     # Provider별 설정 및 수집 옵션
 │   ├── auth_result.dart     # 로그인 결과 (fold, when 함수형 패턴)
+│   ├── k_auth_failure.dart  # 실패 정보 (isCancelled, isNetworkError 등)
 │   └── k_auth_user.dart     # 표준화된 사용자 정보
 ├── providers/
 │   ├── kakao_provider.dart  # 카카오 SDK 래퍼
@@ -23,12 +35,14 @@ lib/
 ├── utils/
 │   ├── diagnostic.dart      # 네이티브 설정 진단 (KAuthDiagnostic)
 │   ├── logger.dart          # 디버그 로깅 (KAuthLogger)
-│   └── session_storage.dart # 세션 저장소 인터페이스
+│   └── session_storage.dart # 세션 저장소 (SecureSessionStorage)
 └── widgets/
-    └── login_buttons.dart   # 공식 디자인 버튼 위젯
+    └── login_buttons.dart   # 공식 디자인 버튼 위젯 + KAuthBuilder
 
 test/
 ├── k_auth_test.dart         # KAuth 유닛 테스트
+├── provider_test.dart       # Provider 파싱 테스트
+├── error_test.dart          # 에러 처리 테스트
 └── widgets_test.dart        # 위젯 테스트
 ```
 
