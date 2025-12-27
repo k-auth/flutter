@@ -34,6 +34,7 @@ dependencies:
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^7.0.0
   flutter_svg: ^2.2.0
+  flutter_secure_storage: ^9.2.0
 
 dev_dependencies:
   flutter_test:

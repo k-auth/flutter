@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
 
@@ -110,6 +112,60 @@ class InMemorySessionStorage implements KAuthSessionStorage {
   @override
   Future<void> clear() async {
     _storage.clear();
+  }
+}
+
+/// SecureStorage 기반 세션 저장소 (기본값)
+///
+/// 암호화된 저장소에 세션을 저장합니다.
+/// iOS는 Keychain, Android는 EncryptedSharedPreferences를 사용합니다.
+///
+/// ```dart
+/// final kAuth = await KAuth.init(
+///   kakao: 'YOUR_APP_KEY',
+/// );
+/// // SecureSessionStorage가 자동으로 사용됨
+/// ```
+class SecureSessionStorage implements KAuthSessionStorage {
+  final FlutterSecureStorage _storage;
+
+  /// SecureSessionStorage 생성
+  ///
+  /// [options]를 통해 Android/iOS 별 설정을 커스터마이징할 수 있습니다.
+  SecureSessionStorage({
+    AndroidOptions? androidOptions,
+    IOSOptions? iosOptions,
+  }) : _storage = FlutterSecureStorage(
+          aOptions: androidOptions ?? _defaultAndroidOptions,
+          iOptions: iosOptions ?? _defaultIOSOptions,
+        );
+
+  static const _defaultAndroidOptions = AndroidOptions(
+    encryptedSharedPreferences: true,
+  );
+
+  static const _defaultIOSOptions = IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  );
+
+  @override
+  Future<void> save(String key, String value) async {
+    await _storage.write(key: key, value: value);
+  }
+
+  @override
+  Future<String?> read(String key) async {
+    return await _storage.read(key: key);
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    await _storage.delete(key: key);
+  }
+
+  @override
+  Future<void> clear() async {
+    await _storage.deleteAll();
   }
 }
 
