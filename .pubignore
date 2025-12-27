@@ -3,6 +3,8 @@ docs/
 
 # 개발 도구
 widgetbook/
+build/
+coverage/
 
-# 테스트 관련
-test/
+# 예제 앱
+example/
