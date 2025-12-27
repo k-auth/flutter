@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:k_auth/k_auth.dart';
@@ -309,6 +311,155 @@ void main() {
 
       final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(sizedBox.height, 56);
+    });
+  });
+
+  group('KAuthBuilder', () {
+    testWidgets('로그인 상태에서 signedIn 위젯을 표시한다', (tester) async {
+      final user = KAuthUser(id: '123', name: '홍길동', provider: AuthProvider.kakao);
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => Text('안녕하세요, ${user.name}!'),
+            signedOut: () => const Text('로그인 화면'),
+          ),
+        ),
+      );
+
+      // 로그인 이벤트 발생
+      controller.add(user);
+      await tester.pump();
+
+      expect(find.text('안녕하세요, 홍길동!'), findsOneWidget);
+      expect(find.text('로그인 화면'), findsNothing);
+
+      await controller.close();
+    });
+
+    testWidgets('로그아웃 상태에서 signedOut 위젯을 표시한다', (tester) async {
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => Text('안녕하세요, ${user.name}!'),
+            signedOut: () => const Text('로그인 화면'),
+          ),
+        ),
+      );
+
+      // 로그아웃 이벤트 발생 (null)
+      controller.add(null);
+      await tester.pump();
+
+      expect(find.text('로그인 화면'), findsOneWidget);
+      expect(find.textContaining('안녕하세요'), findsNothing);
+
+      await controller.close();
+    });
+
+    testWidgets('로딩 중 loading 위젯을 표시한다', (tester) async {
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => const Text('홈'),
+            signedOut: () => const Text('로그인'),
+            loading: () => const Text('로딩 중...'),
+          ),
+        ),
+      );
+
+      // 스트림이 아직 데이터를 방출하지 않은 상태 (waiting)
+      expect(find.text('로딩 중...'), findsOneWidget);
+      expect(find.text('홈'), findsNothing);
+      expect(find.text('로그인'), findsNothing);
+
+      await controller.close();
+    });
+
+    testWidgets('loading이 없으면 기본 CircularProgressIndicator를 표시한다',
+        (tester) async {
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => const Text('홈'),
+            signedOut: () => const Text('로그인'),
+          ),
+        ),
+      );
+
+      // 기본 로딩 인디케이터
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await controller.close();
+    });
+
+    testWidgets('initialUser가 있으면 로딩 없이 바로 표시한다', (tester) async {
+      final user = KAuthUser(id: '123', name: '초기유저', provider: AuthProvider.kakao);
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => Text('안녕, ${user.name}!'),
+            signedOut: () => const Text('로그인'),
+            initialUser: user,
+          ),
+        ),
+      );
+
+      // initialData가 있어도 connectionState가 waiting이면 로딩 표시
+      // 스트림이 데이터를 방출하면 initialData와 함께 표시
+      controller.add(user);
+      await tester.pump();
+
+      expect(find.text('안녕, 초기유저!'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await controller.close();
+    });
+
+    testWidgets('스트림 상태 변화에 따라 화면이 전환된다', (tester) async {
+      final user = KAuthUser(id: '123', name: '테스트', provider: AuthProvider.kakao);
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => const Text('로그인됨'),
+            signedOut: () => const Text('로그아웃됨'),
+          ),
+        ),
+      );
+
+      // 로그인
+      controller.add(user);
+      await tester.pumpAndSettle();
+      expect(find.text('로그인됨'), findsOneWidget);
+
+      // 로그아웃
+      controller.add(null);
+      await tester.pumpAndSettle();
+      expect(find.text('로그아웃됨'), findsOneWidget);
+
+      // 다시 로그인
+      controller.add(user);
+      await tester.pumpAndSettle();
+      expect(find.text('로그인됨'), findsOneWidget);
+
+      await controller.close();
     });
   });
 }

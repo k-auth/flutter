@@ -229,6 +229,7 @@ class KAuth {
   bool _initialized = false;
   AuthResult? _lastResult;
   String? _serverToken;
+  Completer<AuthResult>? _signInLock;
 
   /// 인증 상태 변화 스트림 컨트롤러
   final _authStateController = StreamController<KAuthUser?>.broadcast();
@@ -677,6 +678,14 @@ class KAuth {
   Future<AuthResult> signIn(AuthProvider provider) async {
     _ensureInitialized();
 
+    // 동시 로그인 방지
+    if (_signInLock != null) {
+      KAuthLogger.warning('로그인 진행 중 - 대기', provider: provider.name);
+      return _signInLock!.future;
+    }
+
+    _signInLock = Completer<AuthResult>();
+
     KAuthLogger.info(
       '로그인 시작',
       provider: provider.name,
@@ -688,12 +697,15 @@ class KAuth {
         ErrorCodes.providerNotConfigured,
         details: {'provider': provider.name},
       );
-      return AuthResult.failure(
+      final result = AuthResult.failure(
         provider: provider,
         errorMessage: error.message,
         errorCode: error.code,
         errorHint: error.hint,
       );
+      _signInLock!.complete(result);
+      _signInLock = null;
+      return result;
     }
 
     final stopwatch = Stopwatch()..start();
@@ -756,6 +768,10 @@ class KAuth {
         },
       );
     }
+
+    // 동시 로그인 lock 해제
+    _signInLock?.complete(result);
+    _signInLock = null;
 
     return result;
   }

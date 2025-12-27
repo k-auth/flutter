@@ -38,7 +38,7 @@ class ErrorSimulatingProvider implements BaseAuthProvider {
     }
     return AuthResult.success(
       provider: provider,
-      user: KAuthUser(id: 'test_id', provider: provider.name),
+      user: KAuthUser(id: 'test_id', provider: provider),
       accessToken: 'test_token',
     );
   }
@@ -81,7 +81,7 @@ class ErrorSimulatingProvider implements BaseAuthProvider {
     }
     return AuthResult.success(
       provider: provider,
-      user: KAuthUser(id: 'test_id', provider: provider.name),
+      user: KAuthUser(id: 'test_id', provider: provider),
       accessToken: 'new_token',
     );
   }
@@ -189,7 +189,7 @@ void main() {
     test('isExpired가 true면 갱신 필요', () {
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
-        user: KAuthUser(id: '123', provider: 'kakao'),
+        user: KAuthUser(id: '123', provider: AuthProvider.kakao),
         accessToken: 'token',
         expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
       );
@@ -200,7 +200,7 @@ void main() {
     test('isExpiringSoon이 5분 이내면 true', () {
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
-        user: KAuthUser(id: '123', provider: 'kakao'),
+        user: KAuthUser(id: '123', provider: AuthProvider.kakao),
         accessToken: 'token',
         expiresAt: DateTime.now().add(const Duration(minutes: 3)),
       );

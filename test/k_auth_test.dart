@@ -32,7 +32,7 @@ class MockAuthProvider implements BaseAuthProvider {
             id: 'mock_user_id',
             name: 'Mock User',
             email: 'mock@test.com',
-            provider: provider.name,
+            provider: provider,
           ),
           accessToken: 'mock_access_token',
           refreshToken: 'mock_refresh_token',
@@ -69,7 +69,7 @@ class MockAuthProvider implements BaseAuthProvider {
             id: 'mock_user_id',
             name: 'Mock User',
             email: 'mock@test.com',
-            provider: provider.name,
+            provider: provider,
           ),
           accessToken: 'new_access_token',
           refreshToken: 'new_refresh_token',
@@ -96,7 +96,7 @@ void main() {
         id: '12345',
         email: 'test@example.com',
         name: '홍길동',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       final result = AuthResult.success(
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('토큰 만료 확인이 동작한다', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
 
       final expired = AuthResult.success(
         provider: AuthProvider.kakao,
@@ -146,7 +146,7 @@ void main() {
     });
 
     test('토큰 곧 만료 확인이 동작한다', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
 
       final expiringSoon = AuthResult.success(
         provider: AuthProvider.kakao,
@@ -162,7 +162,7 @@ void main() {
       final user = KAuthUser(
         id: '12345',
         email: 'test@example.com',
-        provider: 'google',
+        provider: AuthProvider.google,
       );
 
       final result = AuthResult.success(
@@ -181,7 +181,7 @@ void main() {
     });
 
     test('fold가 성공 시 onSuccess를 실행한다', () {
-      final user = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final user = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -210,7 +210,7 @@ void main() {
     });
 
     test('when이 성공/취소/실패를 구분한다', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
 
       final successResult = AuthResult.success(
         provider: AuthProvider.kakao,
@@ -256,7 +256,7 @@ void main() {
     });
 
     test('onSuccess가 체이닝을 지원한다', () {
-      final user = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final user = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -291,7 +291,7 @@ void main() {
     });
 
     test('mapUser가 성공 시 변환된 값을 반환한다', () {
-      final user = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final user = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -435,6 +435,52 @@ void main() {
     });
   });
 
+  group('GoogleCollectOptions', () {
+    test('toScopes가 올바른 scope 목록을 반환한다', () {
+      const options = GoogleCollectOptions();
+
+      final scopes = options.toScopes();
+
+      expect(scopes, contains('openid'));
+      expect(scopes, contains('email'));
+      expect(scopes, contains('profile'));
+    });
+
+    test('toScopes가 비활성화된 옵션을 제외한다', () {
+      const options = GoogleCollectOptions(
+        email: true,
+        profile: false,
+        openid: false,
+      );
+
+      final scopes = options.toScopes();
+
+      expect(scopes, contains('email'));
+      expect(scopes, isNot(contains('profile')));
+      expect(scopes, isNot(contains('openid')));
+    });
+
+    test('모든 옵션이 비활성화되면 빈 목록을 반환한다', () {
+      const options = GoogleCollectOptions(
+        email: false,
+        profile: false,
+        openid: false,
+      );
+
+      final scopes = options.toScopes();
+
+      expect(scopes, isEmpty);
+    });
+
+    test('defaults가 기본값을 반환한다', () {
+      const options = GoogleCollectOptions.defaults;
+
+      expect(options.email, true);
+      expect(options.profile, true);
+      expect(options.openid, true);
+    });
+  });
+
   group('KAuthConfig', () {
     test('여러 Provider 설정을 포함할 수 있다', () {
       final config = KAuthConfig(
@@ -482,6 +528,28 @@ void main() {
 
       expect(
           errors.any((e) => e.code == ErrorCodes.noProviderConfigured), true);
+    });
+
+    test('유효한 설정에서 isValid가 true를 반환한다', () {
+      final config = KAuthConfig(
+        kakao: KakaoConfig(appKey: 'valid_key'),
+      );
+
+      expect(config.isValid, true);
+    });
+
+    test('무효한 설정에서 isValid가 false를 반환한다', () {
+      final config = KAuthConfig(
+        kakao: KakaoConfig(appKey: ''), // 빈 앱 키
+      );
+
+      expect(config.isValid, false);
+    });
+
+    test('Provider가 없으면 isValid가 false를 반환한다', () {
+      final config = KAuthConfig();
+
+      expect(config.isValid, false);
     });
   });
 
@@ -1070,20 +1138,20 @@ void main() {
         id: '12345',
         name: '홍길동',
         email: 'test@example.com',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(user.id, '12345');
       expect(user.name, '홍길동');
       expect(user.email, 'test@example.com');
-      expect(user.provider, 'kakao');
+      expect(user.provider, AuthProvider.kakao);
     });
 
     test('displayName이 올바르게 동작한다', () {
-      final withName = KAuthUser(id: '1', name: '홍길동', provider: 'kakao');
+      final withName = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
       final withEmail =
-          KAuthUser(id: '2', email: 'test@example.com', provider: 'kakao');
-      final withNeither = KAuthUser(id: '3', provider: 'kakao');
+          KAuthUser(id: '2', email: 'test@example.com', provider: AuthProvider.kakao);
+      final withNeither = KAuthUser(id: '3', provider: AuthProvider.kakao);
 
       expect(withName.displayName, '홍길동');
       expect(withEmail.displayName, 'test');
@@ -1095,14 +1163,14 @@ void main() {
       final user = KAuthUser(
         id: '1',
         birthyear: '2000',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(user.age, currentYear - 2000);
     });
 
     test('age가 birthyear가 없으면 null이다', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
       expect(user.age, isNull);
     });
 
@@ -1111,7 +1179,7 @@ void main() {
         id: '12345',
         name: '홍길동',
         email: 'test@example.com',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       final json = user.toJson();
@@ -1142,7 +1210,7 @@ void main() {
       final user = KAuthUser.fromKakao(kakaoData);
 
       expect(user.id, '12345678');
-      expect(user.provider, 'kakao');
+      expect(user.provider, AuthProvider.kakao);
       expect(user.name, '카카오유저');
       expect(user.email, 'test@kakao.com');
       expect(user.avatar, 'https://kakao.com/profile.jpg');
@@ -1159,7 +1227,7 @@ void main() {
       final user = KAuthUser.fromKakao(kakaoData);
 
       expect(user.id, '99999');
-      expect(user.provider, 'kakao');
+      expect(user.provider, AuthProvider.kakao);
       expect(user.name, isNull);
       expect(user.email, isNull);
     });
@@ -1183,7 +1251,7 @@ void main() {
       final user = KAuthUser.fromNaver(naverData);
 
       expect(user.id, 'naver_user_id');
-      expect(user.provider, 'naver');
+      expect(user.provider, AuthProvider.naver);
       expect(user.name, '네이버유저');
       expect(user.email, 'test@naver.com');
       expect(user.avatar, 'https://naver.com/profile.jpg');
@@ -1215,7 +1283,7 @@ void main() {
       final user = KAuthUser.fromGoogle(googleData);
 
       expect(user.id, 'google_user_id');
-      expect(user.provider, 'google');
+      expect(user.provider, AuthProvider.google);
       expect(user.name, '구글유저');
       expect(user.email, 'test@gmail.com');
       expect(user.avatar, 'https://google.com/profile.jpg');
@@ -1252,7 +1320,7 @@ void main() {
       final user = KAuthUser.fromApple(appleData);
 
       expect(user.id, 'apple_user_id');
-      expect(user.provider, 'apple');
+      expect(user.provider, AuthProvider.apple);
       expect(user.name, '홍 길동');
       expect(user.email, 'test@privaterelay.appleid.com');
     });
@@ -1283,7 +1351,7 @@ void main() {
         id: '1',
         name: '원래이름',
         email: 'original@test.com',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       final copied = user.copyWith(name: '새이름');
@@ -1291,21 +1359,21 @@ void main() {
       expect(copied.id, '1');
       expect(copied.name, '새이름');
       expect(copied.email, 'original@test.com');
-      expect(copied.provider, 'kakao');
+      expect(copied.provider, AuthProvider.kakao);
     });
 
     test('equality가 id와 provider로 판단된다', () {
-      final user1 = KAuthUser(id: '123', name: '유저1', provider: 'kakao');
-      final user2 = KAuthUser(id: '123', name: '유저2', provider: 'kakao');
-      final user3 = KAuthUser(id: '123', name: '유저1', provider: 'naver');
+      final user1 = KAuthUser(id: '123', name: '유저1', provider: AuthProvider.kakao);
+      final user2 = KAuthUser(id: '123', name: '유저2', provider: AuthProvider.kakao);
+      final user3 = KAuthUser(id: '123', name: '유저1', provider: AuthProvider.naver);
 
       expect(user1 == user2, true);
       expect(user1 == user3, false);
     });
 
     test('hashCode가 id와 provider 기반이다', () {
-      final user1 = KAuthUser(id: '123', provider: 'kakao');
-      final user2 = KAuthUser(id: '123', provider: 'kakao');
+      final user1 = KAuthUser(id: '123', provider: AuthProvider.kakao);
+      final user2 = KAuthUser(id: '123', provider: AuthProvider.kakao);
 
       expect(user1.hashCode, user2.hashCode);
     });
@@ -1315,7 +1383,7 @@ void main() {
         id: '123',
         name: '홍길동',
         email: 'test@test.com',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(
@@ -1372,7 +1440,7 @@ void main() {
       KAuthLogger.level = KAuthLogLevel.debug;
       KAuthLogger.onLog = (event) => logs.add(event);
 
-      KAuthLogger.info('로그인', provider: 'kakao');
+      KAuthLogger.info('로그인', provider: AuthProvider.kakao.name);
 
       expect(logs.first.provider, 'kakao');
     });
@@ -1429,7 +1497,7 @@ void main() {
         level: KAuthLogLevel.info,
         message: '로그인 성공',
         timestamp: DateTime.now(),
-        provider: 'kakao',
+        provider: AuthProvider.kakao.name,
       );
 
       final str = event.toString();
@@ -1573,7 +1641,7 @@ void main() {
         id: '12345',
         email: 'test@example.com',
         name: '테스트',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       final result = AuthResult.success(
@@ -1599,7 +1667,7 @@ void main() {
         id: '12345',
         email: 'test@example.com',
         name: '테스트',
-        provider: 'naver',
+        provider: AuthProvider.naver,
       );
 
       final original = KAuthSession(
@@ -1625,7 +1693,7 @@ void main() {
     });
 
     test('만료 여부를 확인한다', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
 
       final expiredSession = KAuthSession(
         provider: AuthProvider.kakao,
@@ -1666,7 +1734,7 @@ void main() {
     });
 
     test('toString이 올바르게 동작한다', () {
-      final user = KAuthUser(id: 'user123', provider: 'google');
+      final user = KAuthUser(id: 'user123', provider: AuthProvider.google);
 
       final session = KAuthSession(
         provider: AuthProvider.google,
@@ -1831,7 +1899,7 @@ void main() {
 
   group('KAuthUser Edge Cases', () {
     test('모든 필드가 null인 경우 처리', () {
-      final user = KAuthUser(id: 'minimal', provider: 'test');
+      final user = KAuthUser(id: 'minimal', provider: AuthProvider.kakao);
 
       expect(user.id, 'minimal');
       expect(user.name, isNull);
@@ -1846,7 +1914,7 @@ void main() {
         id: '',
         name: '',
         email: '',
-        provider: '',
+        provider: AuthProvider.kakao,
       );
 
       expect(user.id, '');
@@ -1858,7 +1926,7 @@ void main() {
       final user = KAuthUser(
         id: '1',
         name: '홍길동 (테스트) <test>',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(user.name, '홍길동 (테스트) <test>');
@@ -1869,7 +1937,7 @@ void main() {
       final user = KAuthUser(
         id: '1',
         email: 'user.name+tag@example.com',
-        provider: 'google',
+        provider: AuthProvider.google,
       );
 
       expect(user.displayName, 'user.name+tag');
@@ -1879,7 +1947,7 @@ void main() {
       final userWithInvalid = KAuthUser(
         id: '1',
         birthyear: 'invalid',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(userWithInvalid.age, isNull);
@@ -1890,7 +1958,7 @@ void main() {
       final user = KAuthUser(
         id: '1',
         birthyear: futureYear,
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(user.age, lessThan(0));
@@ -1915,7 +1983,7 @@ void main() {
       };
 
       final user = KAuthUser.fromNaver(naverData);
-      expect(user.provider, 'naver');
+      expect(user.provider, AuthProvider.naver);
       expect(user.id, '');
     });
 
@@ -1932,7 +2000,7 @@ void main() {
 
   group('AuthResult Edge Cases', () {
     test('accessToken만 있는 성공 결과', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -1945,7 +2013,7 @@ void main() {
     });
 
     test('rawData가 있는 결과', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -1967,7 +2035,7 @@ void main() {
     });
 
     test('expiresAt가 null일 때 isExpired는 false', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -1982,7 +2050,7 @@ void main() {
         id: '123',
         name: '테스트',
         email: 'test@test.com',
-        provider: 'google',
+        provider: AuthProvider.google,
       );
       final result = AuthResult.success(
         provider: AuthProvider.google,
@@ -2023,7 +2091,7 @@ void main() {
 
   group('KAuthSession Edge Cases', () {
     test('모든 토큰이 null인 세션', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
       final session = KAuthSession(
         provider: AuthProvider.kakao,
         user: user,
@@ -2051,7 +2119,7 @@ void main() {
     });
 
     test('세션 만료 확인 다양한 시간 테스트', () {
-      final user = KAuthUser(id: '1', provider: 'kakao');
+      final user = KAuthUser(id: '1', provider: AuthProvider.kakao);
 
       // 10분 후 만료
       final session10Min = KAuthSession(

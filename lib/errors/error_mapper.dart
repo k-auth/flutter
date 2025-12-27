@@ -184,56 +184,73 @@ class ErrorMapper {
   // ============================================
 
   /// 네이버 에러 메시지 → KAuthError
-  static KAuthError naver(String errorMessage) {
+  static KAuthError naver(String errorMessage, {Object? originalError}) {
     final msg = errorMessage.toLowerCase();
 
     // 사용자 취소
-    if (msg.contains('cancel') || msg.contains('취소')) {
-      return KAuthError.fromCode(ErrorCodes.userCancelled);
+    if (msg.contains('cancel') ||
+        msg.contains('취소') ||
+        msg.contains('denied') ||
+        msg.contains('거부')) {
+      return KAuthError.fromCode(ErrorCodes.userCancelled, originalError: originalError);
     }
 
-    // 네트워크 에러
+    // 네트워크/타임아웃 에러
     if (msg.contains('network') ||
         msg.contains('internet') ||
         msg.contains('connection') ||
-        msg.contains('네트워크')) {
+        msg.contains('timeout') ||
+        msg.contains('네트워크') ||
+        msg.contains('연결') ||
+        msg.contains('시간 초과')) {
       return KAuthError(
         code: ErrorCodes.networkError,
         message: '네트워크 오류가 발생했습니다.',
         hint: '인터넷 연결을 확인해주세요.',
+        originalError: originalError,
       );
     }
 
-    // 클라이언트 정보 오류
-    if (msg.contains('client') ||
-        msg.contains('invalid') ||
-        msg.contains('unauthorized')) {
-      return KAuthError(
-        code: ErrorCodes.naverClientInfoInvalid,
-        message: '네이버 클라이언트 정보가 유효하지 않습니다.',
-        hint: 'Client ID/Secret을 확인하세요.',
-        docs: 'https://developers.naver.com/apps',
-      );
-    }
-
-    // URL 스킴 오류
+    // URL 스킴/콜백 오류 (클라이언트 오류보다 먼저 체크)
     if (msg.contains('url') ||
         msg.contains('scheme') ||
-        msg.contains('callback')) {
+        msg.contains('callback') ||
+        msg.contains('redirect')) {
       return KAuthError(
         code: ErrorCodes.naverInvalidCallback,
         message: '콜백 URL 설정 오류입니다.',
         hint: 'URL 스킴, 콜백 URL, Info.plist를 확인하세요.',
         docs: 'https://developers.naver.com/apps',
+        originalError: originalError,
+      );
+    }
+
+    // 클라이언트/OAuth 정보 오류
+    if (msg.contains('client') ||
+        msg.contains('invalid') ||
+        msg.contains('unauthorized') ||
+        msg.contains('oauth') ||
+        msg.contains('permission') ||
+        msg.contains('권한')) {
+      return KAuthError(
+        code: ErrorCodes.naverClientInfoInvalid,
+        message: '네이버 클라이언트 정보가 유효하지 않습니다.',
+        hint: 'Client ID/Secret을 확인하세요.',
+        docs: 'https://developers.naver.com/apps',
+        originalError: originalError,
       );
     }
 
     // 토큰 만료
-    if (msg.contains('token') || msg.contains('expired')) {
+    if (msg.contains('token') ||
+        msg.contains('expired') ||
+        msg.contains('만료') ||
+        msg.contains('세션')) {
       return KAuthError(
         code: ErrorCodes.tokenExpired,
         message: '인증 정보가 만료되었습니다.',
         hint: '다시 로그인해주세요.',
+        originalError: originalError,
       );
     }
 
@@ -242,6 +259,7 @@ class ErrorMapper {
       message: '네이버 로그인 중 오류가 발생했습니다.',
       hint: errorMessage.isNotEmpty ? errorMessage : '다시 시도해주세요.',
       docs: 'https://developers.naver.com/apps',
+      originalError: originalError,
     );
   }
 }

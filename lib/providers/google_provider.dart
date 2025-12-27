@@ -27,17 +27,43 @@ class GoogleProvider implements BaseAuthProvider {
     _initialized = true;
   }
 
+  /// 사용자 정보로 AuthResult 생성
+  Future<AuthResult> _buildResult(GoogleSignInAccount account) async {
+    final auth = account.authentication;
+
+    String? accessToken;
+    if (config.allScopes.isNotEmpty) {
+      final authorization = await account.authorizationClient
+          .authorizationForScopes(config.allScopes);
+      accessToken = authorization?.accessToken;
+    }
+
+    final rawData = <String, dynamic>{
+      'id': account.id,
+      'email': account.email,
+      'displayName': account.displayName,
+      'photoUrl': account.photoUrl,
+      'idToken': auth.idToken,
+      'accessToken': accessToken,
+    };
+
+    return AuthResult.success(
+      provider: AuthProvider.google,
+      user: KAuthUser.fromGoogle(rawData),
+      accessToken: accessToken,
+      idToken: auth.idToken,
+      rawData: rawData,
+    );
+  }
+
   /// 구글 로그인 실행
   @override
   Future<AuthResult> signIn() async {
     try {
-      if (!_initialized) {
-        await initialize();
-      }
+      if (!_initialized) await initialize();
 
       // 먼저 조용한 로그인 시도
-      GoogleSignInAccount? account =
-          await GoogleSignIn.instance.attemptLightweightAuthentication();
+      var account = await GoogleSignIn.instance.attemptLightweightAuthentication();
 
       // 실패하면 전체 로그인 플로우
       if (account == null) {
@@ -50,41 +76,10 @@ class GoogleProvider implements BaseAuthProvider {
             errorHint: error.hint,
           );
         }
-
         account = await GoogleSignIn.instance.authenticate();
       }
 
-      // 인증 토큰 가져오기
-      final auth = account.authentication;
-
-      // accessToken을 위한 authorization 요청
-      String? accessToken;
-      if (config.allScopes.isNotEmpty) {
-        final authorization = await account.authorizationClient
-            .authorizationForScopes(config.allScopes);
-        accessToken = authorization?.accessToken;
-      }
-
-      // 원본 데이터 구성
-      final rawData = <String, dynamic>{
-        'id': account.id,
-        'email': account.email,
-        'displayName': account.displayName,
-        'photoUrl': account.photoUrl,
-        'idToken': auth.idToken,
-        'accessToken': accessToken,
-      };
-
-      // KAuthUser 생성
-      final user = KAuthUser.fromGoogle(rawData);
-
-      return AuthResult.success(
-        provider: AuthProvider.google,
-        user: user,
-        accessToken: accessToken,
-        idToken: auth.idToken,
-        rawData: rawData,
-      );
+      return _buildResult(account);
     } on GoogleSignInException catch (e) {
       final err = ErrorMapper.google(e);
       return AuthResult.failure(
@@ -144,12 +139,9 @@ class GoogleProvider implements BaseAuthProvider {
   @override
   Future<AuthResult> refreshToken() async {
     try {
-      if (!_initialized) {
-        await initialize();
-      }
+      if (!_initialized) await initialize();
 
-      final account =
-          await GoogleSignIn.instance.attemptLightweightAuthentication();
+      final account = await GoogleSignIn.instance.attemptLightweightAuthentication();
 
       if (account == null) {
         final error = KAuthError.fromCode(ErrorCodes.tokenExpired);
@@ -161,36 +153,7 @@ class GoogleProvider implements BaseAuthProvider {
         );
       }
 
-      final auth = account.authentication;
-
-      // accessToken을 위한 authorization 요청
-      String? accessToken;
-      if (config.allScopes.isNotEmpty) {
-        final authorization = await account.authorizationClient
-            .authorizationForScopes(config.allScopes);
-        accessToken = authorization?.accessToken;
-      }
-
-      // 원본 데이터 구성
-      final rawData = <String, dynamic>{
-        'id': account.id,
-        'email': account.email,
-        'displayName': account.displayName,
-        'photoUrl': account.photoUrl,
-        'idToken': auth.idToken,
-        'accessToken': accessToken,
-      };
-
-      // KAuthUser 생성
-      final user = KAuthUser.fromGoogle(rawData);
-
-      return AuthResult.success(
-        provider: AuthProvider.google,
-        user: user,
-        accessToken: accessToken,
-        idToken: auth.idToken,
-        rawData: rawData,
-      );
+      return _buildResult(account);
     } catch (e) {
       final error = KAuthError.fromCode(
         ErrorCodes.tokenExpired,

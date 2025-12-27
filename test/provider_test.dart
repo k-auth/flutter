@@ -27,7 +27,7 @@ void main() {
       final user = KAuthUser.fromKakao(data);
 
       expect(user.id, '12345678');
-      expect(user.provider, 'kakao');
+      expect(user.provider, AuthProvider.kakao);
       expect(user.name, '홍길동');
       expect(user.email, 'test@kakao.com');
       expect(user.avatar, 'https://k.kakaocdn.net/profile.jpg');
@@ -58,7 +58,7 @@ void main() {
       final user = KAuthUser.fromKakao(data);
 
       expect(user.id, '99999999');
-      expect(user.provider, 'kakao');
+      expect(user.provider, AuthProvider.kakao);
       expect(user.name, isNull);
       expect(user.email, isNull);
     });
@@ -69,7 +69,7 @@ void main() {
       final user = KAuthUser.fromKakao(data);
 
       expect(user.id, '11111111');
-      expect(user.provider, 'kakao');
+      expect(user.provider, AuthProvider.kakao);
     });
 
     test('profile이 없어도 파싱된다', () {
@@ -111,7 +111,7 @@ void main() {
       final user = KAuthUser.fromNaver(data);
 
       expect(user.id, 'NAVER_USER_ID');
-      expect(user.provider, 'naver');
+      expect(user.provider, AuthProvider.naver);
       expect(user.name, '김철수');
       expect(user.email, 'test@naver.com');
       expect(user.avatar, 'https://phinf.naver.net/profile.jpg');
@@ -174,7 +174,7 @@ void main() {
       final user = KAuthUser.fromGoogle(data);
 
       expect(user.id, 'GOOGLE_USER_ID');
-      expect(user.provider, 'google');
+      expect(user.provider, AuthProvider.google);
       expect(user.name, '박영희');
       expect(user.email, 'test@gmail.com');
       expect(user.avatar, 'https://lh3.googleusercontent.com/photo.jpg');
@@ -236,7 +236,7 @@ void main() {
       final user = KAuthUser.fromApple(data);
 
       expect(user.id, 'APPLE_USER_ID');
-      expect(user.provider, 'apple');
+      expect(user.provider, AuthProvider.apple);
       expect(user.name, '홍 길동');
       expect(user.email, 'test@privaterelay.appleid.com');
     });
@@ -298,7 +298,7 @@ void main() {
     test('displayName은 name을 우선 반환한다', () {
       final user = KAuthUser(
         id: '123',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
         name: '홍길동',
         email: 'hong@kakao.com',
       );
@@ -309,7 +309,7 @@ void main() {
     test('displayName은 name이 없으면 email 앞부분 반환', () {
       final user = KAuthUser(
         id: '123',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
         email: 'hong@kakao.com',
       );
 
@@ -319,7 +319,7 @@ void main() {
     test('displayName은 둘 다 없으면 null', () {
       final user = KAuthUser(
         id: '123',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(user.displayName, isNull);
@@ -329,7 +329,7 @@ void main() {
       final currentYear = DateTime.now().year;
       final user = KAuthUser(
         id: '123',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
         birthyear: '1990',
       );
 
@@ -339,7 +339,7 @@ void main() {
     test('age는 birthyear가 없으면 null', () {
       final user = KAuthUser(
         id: '123',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
       );
 
       expect(user.age, isNull);
@@ -348,7 +348,7 @@ void main() {
     test('toJson과 fromJson이 올바르게 동작한다', () {
       final original = KAuthUser(
         id: '123',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
         name: '홍길동',
         email: 'hong@kakao.com',
         avatar: 'https://image.url',
@@ -379,22 +379,22 @@ void main() {
     test('copyWith가 올바르게 동작한다', () {
       final original = KAuthUser(
         id: '123',
-        provider: 'kakao',
+        provider: AuthProvider.kakao,
         name: '홍길동',
       );
 
       final copied = original.copyWith(name: '김철수', email: 'kim@kakao.com');
 
       expect(copied.id, '123');
-      expect(copied.provider, 'kakao');
+      expect(copied.provider, AuthProvider.kakao);
       expect(copied.name, '김철수');
       expect(copied.email, 'kim@kakao.com');
     });
 
     test('equality가 id와 provider로 결정된다', () {
-      final user1 = KAuthUser(id: '123', provider: 'kakao', name: '홍길동');
-      final user2 = KAuthUser(id: '123', provider: 'kakao', name: '김철수');
-      final user3 = KAuthUser(id: '123', provider: 'naver', name: '홍길동');
+      final user1 = KAuthUser(id: '123', provider: AuthProvider.kakao, name: '홍길동');
+      final user2 = KAuthUser(id: '123', provider: AuthProvider.kakao, name: '김철수');
+      final user3 = KAuthUser(id: '123', provider: AuthProvider.naver, name: '홍길동');
 
       expect(user1, equals(user2)); // 같은 id, provider
       expect(user1, isNot(equals(user3))); // 다른 provider

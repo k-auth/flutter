@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -22,14 +20,14 @@ enum ButtonSize {
 }
 
 /// 버튼 사이즈 설정
-class _ButtonSizeConfig {
+class _SizeConfig {
   final double height;
   final double fontSize;
   final double iconSize;
   final double spacing;
   final EdgeInsets padding;
 
-  const _ButtonSizeConfig({
+  const _SizeConfig({
     required this.height,
     required this.fontSize,
     required this.iconSize,
@@ -37,43 +35,169 @@ class _ButtonSizeConfig {
     required this.padding,
   });
 
-  static _ButtonSizeConfig fromSize(ButtonSize size) {
-    switch (size) {
-      case ButtonSize.small:
-        return const _ButtonSizeConfig(
+  static _SizeConfig of(ButtonSize size) {
+    return switch (size) {
+      ButtonSize.small => const _SizeConfig(
           height: 36,
           fontSize: 14,
           iconSize: 16,
           spacing: 6,
           padding: EdgeInsets.symmetric(horizontal: 12),
-        );
-      case ButtonSize.medium:
-        return const _ButtonSizeConfig(
+        ),
+      ButtonSize.medium => const _SizeConfig(
           height: 48,
           fontSize: 16,
           iconSize: 20,
           spacing: 8,
           padding: EdgeInsets.symmetric(horizontal: 16),
-        );
-      case ButtonSize.large:
-        return const _ButtonSizeConfig(
+        ),
+      ButtonSize.large => const _SizeConfig(
           height: 56,
           fontSize: 18,
           iconSize: 24,
           spacing: 10,
           padding: EdgeInsets.symmetric(horizontal: 20),
-        );
-      case ButtonSize.icon:
-        return const _ButtonSizeConfig(
+        ),
+      ButtonSize.icon => const _SizeConfig(
           height: 48,
           fontSize: 0,
           iconSize: 24,
           spacing: 0,
           padding: EdgeInsets.zero,
-        );
-    }
+        ),
+    };
   }
 }
+
+// ============================================
+// 베이스 버튼 (내부용)
+// ============================================
+
+class _SocialButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final String text;
+  final double? width;
+  final double? height;
+  final double borderRadius;
+  final ButtonSize size;
+  final bool isLoading;
+  final bool disabled;
+  final Color bgColor;
+  final Color fgColor;
+  final Color? borderColor;
+  final Widget icon;
+  final bool outlined;
+
+  const _SocialButton({
+    required this.onPressed,
+    required this.text,
+    required this.bgColor,
+    required this.fgColor,
+    required this.icon,
+    this.width,
+    this.height,
+    this.borderRadius = 6,
+    this.size = ButtonSize.medium,
+    this.isLoading = false,
+    this.disabled = false,
+    this.borderColor,
+    this.outlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final config = _SizeConfig.of(size);
+    final isIconOnly = size == ButtonSize.icon;
+    final h = height ?? config.height;
+    final w = isIconOnly ? h : (width ?? double.infinity);
+    final content = _buildContent(config, isIconOnly);
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(borderRadius),
+    );
+
+    Widget button;
+    if (outlined) {
+      button = OutlinedButton(
+        onPressed: (disabled || isLoading) ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: bgColor,
+          foregroundColor: fgColor,
+          disabledBackgroundColor: bgColor.withValues(alpha: 0.6),
+          disabledForegroundColor: fgColor.withValues(alpha: 0.6),
+          side: BorderSide(
+            color: disabled
+                ? (borderColor ?? fgColor).withValues(alpha: 0.6)
+                : (borderColor ?? fgColor),
+          ),
+          shape: shape,
+          padding: config.padding,
+          elevation: 0,
+        ),
+        child: content,
+      );
+    } else {
+      button = ElevatedButton(
+        onPressed: (disabled || isLoading) ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: bgColor,
+          foregroundColor: fgColor,
+          disabledBackgroundColor: bgColor.withValues(alpha: 0.6),
+          disabledForegroundColor: fgColor.withValues(alpha: 0.6),
+          shape: borderColor != null
+              ? RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  side: BorderSide(
+                    color: disabled
+                        ? borderColor!.withValues(alpha: 0.6)
+                        : borderColor!,
+                  ),
+                )
+              : shape,
+          padding: config.padding,
+          elevation: 0,
+        ),
+        child: content,
+      );
+    }
+
+    return SizedBox(width: w, height: h, child: button);
+  }
+
+  Widget _buildContent(_SizeConfig config, bool isIconOnly) {
+    if (isLoading) {
+      return SizedBox(
+        width: config.iconSize,
+        height: config.iconSize,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(fgColor),
+        ),
+      );
+    }
+
+    if (isIconOnly) return icon;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        icon,
+        SizedBox(width: config.spacing),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: config.fontSize,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================
+// 공개 버튼 클래스들
+// ============================================
 
 /// 카카오 로그인 버튼
 class KakaoLoginButton extends StatelessWidget {
@@ -100,65 +224,18 @@ class KakaoLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _ButtonSizeConfig.fromSize(size);
-    final isIconOnly = size == ButtonSize.icon;
-    final effectiveHeight = height ?? config.height;
-    final effectiveWidth =
-        isIconOnly ? effectiveHeight : (width ?? double.infinity);
-
-    return SizedBox(
-      width: effectiveWidth,
-      height: effectiveHeight,
-      child: ElevatedButton(
-        onPressed: (disabled || isLoading) ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFEE500),
-          foregroundColor: const Color(0xFF000000),
-          disabledBackgroundColor:
-              const Color(0xFFFEE500).withValues(alpha: 0.6),
-          disabledForegroundColor:
-              const Color(0xFF000000).withValues(alpha: 0.6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          padding: config.padding,
-          elevation: 0,
-        ),
-        child: _buildContent(config, isIconOnly),
-      ),
-    );
-  }
-
-  Widget _buildContent(_ButtonSizeConfig config, bool isIconOnly) {
-    if (isLoading) {
-      return SizedBox(
-        width: config.iconSize,
-        height: config.iconSize,
-        child: const CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF000000)),
-        ),
-      );
-    }
-
-    if (isIconOnly) {
-      return _KakaoIcon(size: config.iconSize);
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _KakaoIcon(size: config.iconSize),
-        SizedBox(width: config.spacing),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: config.fontSize,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    return _SocialButton(
+      onPressed: onPressed,
+      text: text,
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+      size: size,
+      isLoading: isLoading,
+      disabled: disabled,
+      bgColor: const Color(0xFFFEE500),
+      fgColor: const Color(0xFF000000),
+      icon: _KakaoIcon(size: _SizeConfig.of(size).iconSize),
     );
   }
 }
@@ -188,64 +265,18 @@ class NaverLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _ButtonSizeConfig.fromSize(size);
-    final isIconOnly = size == ButtonSize.icon;
-    final effectiveHeight = height ?? config.height;
-    final effectiveWidth =
-        isIconOnly ? effectiveHeight : (width ?? double.infinity);
-
-    return SizedBox(
-      width: effectiveWidth,
-      height: effectiveHeight,
-      child: ElevatedButton(
-        onPressed: (disabled || isLoading) ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF03C75A),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor:
-              const Color(0xFF03C75A).withValues(alpha: 0.6),
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          padding: config.padding,
-          elevation: 0,
-        ),
-        child: _buildContent(config, isIconOnly),
-      ),
-    );
-  }
-
-  Widget _buildContent(_ButtonSizeConfig config, bool isIconOnly) {
-    if (isLoading) {
-      return SizedBox(
-        width: config.iconSize,
-        height: config.iconSize,
-        child: const CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      );
-    }
-
-    if (isIconOnly) {
-      return _NaverIcon(size: config.iconSize);
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _NaverIcon(size: config.iconSize),
-        SizedBox(width: config.spacing),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: config.fontSize,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    return _SocialButton(
+      onPressed: onPressed,
+      text: text,
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+      size: size,
+      isLoading: isLoading,
+      disabled: disabled,
+      bgColor: const Color(0xFF03C75A),
+      fgColor: Colors.white,
+      icon: _NaverIcon(size: _SizeConfig.of(size).iconSize),
     );
   }
 }
@@ -275,69 +306,20 @@ class GoogleLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _ButtonSizeConfig.fromSize(size);
-    final isIconOnly = size == ButtonSize.icon;
-    final effectiveHeight = height ?? config.height;
-    final effectiveWidth =
-        isIconOnly ? effectiveHeight : (width ?? double.infinity);
-
-    return SizedBox(
-      width: effectiveWidth,
-      height: effectiveHeight,
-      child: OutlinedButton(
-        onPressed: (disabled || isLoading) ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF1F1F1F),
-          disabledBackgroundColor: Colors.white.withValues(alpha: 0.6),
-          disabledForegroundColor:
-              const Color(0xFF1F1F1F).withValues(alpha: 0.6),
-          side: BorderSide(
-            color: disabled
-                ? const Color(0xFFDADCE0).withValues(alpha: 0.6)
-                : const Color(0xFFDADCE0),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          padding: config.padding,
-          elevation: 0,
-        ),
-        child: _buildContent(config, isIconOnly),
-      ),
-    );
-  }
-
-  Widget _buildContent(_ButtonSizeConfig config, bool isIconOnly) {
-    if (isLoading) {
-      return SizedBox(
-        width: config.iconSize,
-        height: config.iconSize,
-        child: const CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1F1F1F)),
-        ),
-      );
-    }
-
-    if (isIconOnly) {
-      return _GoogleIcon(size: config.iconSize);
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _GoogleIcon(size: config.iconSize),
-        SizedBox(width: config.spacing),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: config.fontSize,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    return _SocialButton(
+      onPressed: onPressed,
+      text: text,
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+      size: size,
+      isLoading: isLoading,
+      disabled: disabled,
+      bgColor: Colors.white,
+      fgColor: const Color(0xFF1F1F1F),
+      borderColor: const Color(0xFFDADCE0),
+      outlined: true,
+      icon: _GoogleIcon(size: _SizeConfig.of(size).iconSize),
     );
   }
 }
@@ -369,73 +351,29 @@ class AppleLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _ButtonSizeConfig.fromSize(size);
-    final isIconOnly = size == ButtonSize.icon;
-    final effectiveHeight = height ?? config.height;
-    final effectiveWidth =
-        isIconOnly ? effectiveHeight : (width ?? double.infinity);
-
     final bgColor = isDark ? Colors.black : Colors.white;
     final fgColor = isDark ? Colors.white : Colors.black;
 
-    return SizedBox(
-      width: effectiveWidth,
-      height: effectiveHeight,
-      child: ElevatedButton(
-        onPressed: (disabled || isLoading) ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bgColor,
-          foregroundColor: fgColor,
-          disabledBackgroundColor: bgColor.withValues(alpha: 0.6),
-          disabledForegroundColor: fgColor.withValues(alpha: 0.6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            side: isDark
-                ? BorderSide.none
-                : const BorderSide(color: Colors.black),
-          ),
-          padding: config.padding,
-          elevation: 0,
-        ),
-        child: _buildContent(config, isIconOnly, fgColor),
-      ),
-    );
-  }
-
-  Widget _buildContent(
-      _ButtonSizeConfig config, bool isIconOnly, Color fgColor) {
-    if (isLoading) {
-      return SizedBox(
-        width: config.iconSize,
-        height: config.iconSize,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(fgColor),
-        ),
-      );
-    }
-
-    if (isIconOnly) {
-      return _AppleIcon(isDark: isDark, size: config.iconSize);
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _AppleIcon(isDark: isDark, size: config.iconSize),
-        SizedBox(width: config.spacing),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: config.fontSize,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    return _SocialButton(
+      onPressed: onPressed,
+      text: text,
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+      size: size,
+      isLoading: isLoading,
+      disabled: disabled,
+      bgColor: bgColor,
+      fgColor: fgColor,
+      borderColor: isDark ? null : Colors.black,
+      icon: _AppleIcon(isDark: isDark, size: _SizeConfig.of(size).iconSize),
     );
   }
 }
+
+// ============================================
+// 버튼 그룹
+// ============================================
 
 /// 로그인 버튼 그룹 방향
 enum ButtonGroupDirection {
@@ -469,75 +407,65 @@ class LoginButtonGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttons = providers.map((provider) {
-      final isLoading = loadingStates[provider] ?? false;
-      final isDisabled = disabledStates[provider] ?? false;
-
-      switch (provider) {
-        case AuthProvider.kakao:
-          return KakaoLoginButton(
-            onPressed: () => onPressed?.call(provider),
-            size: buttonSize,
-            isLoading: isLoading,
-            disabled: isDisabled,
-          );
-        case AuthProvider.naver:
-          return NaverLoginButton(
-            onPressed: () => onPressed?.call(provider),
-            size: buttonSize,
-            isLoading: isLoading,
-            disabled: isDisabled,
-          );
-        case AuthProvider.google:
-          return GoogleLoginButton(
-            onPressed: () => onPressed?.call(provider),
-            size: buttonSize,
-            isLoading: isLoading,
-            disabled: isDisabled,
-          );
-        case AuthProvider.apple:
-          return AppleLoginButton(
-            onPressed: () => onPressed?.call(provider),
-            size: buttonSize,
-            isLoading: isLoading,
-            disabled: isDisabled,
-          );
-      }
-    }).toList();
+    final buttons = providers.map(_buildButton).toList();
 
     if (direction == ButtonGroupDirection.horizontal) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: buttons.map((button) {
-          final index = buttons.indexOf(button);
-          if (index < buttons.length - 1) {
-            return Padding(
-              padding: EdgeInsets.only(right: spacing),
-              child: button,
-            );
-          }
-          return button;
-        }).toList(),
+        children: _addSpacing(buttons, EdgeInsets.only(right: spacing)),
       );
     }
 
     return Column(
-      children: buttons.map((button) {
-        final index = buttons.indexOf(button);
-        if (index < buttons.length - 1) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: spacing),
-            child: button,
-          );
-        }
-        return button;
-      }).toList(),
+      children: _addSpacing(buttons, EdgeInsets.only(bottom: spacing)),
     );
+  }
+
+  Widget _buildButton(AuthProvider provider) {
+    final isLoading = loadingStates[provider] ?? false;
+    final isDisabled = disabledStates[provider] ?? false;
+    final callback = () => onPressed?.call(provider);
+
+    return switch (provider) {
+      AuthProvider.kakao => KakaoLoginButton(
+          onPressed: callback,
+          size: buttonSize,
+          isLoading: isLoading,
+          disabled: isDisabled,
+        ),
+      AuthProvider.naver => NaverLoginButton(
+          onPressed: callback,
+          size: buttonSize,
+          isLoading: isLoading,
+          disabled: isDisabled,
+        ),
+      AuthProvider.google => GoogleLoginButton(
+          onPressed: callback,
+          size: buttonSize,
+          isLoading: isLoading,
+          disabled: isDisabled,
+        ),
+      AuthProvider.apple => AppleLoginButton(
+          onPressed: callback,
+          size: buttonSize,
+          isLoading: isLoading,
+          disabled: isDisabled,
+        ),
+    };
+  }
+
+  List<Widget> _addSpacing(List<Widget> widgets, EdgeInsets padding) {
+    return widgets.asMap().entries.map((entry) {
+      if (entry.key < widgets.length - 1) {
+        return Padding(padding: padding, child: entry.value);
+      }
+      return entry.value;
+    }).toList();
   }
 }
 
 // ============================================
-// SVG 아이콘 상수
+// SVG 아이콘
 // ============================================
 
 const String _kakaoSvg = '''
@@ -561,71 +489,46 @@ const String _googleSvg = '''
 </svg>
 ''';
 
-// ============================================
-// 아이콘 위젯들
-// ============================================
-
 class _KakaoIcon extends StatelessWidget {
   final double size;
-
   const _KakaoIcon({this.size = 20});
 
   @override
   Widget build(BuildContext context) {
-    // 카카오 로고는 기본 크기 사용 (시각적으로 적절)
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(
-        _kakaoSvg,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-      ),
+      child: SvgPicture.string(_kakaoSvg, fit: BoxFit.contain),
     );
   }
 }
 
 class _NaverIcon extends StatelessWidget {
   final double size;
-
   const _NaverIcon({this.size = 20});
 
   @override
   Widget build(BuildContext context) {
-    // 네이버 N 로고는 약간 크게 (더 얇은 디자인)
-    final adjustedSize = size * 1.1;
+    final s = size * 1.1;
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(
-        _naverSvg,
-        width: adjustedSize,
-        height: adjustedSize,
-        fit: BoxFit.contain,
-      ),
+      child: SvgPicture.string(_naverSvg, width: s, height: s, fit: BoxFit.contain),
     );
   }
 }
 
 class _GoogleIcon extends StatelessWidget {
   final double size;
-
   const _GoogleIcon({this.size = 20});
 
   @override
   Widget build(BuildContext context) {
-    // 구글 G 로고는 약간 작게 (시각적으로 더 크게 보임)
-    final adjustedSize = size * 0.95;
+    final s = size * 0.95;
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(
-        _googleSvg,
-        width: adjustedSize,
-        height: adjustedSize,
-        fit: BoxFit.contain,
-      ),
+      child: SvgPicture.string(_googleSvg, width: s, height: s, fit: BoxFit.contain),
     );
   }
 }
@@ -633,29 +536,21 @@ class _GoogleIcon extends StatelessWidget {
 class _AppleIcon extends StatelessWidget {
   final bool isDark;
   final double size;
-
   const _AppleIcon({required this.isDark, this.size = 20});
 
   @override
   Widget build(BuildContext context) {
-    // Apple 공식 로고 SVG
-    final appleSvg = '''
+    final color = isDark ? '#FFFFFF' : '#000000';
+    final svg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path fill="${isDark ? '#FFFFFF' : '#000000'}" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08l-.3-.3v.3zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+  <path fill="$color" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08l-.3-.3v.3zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
 </svg>
 ''';
-
-    // 애플 로고는 약간 크게 (단순한 디자인)
-    final adjustedSize = size * 1.05;
+    final s = size * 1.05;
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(
-        appleSvg,
-        width: adjustedSize,
-        height: adjustedSize,
-        fit: BoxFit.contain,
-      ),
+      child: SvgPicture.string(svg, width: s, height: s, fit: BoxFit.contain),
     );
   }
 }
@@ -665,20 +560,6 @@ class _AppleIcon extends StatelessWidget {
 // ============================================
 
 /// 인증 상태에 따라 화면을 자동으로 전환하는 위젯
-///
-/// StreamBuilder를 래핑하여 더 간단하게 사용할 수 있습니다.
-///
-/// ## 사용 예시
-///
-/// ```dart
-/// KAuthBuilder(
-///   stream: kAuth.authStateChanges,
-///   signedIn: (user) => HomeScreen(user: user),
-///   signedOut: () => LoginScreen(),
-/// )
-/// ```
-///
-/// ## 로딩 상태 처리
 ///
 /// ```dart
 /// KAuthBuilder(
@@ -719,24 +600,13 @@ class KAuthBuilder extends StatelessWidget {
       stream: stream,
       initialData: initialUser,
       builder: (context, snapshot) {
-        // 로딩 상태
         if (snapshot.connectionState == ConnectionState.waiting) {
-          if (loading != null) {
-            return loading!();
-          }
-          // 기본 로딩 UI
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return loading?.call() ??
+              const Center(child: CircularProgressIndicator());
         }
 
-        // 로그인 상태
         final user = snapshot.data;
-        if (user != null) {
-          return signedIn(user);
-        }
-
-        // 로그아웃 상태
+        if (user != null) return signedIn(user);
         return signedOut();
       },
     );

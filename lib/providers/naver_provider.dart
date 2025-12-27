@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_naver_login/flutter_naver_login.dart';
+import 'package:flutter_naver_login/interface/types/naver_account_result.dart';
 import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
+import 'package:flutter_naver_login/interface/types/naver_token.dart';
 
 import '../errors/error_mapper.dart';
 import '../errors/k_auth_error.dart';
@@ -18,6 +20,37 @@ class NaverProvider implements BaseAuthProvider {
   /// 네이버 SDK 초기화 (별도 초기화 필요 없음)
   @override
   Future<void> initialize() async {}
+
+  /// 사용자 정보로 AuthResult 생성
+  AuthResult _buildResult(NaverAccountResult account, NaverToken token) {
+    DateTime? expiresAt;
+    if (token.expiresAt.isNotEmpty) {
+      expiresAt = DateTime.tryParse(token.expiresAt);
+    }
+
+    final rawData = <String, dynamic>{
+      'response': {
+        'id': account.id,
+        'email': account.email,
+        'name': account.name,
+        'nickname': account.nickname,
+        'profile_image': account.profileImage,
+        'gender': account.gender,
+        'age': account.age,
+        'birthday': account.birthday,
+        'birthyear': account.birthYear,
+        'mobile': account.mobile,
+      },
+    };
+
+    return AuthResult.success(
+      provider: AuthProvider.naver,
+      user: KAuthUser.fromNaver(rawData),
+      accessToken: token.accessToken,
+      expiresAt: expiresAt,
+      rawData: rawData,
+    );
+  }
 
   /// 네이버 로그인 실행
   @override
@@ -45,44 +78,8 @@ class NaverProvider implements BaseAuthProvider {
         );
       }
 
-      // 토큰 정보 조회
       final token = await FlutterNaverLogin.getCurrentAccessToken();
-
-      // expiresAt 파싱 (String -> DateTime)
-      DateTime? expiresAt;
-      if (token.expiresAt.isNotEmpty) {
-        expiresAt = DateTime.tryParse(token.expiresAt);
-      }
-
-      // 사용자 정보
-      final account = result.account;
-
-      // 원본 데이터 구성
-      final rawData = <String, dynamic>{
-        'response': {
-          'id': account?.id,
-          'email': account?.email,
-          'name': account?.name,
-          'nickname': account?.nickname,
-          'profile_image': account?.profileImage,
-          'gender': account?.gender,
-          'age': account?.age,
-          'birthday': account?.birthday,
-          'birthyear': account?.birthYear,
-          'mobile': account?.mobile,
-        },
-      };
-
-      // KAuthUser 생성
-      final user = KAuthUser.fromNaver(rawData);
-
-      return AuthResult.success(
-        provider: AuthProvider.naver,
-        user: user,
-        accessToken: token.accessToken,
-        expiresAt: expiresAt,
-        rawData: rawData,
-      );
+      return _buildResult(result.account!, token);
     } catch (e) {
       final error = KAuthError.fromCode(
         ErrorCodes.loginFailed,
@@ -136,11 +133,9 @@ class NaverProvider implements BaseAuthProvider {
   /// 네이버 토큰 갱신
   ///
   /// 네이버 SDK는 자동 토큰 갱신을 지원합니다.
-  /// 이 메서드는 현재 토큰 상태를 확인하고 필요시 갱신합니다.
   @override
   Future<AuthResult> refreshToken() async {
     try {
-      // 현재 토큰 상태 확인 (SDK가 자동으로 갱신)
       final token = await FlutterNaverLogin.getCurrentAccessToken();
 
       if (token.accessToken.isEmpty) {
@@ -153,41 +148,8 @@ class NaverProvider implements BaseAuthProvider {
         );
       }
 
-      // 사용자 정보 조회
       final account = await FlutterNaverLogin.getCurrentAccount();
-
-      // expiresAt 파싱
-      DateTime? expiresAt;
-      if (token.expiresAt.isNotEmpty) {
-        expiresAt = DateTime.tryParse(token.expiresAt);
-      }
-
-      // 원본 데이터 구성
-      final rawData = <String, dynamic>{
-        'response': {
-          'id': account.id,
-          'email': account.email,
-          'name': account.name,
-          'nickname': account.nickname,
-          'profile_image': account.profileImage,
-          'gender': account.gender,
-          'age': account.age,
-          'birthday': account.birthday,
-          'birthyear': account.birthYear,
-          'mobile': account.mobile,
-        },
-      };
-
-      // KAuthUser 생성
-      final user = KAuthUser.fromNaver(rawData);
-
-      return AuthResult.success(
-        provider: AuthProvider.naver,
-        user: user,
-        accessToken: token.accessToken,
-        expiresAt: expiresAt,
-        rawData: rawData,
-      );
+      return _buildResult(account, token);
     } catch (e) {
       final error = KAuthError.fromCode(
         ErrorCodes.tokenExpired,

@@ -20,52 +20,45 @@ class KakaoProvider implements BaseAuthProvider {
     kakao.KakaoSdk.init(nativeAppKey: config.appKey);
   }
 
+  /// 사용자 정보로 AuthResult 생성
+  AuthResult _buildResult(kakao.OAuthToken token, kakao.User user) {
+    final rawData = <String, dynamic>{
+      'id': user.id,
+      'kakao_account': {
+        'email': user.kakaoAccount?.email,
+        'profile': {
+          'nickname': user.kakaoAccount?.profile?.nickname,
+          'profile_image_url': user.kakaoAccount?.profile?.profileImageUrl,
+        },
+        'phone_number': user.kakaoAccount?.phoneNumber,
+        'birthday': user.kakaoAccount?.birthday,
+        'birthyear': user.kakaoAccount?.birthyear,
+        'gender': user.kakaoAccount?.gender?.name,
+        'age_range': user.kakaoAccount?.ageRange?.name,
+      },
+    };
+
+    return AuthResult.success(
+      provider: AuthProvider.kakao,
+      user: KAuthUser.fromKakao(rawData),
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      idToken: token.idToken,
+      expiresAt: token.expiresAt,
+      rawData: rawData,
+    );
+  }
+
   /// 카카오 로그인 실행
   @override
   Future<AuthResult> signIn() async {
     try {
-      // 카카오톡 설치 여부에 따라 로그인 방식 선택
-      kakao.OAuthToken token;
+      final token = await kakao.isKakaoTalkInstalled()
+          ? await kakao.UserApi.instance.loginWithKakaoTalk()
+          : await kakao.UserApi.instance.loginWithKakaoAccount();
 
-      if (await kakao.isKakaoTalkInstalled()) {
-        token = await kakao.UserApi.instance.loginWithKakaoTalk();
-      } else {
-        token = await kakao.UserApi.instance.loginWithKakaoAccount();
-      }
-
-      // 사용자 정보 조회
-      final kakaoUser = await kakao.UserApi.instance.me();
-
-      // 원본 데이터 구성
-      final rawData = <String, dynamic>{
-        'id': kakaoUser.id,
-        'kakao_account': {
-          'email': kakaoUser.kakaoAccount?.email,
-          'profile': {
-            'nickname': kakaoUser.kakaoAccount?.profile?.nickname,
-            'profile_image_url':
-                kakaoUser.kakaoAccount?.profile?.profileImageUrl,
-          },
-          'phone_number': kakaoUser.kakaoAccount?.phoneNumber,
-          'birthday': kakaoUser.kakaoAccount?.birthday,
-          'birthyear': kakaoUser.kakaoAccount?.birthyear,
-          'gender': kakaoUser.kakaoAccount?.gender?.name,
-          'age_range': kakaoUser.kakaoAccount?.ageRange?.name,
-        },
-      };
-
-      // KAuthUser 생성
-      final user = KAuthUser.fromKakao(rawData);
-
-      return AuthResult.success(
-        provider: AuthProvider.kakao,
-        user: user,
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken,
-        idToken: token.idToken,
-        expiresAt: token.expiresAt,
-        rawData: rawData,
-      );
+      final user = await kakao.UserApi.instance.me();
+      return _buildResult(token, user);
     } on kakao.KakaoAuthException catch (e) {
       final err = ErrorMapper.kakaoAuth(e);
       return AuthResult.failure(
@@ -131,42 +124,9 @@ class KakaoProvider implements BaseAuthProvider {
   @override
   Future<AuthResult> refreshToken() async {
     try {
-      // 토큰 갱신
       final token = await kakao.AuthApi.instance.refreshToken();
-
-      // 사용자 정보 조회
-      final kakaoUser = await kakao.UserApi.instance.me();
-
-      // 원본 데이터 구성
-      final rawData = <String, dynamic>{
-        'id': kakaoUser.id,
-        'kakao_account': {
-          'email': kakaoUser.kakaoAccount?.email,
-          'profile': {
-            'nickname': kakaoUser.kakaoAccount?.profile?.nickname,
-            'profile_image_url':
-                kakaoUser.kakaoAccount?.profile?.profileImageUrl,
-          },
-          'phone_number': kakaoUser.kakaoAccount?.phoneNumber,
-          'birthday': kakaoUser.kakaoAccount?.birthday,
-          'birthyear': kakaoUser.kakaoAccount?.birthyear,
-          'gender': kakaoUser.kakaoAccount?.gender?.name,
-          'age_range': kakaoUser.kakaoAccount?.ageRange?.name,
-        },
-      };
-
-      // KAuthUser 생성
-      final user = KAuthUser.fromKakao(rawData);
-
-      return AuthResult.success(
-        provider: AuthProvider.kakao,
-        user: user,
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken,
-        idToken: token.idToken,
-        expiresAt: token.expiresAt,
-        rawData: rawData,
-      );
+      final user = await kakao.UserApi.instance.me();
+      return _buildResult(token, user);
     } on kakao.KakaoAuthException catch (e) {
       final error = KAuthError.fromCode(
         ErrorCodes.tokenExpired,

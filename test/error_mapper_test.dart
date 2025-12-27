@@ -282,6 +282,18 @@ void main() {
       expect(error.code, ErrorCodes.userCancelled);
     });
 
+    test('denied 키워드 → USER_CANCELLED', () {
+      final error = ErrorMapper.naver('Access denied by user');
+
+      expect(error.code, ErrorCodes.userCancelled);
+    });
+
+    test('거부 키워드 → USER_CANCELLED', () {
+      final error = ErrorMapper.naver('사용자가 권한을 거부했습니다');
+
+      expect(error.code, ErrorCodes.userCancelled);
+    });
+
     test('network 키워드 → NETWORK_ERROR', () {
       final error = ErrorMapper.naver('Network error occurred');
 
@@ -307,6 +319,24 @@ void main() {
       expect(error.code, ErrorCodes.networkError);
     });
 
+    test('timeout 키워드 → NETWORK_ERROR', () {
+      final error = ErrorMapper.naver('Request timeout');
+
+      expect(error.code, ErrorCodes.networkError);
+    });
+
+    test('연결 키워드 → NETWORK_ERROR', () {
+      final error = ErrorMapper.naver('서버 연결 실패');
+
+      expect(error.code, ErrorCodes.networkError);
+    });
+
+    test('시간 초과 키워드 → NETWORK_ERROR', () {
+      final error = ErrorMapper.naver('요청 시간 초과');
+
+      expect(error.code, ErrorCodes.networkError);
+    });
+
     test('client 키워드 → NAVER_CLIENT_INFO_INVALID', () {
       final error = ErrorMapper.naver('Invalid client credentials');
 
@@ -322,6 +352,24 @@ void main() {
 
     test('unauthorized 키워드 → NAVER_CLIENT_INFO_INVALID', () {
       final error = ErrorMapper.naver('Unauthorized access');
+
+      expect(error.code, ErrorCodes.naverClientInfoInvalid);
+    });
+
+    test('oauth 키워드 → NAVER_CLIENT_INFO_INVALID', () {
+      final error = ErrorMapper.naver('OAuth authentication failed');
+
+      expect(error.code, ErrorCodes.naverClientInfoInvalid);
+    });
+
+    test('permission 키워드 → NAVER_CLIENT_INFO_INVALID', () {
+      final error = ErrorMapper.naver('Permission not granted');
+
+      expect(error.code, ErrorCodes.naverClientInfoInvalid);
+    });
+
+    test('권한 키워드 → NAVER_CLIENT_INFO_INVALID', () {
+      final error = ErrorMapper.naver('API 권한이 없습니다');
 
       expect(error.code, ErrorCodes.naverClientInfoInvalid);
     });
@@ -345,6 +393,12 @@ void main() {
       expect(error.code, ErrorCodes.naverInvalidCallback);
     });
 
+    test('redirect 키워드 → NAVER_INVALID_CALLBACK', () {
+      final error = ErrorMapper.naver('Invalid redirect URI');
+
+      expect(error.code, ErrorCodes.naverInvalidCallback);
+    });
+
     test('token 키워드 → TOKEN_EXPIRED', () {
       final error = ErrorMapper.naver('Token expired');
 
@@ -354,6 +408,18 @@ void main() {
 
     test('expired 키워드 → TOKEN_EXPIRED', () {
       final error = ErrorMapper.naver('Session expired');
+
+      expect(error.code, ErrorCodes.tokenExpired);
+    });
+
+    test('만료 키워드 → TOKEN_EXPIRED', () {
+      final error = ErrorMapper.naver('토큰이 만료되었습니다');
+
+      expect(error.code, ErrorCodes.tokenExpired);
+    });
+
+    test('세션 키워드 → TOKEN_EXPIRED', () {
+      final error = ErrorMapper.naver('세션이 종료되었습니다');
 
       expect(error.code, ErrorCodes.tokenExpired);
     });

@@ -1,3 +1,5 @@
+import 'auth_result.dart' show AuthProvider;
+
 /// K-Auth 표준화된 사용자 프로필
 ///
 /// 모든 Provider에서 반환되는 사용자 정보를 통일된 형식으로 제공합니다.
@@ -33,7 +35,7 @@ class KAuthUser {
   final String? ci;
 
   /// 로그인한 Provider
-  final String provider;
+  final AuthProvider provider;
 
   /// 원본 Provider 응답 데이터
   final Map<String, dynamic>? rawData;
@@ -65,7 +67,7 @@ class KAuthUser {
 
     return KAuthUser(
       id: data['id'].toString(),
-      provider: 'kakao',
+      provider: AuthProvider.kakao,
       name: profile['nickname'] as String?,
       email: account['email'] as String?,
       avatar: profile['profile_image_url'] as String?,
@@ -90,7 +92,7 @@ class KAuthUser {
 
     return KAuthUser(
       id: response['id'] as String,
-      provider: 'naver',
+      provider: AuthProvider.naver,
       name: response['name'] as String? ?? response['nickname'] as String?,
       email: response['email'] as String?,
       avatar: response['profile_image'] as String?,
@@ -107,7 +109,7 @@ class KAuthUser {
   factory KAuthUser.fromGoogle(Map<String, dynamic> data) {
     return KAuthUser(
       id: data['id'] as String? ?? data['sub'] as String,
-      provider: 'google',
+      provider: AuthProvider.google,
       name: data['name'] as String? ?? data['displayName'] as String?,
       email: data['email'] as String?,
       avatar: data['picture'] as String? ?? data['photoUrl'] as String?,
@@ -128,7 +130,7 @@ class KAuthUser {
 
     return KAuthUser(
       id: data['userIdentifier'] as String? ?? data['sub'] as String,
-      provider: 'apple',
+      provider: AuthProvider.apple,
       name: name,
       email: data['email'] as String?,
       rawData: data,
@@ -138,7 +140,7 @@ class KAuthUser {
   /// JSON으로 변환
   Map<String, dynamic> toJson() => {
         'id': id,
-        'provider': provider,
+        'provider': provider.name,
         if (name != null) 'name': name,
         if (email != null) 'email': email,
         if (avatar != null) 'avatar': avatar,
@@ -152,9 +154,15 @@ class KAuthUser {
 
   /// JSON에서 생성
   factory KAuthUser.fromJson(Map<String, dynamic> json) {
+    final providerStr = json['provider'] as String;
+    final provider = AuthProvider.values.firstWhere(
+      (p) => p.name == providerStr,
+      orElse: () => AuthProvider.kakao,
+    );
+
     return KAuthUser(
       id: json['id'] as String,
-      provider: json['provider'] as String,
+      provider: provider,
       name: json['name'] as String?,
       email: json['email'] as String?,
       avatar: json['avatar'] as String?,
@@ -187,7 +195,7 @@ class KAuthUser {
 
   @override
   String toString() =>
-      'KAuthUser(id: $id, provider: $provider, name: $name, email: $email)';
+      'KAuthUser(id: $id, provider: ${provider.name}, name: $name, email: $email)';
 
   @override
   bool operator ==(Object other) =>
@@ -203,7 +211,7 @@ class KAuthUser {
   /// 복사본 생성 (일부 필드 수정)
   KAuthUser copyWith({
     String? id,
-    String? provider,
+    AuthProvider? provider,
     String? name,
     String? email,
     String? avatar,

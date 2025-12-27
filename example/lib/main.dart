@@ -318,7 +318,7 @@ class _LoginPageState extends State<LoginPage> {
               _getProviderIcon(_user!.provider),
               size: 18,
             ),
-            label: Text(_user!.provider.toUpperCase()),
+            label: Text(_user!.provider.name.toUpperCase()),
           ),
 
           const SizedBox(height: 32),
@@ -407,18 +407,16 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  IconData _getProviderIcon(String provider) {
-    switch (provider.toLowerCase()) {
-      case 'kakao':
+  IconData _getProviderIcon(AuthProvider provider) {
+    switch (provider) {
+      case AuthProvider.kakao:
         return Icons.chat_bubble;
-      case 'naver':
+      case AuthProvider.naver:
         return Icons.north_east;
-      case 'google':
+      case AuthProvider.google:
         return Icons.g_mobiledata;
-      case 'apple':
+      case AuthProvider.apple:
         return Icons.apple;
-      default:
-        return Icons.login;
     }
   }
 }
