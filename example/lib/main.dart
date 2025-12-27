@@ -113,9 +113,9 @@ class _LoginPageState extends State<LoginPage> {
       cancelled: () {
         _showSnackBar('로그인을 취소했습니다');
       },
-      failure: (code, message) {
-        setState(() => _error = message);
-        _showErrorDialog(code, message);
+      failure: (failure) {
+        setState(() => _error = failure.message);
+        _showErrorDialog(failure.code, failure.message);
       },
     );
   }
@@ -280,8 +280,8 @@ class _LoginPageState extends State<LoginPage> {
             radius: 50,
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             backgroundImage:
-                _user!.image != null ? NetworkImage(_user!.image!) : null,
-            child: _user!.image == null
+                _user!.avatar != null ? NetworkImage(_user!.avatar!) : null,
+            child: _user!.avatar == null
                 ? Icon(
                     Icons.person,
                     size: 50,

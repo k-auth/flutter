@@ -140,9 +140,7 @@ class SecureSessionStorage implements KAuthSessionStorage {
           iOptions: iosOptions ?? _defaultIOSOptions,
         );
 
-  static const _defaultAndroidOptions = AndroidOptions(
-    encryptedSharedPreferences: true,
-  );
+  static const _defaultAndroidOptions = AndroidOptions();
 
   static const _defaultIOSOptions = IOSOptions(
     accessibility: KeychainAccessibility.first_unlock_this_device,
