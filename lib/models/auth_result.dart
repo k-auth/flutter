@@ -1,4 +1,5 @@
 import 'k_auth_user.dart';
+import 'k_auth_failure.dart';
 
 /// 소셜 로그인 결과를 나타내는 클래스
 ///
@@ -24,20 +25,20 @@ import 'k_auth_user.dart';
 /// // fold: 성공/실패 분기
 /// final message = result.fold(
 ///   onSuccess: (user) => '환영합니다, ${user.displayName}!',
-///   onFailure: (error) => '로그인 실패: $error',
+///   onFailure: (failure) => '로그인 실패: ${failure.message}',
 /// );
 ///
 /// // when: 성공/취소/실패 세분화
 /// result.when(
 ///   success: (user) => navigateToHome(user),
 ///   cancelled: () => showToast('로그인을 취소했습니다'),
-///   failure: (code, msg) => showError(msg),
+///   failure: (failure) => showError(failure.message),
 /// );
 ///
 /// // 체이닝
 /// result
 ///   .onSuccess((user) => saveUser(user))
-///   .onFailure((code, msg) => logError(msg));
+///   .onFailure((failure) => logError(failure.code, failure.message));
 ///
 /// // 값 추출
 /// final name = result.mapUserOr((u) => u.displayName, 'Guest');
@@ -221,22 +222,43 @@ class AuthResult {
     );
   }
 
+  /// 실패 정보를 KAuthFailure로 반환
+  ///
+  /// fold, when, onFailure에서 사용됩니다.
+  KAuthFailure get failure => KAuthFailure(
+        code: errorCode,
+        message: errorMessage,
+        hint: errorHint,
+      );
+
   /// 성공/실패에 따라 다른 값 반환
   ///
   /// ```dart
   /// final message = result.fold(
   ///   onSuccess: (user) => '환영합니다, ${user.displayName}님!',
-  ///   onFailure: (error) => '로그인 실패: $error',
+  ///   onFailure: (failure) => '로그인 실패: ${failure.message}',
+  /// );
+  ///
+  /// // 취소 여부 확인
+  /// result.fold(
+  ///   onSuccess: (user) => navigateToHome(),
+  ///   onFailure: (failure) {
+  ///     if (failure.isCancelled) {
+  ///       // 취소는 조용히 처리
+  ///       return;
+  ///     }
+  ///     showError(failure.message);
+  ///   },
   /// );
   /// ```
   T fold<T>({
     required T Function(KAuthUser user) onSuccess,
-    required T Function(String? errorMessage) onFailure,
+    required T Function(KAuthFailure failure) onFailure,
   }) {
     if (success && user != null) {
       return onSuccess(user!);
     }
-    return onFailure(errorMessage);
+    return onFailure(failure);
   }
 
   /// 성공/실패/취소에 따라 다른 값 반환
@@ -245,13 +267,13 @@ class AuthResult {
   /// result.when(
   ///   success: (user) => navigateToHome(user),
   ///   cancelled: () => showToast('로그인을 취소했습니다'),
-  ///   failure: (code, message) => showError(message),
+  ///   failure: (failure) => showError(failure.message),
   /// );
   /// ```
   T when<T>({
     required T Function(KAuthUser user) success,
     required T Function() cancelled,
-    required T Function(String? code, String? message) failure,
+    required T Function(KAuthFailure failure) failure,
   }) {
     if (this.success && user != null) {
       return success(user!);
@@ -259,7 +281,7 @@ class AuthResult {
     if (errorCode == 'USER_CANCELLED') {
       return cancelled();
     }
-    return failure(errorCode, errorMessage);
+    return failure(this.failure);
   }
 
   /// 성공 시에만 콜백 실행
@@ -279,13 +301,16 @@ class AuthResult {
   /// 실패 시에만 콜백 실행
   ///
   /// ```dart
-  /// result.onFailure((code, message) {
-  ///   print('에러: $message');
+  /// result.onFailure((failure) {
+  ///   print('에러: ${failure.message}');
+  ///   if (failure.hint != null) {
+  ///     print('힌트: ${failure.hint}');
+  ///   }
   /// });
   /// ```
-  AuthResult onFailure(void Function(String? code, String? message) callback) {
+  AuthResult onFailure(void Function(KAuthFailure failure) callback) {
     if (!success) {
-      callback(errorCode, errorMessage);
+      callback(failure);
     }
     return this;
   }

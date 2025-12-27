@@ -61,6 +61,7 @@ library;
 export 'models/auth_result.dart';
 export 'models/auth_config.dart';
 export 'models/k_auth_user.dart';
+export 'models/k_auth_failure.dart';
 
 // Errors
 export 'errors/k_auth_error.dart';
