@@ -313,7 +313,7 @@ class ErrorCodes {
     kakaoAppKeyInvalid: ErrorInfo(
       message: '카카오 앱 키가 유효하지 않습니다.',
       hint: 'Native App Key를 사용하고 있는지 확인하세요. (REST API Key 아님)',
-      docs: '${_docsBase}koe101-invalid-client',
+      docs: '$_docsBase카카오',
     ),
 
     // 네이버 에러
@@ -330,7 +330,7 @@ class ErrorCodes {
     naverClientInfoInvalid: ErrorInfo(
       message: '네이버 클라이언트 정보가 유효하지 않습니다.',
       hint: 'Client ID와 Client Secret이 올바른지 확인하세요.',
-      docs: '$_docsBase인증-실패-invalid_request',
+      docs: '$_docsBase네이버',
     ),
 
     // 구글 에러
@@ -342,7 +342,7 @@ class ErrorCodes {
     googleMissingIosClientId: ErrorInfo(
       message: 'iOS Client ID가 설정되지 않았습니다.',
       hint: 'iOS에서 구글 로그인을 사용하려면 iosClientId를 설정하세요.',
-      docs: '${_docsBase}ios에서-developer_error',
+      docs: '$_docsBase구글',
     ),
 
     // 애플 에러
@@ -359,7 +359,7 @@ class ErrorCodes {
     appleCredentialError: ErrorInfo(
       message: '애플 인증 정보를 가져오는데 실패했습니다.',
       hint: 'Apple ID 설정을 확인해주세요.',
-      docs: '$_docsBase이름이메일이-null로-반환됨',
+      docs: '$_docsBase애플',
     ),
 
     // 플랫폼 에러

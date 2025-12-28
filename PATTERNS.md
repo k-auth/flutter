@@ -319,7 +319,7 @@ class HomeScreen extends StatelessWidget {
                 backgroundImage: NetworkImage(user.avatar!),
               ),
             SizedBox(height: 16),
-            Text(user.displayName, style: TextStyle(fontSize: 24)),
+            Text(user.displayName ?? '', style: TextStyle(fontSize: 24)),
             if (user.email != null) Text(user.email!),
           ],
         ),
@@ -677,7 +677,7 @@ user.gender       // 성별 (nullable)
 user.birthday     // 생일 (nullable)
 user.birthyear    // 출생연도 (nullable)
 user.age          // 나이 (nullable)
-user.displayName  // 표시용 이름 (name ?? email 앞부분)
+user.displayName  // 표시용 이름 (name ?? email 앞부분, nullable)
 user.provider     // AuthProvider enum (kakao, naver, google, apple)
 ```
 

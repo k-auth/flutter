@@ -378,14 +378,12 @@ class KAuthDiagnostic {
         severity: DiagnosticSeverity.info,
         message: 'Info.plist에 네이버 설정을 확인하세요',
         solution: '''<!-- 네이버 SDK 필수 키 -->
-<key>NidClientID</key>
+<key>NidConsumerKey</key>
 <string>YOUR_CLIENT_ID</string>
-<key>NidClientSecret</key>
+<key>NidConsumerSecret</key>
 <string>YOUR_CLIENT_SECRET</string>
 <key>NidAppName</key>
 <string>YOUR_APP_NAME</string>
-<key>NidUrlScheme</key>
-<string>your-app-url-scheme</string>
 
 <!-- URL Scheme -->
 <key>CFBundleURLTypes</key>

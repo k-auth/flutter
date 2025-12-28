@@ -43,7 +43,7 @@ void main(List<String> args) async {
     case 'help' || '--help' || '-h':
       _printHelp();
     case 'version' || '--version' || '-v':
-      print('${_dim}k_auth $_reset${_bold}0.5.0$_reset');
+      print('${_dim}k_auth $_reset${_bold}0.5.2$_reset');
     default:
       _log('error', '알 수 없는 명령어: $cmd');
       exit(1);
