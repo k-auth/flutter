@@ -248,7 +248,7 @@ KakaoLoginButton(onPressed: () => kAuth.signIn(AuthProvider.kakao))
 
 AI 코드 생성 시 참고할 파일들:
 - **PATTERNS.md** - 모든 주요 패턴과 예제 (AI 전용)
-- **example/basic/main.dart** - 가장 간단한 5줄짜리 예제
+- **example/basic/main.dart** - 기본 사용법 예제
 - **example/lib/main.dart** - 완전한 프로덕션 예제
 - **.vscode/k_auth.code-snippets** - VSCode 스니펫
 
