@@ -131,7 +131,7 @@ class SecureSessionStorage implements KAuthSessionStorage {
 
   /// SecureSessionStorage 생성
   ///
-  /// [options]를 통해 Android/iOS 별 설정을 커스터마이징할 수 있습니다.
+  /// [androidOptions] 또는 [iosOptions]를 통해 플랫폼별 설정을 커스터마이징할 수 있습니다.
   SecureSessionStorage({
     AndroidOptions? androidOptions,
     IOSOptions? iosOptions,
