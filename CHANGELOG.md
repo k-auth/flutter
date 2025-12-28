@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2025-12
+
+### Fixed
+
+- **Documentation**: API 문서 콜백 시그니처 수정
+  - `onFailure((error) => ...)` → `onFailure((failure) => ...)`
+  - `when(failure: (code, message) => ...)` → `when(failure: (failure) => ...)`
+- **Documentation**: 에러 코드 docs 링크 404 방지 (트러블슈팅 섹션으로 연결)
+- **Documentation**: PATTERNS.md `displayName` null 처리 예제 수정
+- **Diagnostic**: 네이버 Info.plist 키 이름 수정 (`NidConsumerKey`, `NidConsumerSecret`)
+- **CLI**: 버전 표시 수정
+
+### Improved
+
+- **VSCode Snippets**: 콜백 시그니처 최신 API 반영
+
 ## [0.5.2] - 2025-12
 
 ### Added
