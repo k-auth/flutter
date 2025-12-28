@@ -192,7 +192,8 @@ class ErrorMapper {
         msg.contains('취소') ||
         msg.contains('denied') ||
         msg.contains('거부')) {
-      return KAuthError.fromCode(ErrorCodes.userCancelled, originalError: originalError);
+      return KAuthError.fromCode(ErrorCodes.userCancelled,
+          originalError: originalError);
     }
 
     // 네트워크/타임아웃 에러

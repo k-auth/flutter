@@ -316,7 +316,8 @@ void main() {
 
   group('KAuthBuilder', () {
     testWidgets('로그인 상태에서 signedIn 위젯을 표시한다', (tester) async {
-      final user = KAuthUser(id: '123', name: '홍길동', provider: AuthProvider.kakao);
+      final user =
+          KAuthUser(id: '123', name: '홍길동', provider: AuthProvider.kakao);
       final controller = StreamController<KAuthUser?>.broadcast();
 
       await tester.pumpWidget(
@@ -405,7 +406,8 @@ void main() {
     });
 
     testWidgets('initialUser가 있으면 로딩 없이 바로 표시한다', (tester) async {
-      final user = KAuthUser(id: '123', name: '초기유저', provider: AuthProvider.kakao);
+      final user =
+          KAuthUser(id: '123', name: '초기유저', provider: AuthProvider.kakao);
       final controller = StreamController<KAuthUser?>.broadcast();
 
       await tester.pumpWidget(
@@ -431,7 +433,8 @@ void main() {
     });
 
     testWidgets('스트림 상태 변화에 따라 화면이 전환된다', (tester) async {
-      final user = KAuthUser(id: '123', name: '테스트', provider: AuthProvider.kakao);
+      final user =
+          KAuthUser(id: '123', name: '테스트', provider: AuthProvider.kakao);
       final controller = StreamController<KAuthUser?>.broadcast();
 
       await tester.pumpWidget(

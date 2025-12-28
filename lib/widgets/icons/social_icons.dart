@@ -67,7 +67,8 @@ class NaverIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(naverSvgData, width: s, height: s, fit: BoxFit.contain),
+      child: SvgPicture.string(naverSvgData,
+          width: s, height: s, fit: BoxFit.contain),
     );
   }
 }
@@ -83,7 +84,8 @@ class GoogleIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(googleSvgData, width: s, height: s, fit: BoxFit.contain),
+      child: SvgPicture.string(googleSvgData,
+          width: s, height: s, fit: BoxFit.contain),
     );
   }
 }
@@ -100,7 +102,8 @@ class AppleIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: SvgPicture.string(appleSvgData(isDark), width: s, height: s, fit: BoxFit.contain),
+      child: SvgPicture.string(appleSvgData(isDark),
+          width: s, height: s, fit: BoxFit.contain),
     );
   }
 }

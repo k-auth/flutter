@@ -63,7 +63,8 @@ class GoogleProvider implements BaseAuthProvider {
       if (!_initialized) await initialize();
 
       // 먼저 조용한 로그인 시도
-      var account = await GoogleSignIn.instance.attemptLightweightAuthentication();
+      var account =
+          await GoogleSignIn.instance.attemptLightweightAuthentication();
 
       // 실패하면 전체 로그인 플로우
       if (account == null) {
@@ -141,7 +142,8 @@ class GoogleProvider implements BaseAuthProvider {
     try {
       if (!_initialized) await initialize();
 
-      final account = await GoogleSignIn.instance.attemptLightweightAuthentication();
+      final account =
+          await GoogleSignIn.instance.attemptLightweightAuthentication();
 
       if (account == null) {
         final error = KAuthError.fromCode(ErrorCodes.tokenExpired);

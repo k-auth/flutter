@@ -90,7 +90,8 @@ import 'providers/naver_provider.dart';
 import 'providers/google_provider.dart';
 import 'providers/apple_provider.dart';
 
-// Provider 내보내기 (테스트용)
+// Testing
+export 'testing/mock_k_auth.dart';
 export 'providers/base_auth_provider.dart';
 
 /// 인증 토큰 정보

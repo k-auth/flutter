@@ -339,8 +339,7 @@ class _LoginPageState extends State<LoginPage> {
                   const Divider(),
                   _buildInfoRow('ID', _user!.id),
                   if (_user!.name != null) _buildInfoRow('이름', _user!.name!),
-                  if (_user!.email != null)
-                    _buildInfoRow('이메일', _user!.email!),
+                  if (_user!.email != null) _buildInfoRow('이메일', _user!.email!),
                   if (_user!.phone != null)
                     _buildInfoRow('전화번호', _user!.phone!),
                   if (_user!.gender != null)

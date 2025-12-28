@@ -181,7 +181,8 @@ void main() {
     });
 
     test('fold가 성공 시 onSuccess를 실행한다', () {
-      final user = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
+      final user =
+          KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -256,7 +257,8 @@ void main() {
     });
 
     test('onSuccess가 체이닝을 지원한다', () {
-      final user = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
+      final user =
+          KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -291,7 +293,8 @@ void main() {
     });
 
     test('mapUser가 성공 시 변환된 값을 반환한다', () {
-      final user = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
+      final user =
+          KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
       final result = AuthResult.success(
         provider: AuthProvider.kakao,
         user: user,
@@ -1148,9 +1151,10 @@ void main() {
     });
 
     test('displayName이 올바르게 동작한다', () {
-      final withName = KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
-      final withEmail =
-          KAuthUser(id: '2', email: 'test@example.com', provider: AuthProvider.kakao);
+      final withName =
+          KAuthUser(id: '1', name: '홍길동', provider: AuthProvider.kakao);
+      final withEmail = KAuthUser(
+          id: '2', email: 'test@example.com', provider: AuthProvider.kakao);
       final withNeither = KAuthUser(id: '3', provider: AuthProvider.kakao);
 
       expect(withName.displayName, '홍길동');
@@ -1363,9 +1367,12 @@ void main() {
     });
 
     test('equality가 id와 provider로 판단된다', () {
-      final user1 = KAuthUser(id: '123', name: '유저1', provider: AuthProvider.kakao);
-      final user2 = KAuthUser(id: '123', name: '유저2', provider: AuthProvider.kakao);
-      final user3 = KAuthUser(id: '123', name: '유저1', provider: AuthProvider.naver);
+      final user1 =
+          KAuthUser(id: '123', name: '유저1', provider: AuthProvider.kakao);
+      final user2 =
+          KAuthUser(id: '123', name: '유저2', provider: AuthProvider.kakao);
+      final user3 =
+          KAuthUser(id: '123', name: '유저1', provider: AuthProvider.naver);
 
       expect(user1 == user2, true);
       expect(user1 == user3, false);

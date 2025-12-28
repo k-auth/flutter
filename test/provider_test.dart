@@ -392,9 +392,12 @@ void main() {
     });
 
     test('equality가 id와 provider로 결정된다', () {
-      final user1 = KAuthUser(id: '123', provider: AuthProvider.kakao, name: '홍길동');
-      final user2 = KAuthUser(id: '123', provider: AuthProvider.kakao, name: '김철수');
-      final user3 = KAuthUser(id: '123', provider: AuthProvider.naver, name: '홍길동');
+      final user1 =
+          KAuthUser(id: '123', provider: AuthProvider.kakao, name: '홍길동');
+      final user2 =
+          KAuthUser(id: '123', provider: AuthProvider.kakao, name: '김철수');
+      final user3 =
+          KAuthUser(id: '123', provider: AuthProvider.naver, name: '홍길동');
 
       expect(user1, equals(user2)); // 같은 id, provider
       expect(user1, isNot(equals(user3))); // 다른 provider

@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+
 /// K-Auth CLI - 한국 앱을 위한 소셜 로그인 설정 도구
 
 import 'dart:async';
@@ -138,14 +139,16 @@ Future<void> _runInit() async {
   if (skipped.isNotEmpty) {
     print('');
     for (final r in skipped) {
-      print('  $_dim│$_reset  $_dim○$_reset ${r.file} $_dim(${r.reason})$_reset');
+      print(
+          '  $_dim│$_reset  $_dim○$_reset ${r.file} $_dim(${r.reason})$_reset');
     }
   }
 
   print('');
   print('  $_dim┌$_reset  다음 단계');
   print('  $_dim│$_reset');
-  print('  $_dim│$_reset  ${_dim}1.$_reset $_bold.gitignore$_reset에 k_auth_config.dart 추가');
+  print(
+      '  $_dim│$_reset  ${_dim}1.$_reset $_bold.gitignore$_reset에 k_auth_config.dart 추가');
   print('  $_dim│$_reset  ${_dim}2.$_reset flutter pub get');
   print('  $_dim│$_reset  ${_dim}3.$_reset 앱 실행 및 테스트');
   print('  $_dim│$_reset');
@@ -482,12 +485,14 @@ Future<_Result> _generateConfigFile(Map<String, String> config) async {
   buf.writeln('  return await KAuth.init(');
 
   if (config.containsKey('kakao_app_key')) {
-    buf.writeln("    kakao: KakaoConfig(appKey: '${config['kakao_app_key']}'),");
+    buf.writeln(
+        "    kakao: KakaoConfig(appKey: '${config['kakao_app_key']}'),");
   }
   if (config.containsKey('naver_client_id')) {
     buf.writeln('    naver: NaverConfig(');
     buf.writeln("      clientId: '${config['naver_client_id']}',");
-    buf.writeln("      clientSecret: '${config['naver_client_secret'] ?? ''}',");
+    buf.writeln(
+        "      clientSecret: '${config['naver_client_secret'] ?? ''}',");
     if (config['naver_app_name']?.isNotEmpty ?? false) {
       buf.writeln("      appName: '${config['naver_app_name']}',");
     }
