@@ -661,7 +661,7 @@ AI 코드 생성 도구를 사용하시나요? [PATTERNS.md](PATTERNS.md) 문서
 - 모든 주요 사용 패턴
 - 안티패턴과 베스트 프랙티스
 - VSCode 스니펫 (`.vscode/k_auth.code-snippets`)
-- 최소 예제 (`example/basic/main.dart`)
+- 프로덕션 예제 (`example/lib/main.dart`)
 
 ---
 
