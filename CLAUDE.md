@@ -76,7 +76,7 @@ test/
 ### 설정 클래스
 - **KAuthConfig**: 전체 설정 컨테이너
 - **KakaoConfig** + KakaoCollectOptions
-- **NaverConfig** + NaverCollectOptions (scope 미지원, 개발자센터에서 설정)
+- **NaverConfig** (scope 미지원, 개발자센터에서 설정)
 - **GoogleConfig** + GoogleCollectOptions
 - **AppleConfig** + AppleCollectOptions
 
@@ -211,6 +211,7 @@ KAuthBuilder(
   signedIn: (user) => HomeScreen(user: user),
   signedOut: () => LoginScreen(),
   loading: () => SplashScreen(),  // 선택
+  error: (e) => ErrorScreen(e),   // 선택
 )
 ```
 

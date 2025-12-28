@@ -14,9 +14,17 @@ All notable changes to this project will be documented in this file.
 - **Diagnostic**: 네이버 Info.plist 키 이름 수정 (`NidConsumerKey`, `NidConsumerSecret`)
 - **CLI**: 버전 표시 수정
 
+### Added
+
+- **Widget**: `KAuthBuilder`에 `error` 콜백 추가 - 스트림 에러 처리 지원
+
 ### Improved
 
 - **VSCode Snippets**: 콜백 시그니처 최신 API 반영
+
+### Removed
+
+- **Config**: `NaverCollectOptions` 클래스 제거 - 네이버는 scope 미지원 (개발자센터에서 설정)
 
 ## [0.5.2] - 2025-12
 

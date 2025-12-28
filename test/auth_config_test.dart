@@ -92,67 +92,6 @@ void main() {
   });
 
   // ============================================
-  // NaverCollectOptions 테스트
-  // ============================================
-  group('NaverCollectOptions', () {
-    test('기본값 테스트', () {
-      const options = NaverCollectOptions();
-
-      expect(options.email, true);
-      expect(options.nickname, true);
-      expect(options.profileImage, true);
-      expect(options.name, false);
-      expect(options.birthday, false);
-      expect(options.ageRange, false);
-      expect(options.gender, false);
-      expect(options.mobile, false);
-    });
-
-    test('defaults가 기본값을 반환한다', () {
-      const options = NaverCollectOptions.defaults;
-
-      expect(options.email, true);
-      expect(options.nickname, true);
-      expect(options.profileImage, true);
-      expect(options.name, false);
-    });
-
-    test('모든 옵션 활성화', () {
-      const options = NaverCollectOptions(
-        email: true,
-        nickname: true,
-        profileImage: true,
-        name: true,
-        birthday: true,
-        ageRange: true,
-        gender: true,
-        mobile: true,
-      );
-
-      expect(options.email, true);
-      expect(options.name, true);
-      expect(options.birthday, true);
-      expect(options.ageRange, true);
-      expect(options.gender, true);
-      expect(options.mobile, true);
-    });
-
-    test('NaverConfig에 collect를 설정할 수 있다', () {
-      const options = NaverCollectOptions(name: true, mobile: true);
-
-      final config = NaverConfig(
-        clientId: 'id',
-        clientSecret: 'secret',
-        appName: 'app',
-        collect: options,
-      );
-
-      expect(config.collect?.name, true);
-      expect(config.collect?.mobile, true);
-    });
-  });
-
-  // ============================================
   // GoogleCollectOptions 테스트
   // ============================================
   group('GoogleCollectOptions', () {

@@ -222,54 +222,11 @@ class KakaoConfig {
 // 네이버 설정
 // ============================================
 
-/// 네이버 수집 옵션
-///
-/// ⚠️ 중요: 네이버는 OAuth scope 파라미터를 지원하지 않습니다.
-/// 수집 항목은 네이버 개발자센터에서 직접 설정해야 합니다.
-/// https://developers.naver.com/apps
-///
-/// 이 클래스는 문서화 및 타입 안전성 목적으로만 제공됩니다.
-class NaverCollectOptions {
-  /// 이메일 (개발자센터에서 설정)
-  final bool email;
-
-  /// 별명 (개발자센터에서 설정)
-  final bool nickname;
-
-  /// 프로필 이미지 (개발자센터에서 설정)
-  final bool profileImage;
-
-  /// 이름 (개발자센터에서 설정)
-  final bool name;
-
-  /// 생일 (개발자센터에서 설정)
-  final bool birthday;
-
-  /// 연령대 (개발자센터에서 설정)
-  final bool ageRange;
-
-  /// 성별 (개발자센터에서 설정)
-  final bool gender;
-
-  /// 휴대전화번호 (개발자센터에서 설정)
-  final bool mobile;
-
-  const NaverCollectOptions({
-    this.email = true,
-    this.nickname = true,
-    this.profileImage = true,
-    this.name = false,
-    this.birthday = false,
-    this.ageRange = false,
-    this.gender = false,
-    this.mobile = false,
-  });
-
-  /// 기본 옵션
-  static const NaverCollectOptions defaults = NaverCollectOptions();
-}
-
 /// 네이버 로그인 설정
+///
+/// ⚠️ 네이버는 OAuth scope 파라미터를 지원하지 않습니다.
+/// 수집 항목은 네이버 개발자센터에서 직접 설정하세요.
+/// https://developers.naver.com/apps
 class NaverConfig {
   /// 클라이언트 ID
   final String clientId;
@@ -280,17 +237,10 @@ class NaverConfig {
   /// 앱 이름 (로그인 화면에 표시)
   final String appName;
 
-  /// 수집 옵션 (문서화 목적, 실제 설정은 개발자센터에서)
-  ///
-  /// ⚠️ 네이버는 scope 파라미터를 지원하지 않습니다.
-  /// 이 옵션은 어떤 데이터를 수집하는지 기록용으로만 사용됩니다.
-  final NaverCollectOptions? collect;
-
   const NaverConfig({
     required this.clientId,
     required this.clientSecret,
     required this.appName,
-    this.collect,
   });
 
   /// 설정 검증

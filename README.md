@@ -4,7 +4,7 @@
     <strong>한국 앱을 위한 소셜 로그인 SDK</strong>
   </p>
   <p align="center">
-한국 앱을 위한 소셜 로그인 SDK (v0.5.2). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.5.3). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
   </p>
 </p>
 
@@ -710,6 +710,7 @@ void main() {
           stream: mockKAuth.authStateChanges,
           signedIn: (user) => Text('Welcome ${user.displayName}'),
           signedOut: () => Text('Please login'),
+          error: (e) => Text('Error: $e'),  // 선택
         ),
       ),
     );

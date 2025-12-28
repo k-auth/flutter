@@ -464,5 +464,46 @@ void main() {
 
       await controller.close();
     });
+
+    testWidgets('에러 발생 시 error 위젯이 표시된다', (tester) async {
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => const Text('로그인됨'),
+            signedOut: () => const Text('로그아웃됨'),
+            error: (e) => Text('에러: $e'),
+          ),
+        ),
+      );
+
+      controller.addError('테스트 에러');
+      await tester.pumpAndSettle();
+      expect(find.text('에러: 테스트 에러'), findsOneWidget);
+
+      await controller.close();
+    });
+
+    testWidgets('error 위젯 없으면 기본 에러 메시지가 표시된다', (tester) async {
+      final controller = StreamController<KAuthUser?>.broadcast();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KAuthBuilder(
+            stream: controller.stream,
+            signedIn: (user) => const Text('로그인됨'),
+            signedOut: () => const Text('로그아웃됨'),
+          ),
+        ),
+      );
+
+      controller.addError('테스트 에러');
+      await tester.pumpAndSettle();
+      expect(find.text('오류: 테스트 에러'), findsOneWidget);
+
+      await controller.close();
+    });
   });
 }

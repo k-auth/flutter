@@ -10,6 +10,7 @@ import '../models/k_auth_user.dart';
 ///   signedIn: (user) => HomeScreen(user: user),
 ///   signedOut: () => LoginScreen(),
 ///   loading: () => SplashScreen(),
+///   error: (e) => ErrorScreen(error: e),
 /// )
 /// ```
 class KAuthBuilder extends StatelessWidget {
@@ -25,6 +26,9 @@ class KAuthBuilder extends StatelessWidget {
   /// 로딩 중일 때 표시할 위젯 (선택)
   final Widget Function()? loading;
 
+  /// 에러 발생 시 표시할 위젯 (선택)
+  final Widget Function(Object error)? error;
+
   /// 초기 사용자 (스트림 연결 전)
   final KAuthUser? initialUser;
 
@@ -34,6 +38,7 @@ class KAuthBuilder extends StatelessWidget {
     required this.signedIn,
     required this.signedOut,
     this.loading,
+    this.error,
     this.initialUser,
   });
 
@@ -46,6 +51,11 @@ class KAuthBuilder extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return loading?.call() ??
               const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return error?.call(snapshot.error!) ??
+              Center(child: Text('오류: ${snapshot.error}'));
         }
 
         final user = snapshot.data;

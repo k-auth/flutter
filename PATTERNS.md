@@ -242,7 +242,8 @@ class MyApp extends StatelessWidget {
         stream: kAuth.authStateChanges,
         signedIn: (user) => HomeScreen(user: user),
         signedOut: () => LoginScreen(),
-        loading: () => SplashScreen(),  // 선택
+        loading: () => SplashScreen(),   // 선택
+        error: (e) => ErrorScreen(e),    // 선택
       ),
     );
   }
