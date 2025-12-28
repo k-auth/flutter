@@ -25,7 +25,7 @@ lib/
 ├── models/
 │   ├── auth_config.dart     # Provider별 설정 및 수집 옵션
 │   ├── auth_result.dart     # 로그인 결과 (fold, when 함수형 패턴)
-│   ├── k_auth_failure.dart  # 실패 정보 (isCancelled, isNetworkError 등)
+│   ├── k_auth_failure.dart  # 실패 정보 (isCancelled, canRetry, shouldIgnore 등)
 │   └── k_auth_user.dart     # 표준화된 사용자 정보
 ├── providers/
 │   ├── kakao_provider.dart  # 카카오 SDK 래퍼
@@ -193,13 +193,14 @@ result.when(
 
 **KAuthFailure 편의 메서드**
 ```dart
-result.fold(
-  onSuccess: (user) => navigateToHome(user),
-  onFailure: (failure) {
-    if (failure.isCancelled) return;  // 취소는 무시
+result.onFailure((failure) {
+  if (failure.shouldIgnore) return;  // 취소 등 무시해도 되는 에러
+  if (failure.canRetry) {
+    showRetryButton();  // 네트워크 오류 등 재시도 가능
+  } else {
     showError(failure.displayMessage);
-  },
-);
+  }
+});
 ```
 
 #### 3. 화면 전환 (KAuthBuilder 사용 - 권장)
@@ -235,14 +236,29 @@ StreamBuilder<KAuthUser?>(
 #### 4. 버튼 위젯 사용
 
 ```dart
-// 버튼 그룹 (추천)
+// 버튼 그룹 (추천) - 로딩 상태 자동 관리
+AuthProvider? _loading;
+
 LoginButtonGroup(
   providers: [AuthProvider.kakao, AuthProvider.naver, AuthProvider.google],
-  onPressed: (provider) => kAuth.signIn(provider),
+  loading: _loading,  // 로딩 중인 버튼, 나머지는 자동 비활성화
+  onPressed: (p) async {
+    setState(() => _loading = p);
+    await kAuth.signIn(p);
+    setState(() => _loading = null);
+  },
 )
 
 // 개별 버튼
 KakaoLoginButton(onPressed: () => kAuth.signIn(AuthProvider.kakao))
+
+// 아이콘만 있는 버튼 (가로 배치용)
+Row(children: [
+  KakaoLoginButton.icon(onPressed: ...),
+  NaverLoginButton.icon(onPressed: ...),
+  GoogleLoginButton.icon(onPressed: ...),
+  AppleLoginButton.icon(onPressed: ...),
+])
 ```
 
 ### 참고 파일
