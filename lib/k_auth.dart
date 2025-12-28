@@ -18,7 +18,7 @@
 /// final result = await kAuth.signIn(AuthProvider.kakao);
 /// result.fold(
 ///   onSuccess: (user) => print('환영합니다, ${user.displayName}!'),
-///   onFailure: (error) => print('로그인 실패: $error'),
+///   onFailure: (failure) => print('로그인 실패: ${failure.message}'),
 /// );
 ///
 /// // 로그아웃 (현재 로그인된 Provider로 자동)
@@ -43,13 +43,13 @@
 /// // 체이닝
 /// result
 ///   .onSuccess((user) => saveUser(user))
-///   .onFailure((code, msg) => showError(msg));
+///   .onFailure((failure) => showError(failure.message));
 ///
 /// // 성공/취소/실패 구분
 /// result.when(
 ///   success: (user) => goToHome(),
 ///   cancelled: () => showToast('취소됨'),
-///   failure: (code, msg) => showError(msg),
+///   failure: (failure) => showError(failure.message),
 /// );
 ///
 /// // 값 추출
@@ -635,9 +635,9 @@ class KAuth {
   ///     print('환영합니다, ${user.displayName}!');
   ///     navigateToHome(user);
   ///   },
-  ///   onFailure: (error) {
-  ///     print('실패: $error');
-  ///     showErrorDialog(error);
+  ///   onFailure: (failure) {
+  ///     print('실패: ${failure.message}');
+  ///     showErrorDialog(failure.message);
   ///   },
   /// );
   /// ```
@@ -655,9 +655,9 @@ class KAuth {
   ///     print('사용자가 로그인을 취소했습니다');
   ///     showSnackBar('로그인이 취소되었습니다');
   ///   },
-  ///   failure: (code, message) {
-  ///     print('로그인 실패 [$code]: $message');
-  ///     showErrorDialog(message);
+  ///   failure: (failure) {
+  ///     print('로그인 실패: ${failure.message}');
+  ///     showErrorDialog(failure.message);
   ///   },
   /// );
   /// ```
@@ -671,9 +671,9 @@ class KAuth {
   ///     saveUserToDatabase(user);
   ///     navigateToHome(user);
   ///   })
-  ///   .onFailure((code, msg) {
-  ///     logError(code, msg);
-  ///     showError(msg);
+  ///   .onFailure((failure) {
+  ///     logError(failure.code, failure.message);
+  ///     showError(failure.message);
   ///   });
   /// ```
   Future<AuthResult> signIn(AuthProvider provider) async {
@@ -809,7 +809,7 @@ class KAuth {
   /// final result = await kAuth.signOut();
   /// result.fold(
   ///   onSuccess: (_) => print('로그아웃 성공'),
-  ///   onFailure: (error) => print('로그아웃 실패: $error'),
+  ///   onFailure: (failure) => print('로그아웃 실패: ${failure.message}'),
   /// );
   ///
   /// // 특정 Provider로 로그아웃
@@ -922,7 +922,7 @@ class KAuth {
   /// final result = await kAuth.unlink(AuthProvider.kakao);
   /// result.fold(
   ///   onSuccess: (_) => print('연결 해제 성공'),
-  ///   onFailure: (error) => print('연결 해제 실패: $error'),
+  ///   onFailure: (failure) => print('연결 해제 실패: ${failure.message}'),
   /// );
   /// ```
   Future<AuthResult> unlink(AuthProvider provider) async {
@@ -980,7 +980,7 @@ class KAuth {
   ///
   /// result.fold(
   ///   onSuccess: (user) => print('토큰 갱신 성공'),
-  ///   onFailure: (error) => print('토큰 갱신 실패: $error'),
+  ///   onFailure: (failure) => print('토큰 갱신 실패: ${failure.message}'),
   /// );
   /// ```
   Future<AuthResult> refreshToken([AuthProvider? provider]) async {
