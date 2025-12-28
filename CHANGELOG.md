@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.4] - 2025-12
+
+### Added
+
+- **Widget**: `LoginButtonGroup.loading` 파라미터 - 단일 값으로 로딩 상태 관리
+  - 로딩 중인 버튼 외 나머지 자동 비활성화
+- **Model**: `KAuthFailure.canRetry` - 재시도 가능 여부 (네트워크/타임아웃 에러)
+- **Model**: `KAuthFailure.shouldIgnore` - 무시해도 되는 에러 (사용자 취소)
+- **Widget**: 모든 버튼에 `.icon()` 생성자 추가
+  - `KakaoLoginButton.icon()`, `NaverLoginButton.icon()`, `GoogleLoginButton.icon()`, `AppleLoginButton.icon()`
+- **Error**: `ErrorCodes.timeout` 에러 코드 추가
+
 ## [0.5.3] - 2025-12
 
 ### Fixed
