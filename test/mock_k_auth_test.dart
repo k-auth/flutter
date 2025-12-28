@@ -116,7 +116,8 @@ void main() {
     group('signOut', () {
       test('로그아웃 성공', () async {
         // 먼저 로그인
-        mockKAuth.mockUser = KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
         await mockKAuth.signIn(AuthProvider.kakao);
         expect(mockKAuth.isSignedIn, true);
 
@@ -130,7 +131,8 @@ void main() {
 
       test('signOutAll 성공', () async {
         // 먼저 로그인
-        mockKAuth.mockUser = KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
         await mockKAuth.signIn(AuthProvider.kakao);
 
         // 전체 로그아웃
@@ -144,7 +146,8 @@ void main() {
 
     group('unlink', () {
       test('지원되는 Provider 연결해제 성공', () async {
-        mockKAuth.mockUser = KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
         await mockKAuth.signIn(AuthProvider.kakao);
 
         final result = await mockKAuth.unlink(AuthProvider.kakao);
@@ -163,7 +166,8 @@ void main() {
 
     group('refreshToken', () {
       test('로그인 상태에서 토큰 갱신 성공', () async {
-        mockKAuth.mockUser = KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
         await mockKAuth.signIn(AuthProvider.kakao);
 
         final result = await mockKAuth.refreshToken();
@@ -180,7 +184,8 @@ void main() {
       });
 
       test('Apple 토큰 갱신 미지원', () async {
-        mockKAuth.mockUser = KAuthUser(id: 'user', provider: AuthProvider.apple);
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.apple);
         await mockKAuth.signIn(AuthProvider.apple);
 
         final result = await mockKAuth.refreshToken(AuthProvider.apple);
@@ -261,7 +266,8 @@ void main() {
       });
 
       test('reset', () async {
-        mockKAuth.mockUser = KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
         await mockKAuth.signIn(AuthProvider.kakao);
         expect(mockKAuth.isSignedIn, true);
 
