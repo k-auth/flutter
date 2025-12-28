@@ -34,6 +34,19 @@ class AppleLoginButton extends StatelessWidget {
     this.disabled = false,
   });
 
+  /// 아이콘만 있는 버튼 (다크 모드)
+  const AppleLoginButton.icon({
+    super.key,
+    this.onPressed,
+    this.width,
+    this.height,
+    this.borderRadius = 6,
+    this.isDark = true,
+    this.isLoading = false,
+    this.disabled = false,
+  })  : text = '',
+        size = ButtonSize.icon;
+
   @override
   Widget build(BuildContext context) {
     final bgColor = isDark ? Colors.black : Colors.white;

@@ -26,12 +26,33 @@ enum ButtonGroupDirection {
 ///   onPressed: (provider) => kAuth.signIn(provider),
 /// )
 /// ```
+///
+/// ## 로딩 상태
+///
+/// ```dart
+/// LoginButtonGroup(
+///   providers: [...],
+///   loading: _currentProvider,  // 로딩 중인 Provider
+///   onPressed: (p) async {
+///     setState(() => _currentProvider = p);
+///     await kAuth.signIn(p);
+///     setState(() => _currentProvider = null);
+///   },
+/// )
+/// ```
 class LoginButtonGroup extends StatelessWidget {
   final List<AuthProvider> providers;
   final void Function(AuthProvider provider)? onPressed;
   final double spacing;
   final ButtonSize buttonSize;
   final ButtonGroupDirection direction;
+
+  /// 현재 로딩 중인 Provider (단일값)
+  ///
+  /// 해당 Provider 버튼만 로딩 표시되고, 나머지는 비활성화됩니다.
+  final AuthProvider? loading;
+
+  /// @Deprecated 대신 [loading]을 사용하세요.
   final Map<AuthProvider, bool> loadingStates;
   final Map<AuthProvider, bool> disabledStates;
 
@@ -42,6 +63,7 @@ class LoginButtonGroup extends StatelessWidget {
     this.spacing = 12,
     this.buttonSize = ButtonSize.medium,
     this.direction = ButtonGroupDirection.vertical,
+    this.loading,
     this.loadingStates = const {},
     this.disabledStates = const {},
   });
@@ -63,8 +85,11 @@ class LoginButtonGroup extends StatelessWidget {
   }
 
   Widget _buildButton(AuthProvider provider) {
-    final isLoading = loadingStates[provider] ?? false;
-    final isDisabled = disabledStates[provider] ?? false;
+    // loading 파라미터 우선, 없으면 loadingStates 사용 (하위 호환성)
+    final isLoading = loading == provider || (loadingStates[provider] ?? false);
+    // 다른 버튼이 로딩 중이면 비활성화
+    final isOtherLoading = loading != null && loading != provider;
+    final isDisabled = isOtherLoading || (disabledStates[provider] ?? false);
     void callback() => onPressed?.call(provider);
 
     return switch (provider) {

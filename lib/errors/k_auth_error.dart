@@ -138,6 +138,7 @@ class ErrorCodes {
   static const String tokenExpired = 'TOKEN_EXPIRED';
   static const String refreshFailed = 'REFRESH_FAILED';
   static const String networkError = 'NETWORK_ERROR';
+  static const String timeout = 'TIMEOUT';
   static const String accessTokenError = 'ACCESS_TOKEN_ERROR';
   static const String userInfoError = 'USER_INFO_ERROR';
   static const String oauthCallbackError = 'OAUTH_CALLBACK_ERROR';
@@ -262,6 +263,10 @@ class ErrorCodes {
     networkError: ErrorInfo(
       message: '네트워크 오류가 발생했습니다.',
       hint: '인터넷 연결 상태를 확인하고 다시 시도해주세요.',
+    ),
+    timeout: ErrorInfo(
+      message: '요청 시간이 초과되었습니다.',
+      hint: '네트워크 상태를 확인하고 다시 시도해주세요.',
     ),
     accessTokenError: ErrorInfo(
       message: '액세스 토큰을 가져오는데 실패했습니다.',

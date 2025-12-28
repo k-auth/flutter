@@ -31,6 +31,18 @@ class NaverLoginButton extends StatelessWidget {
     this.disabled = false,
   });
 
+  /// 아이콘만 있는 버튼
+  const NaverLoginButton.icon({
+    super.key,
+    this.onPressed,
+    this.width,
+    this.height,
+    this.borderRadius = 6,
+    this.isLoading = false,
+    this.disabled = false,
+  })  : text = '',
+        size = ButtonSize.icon;
+
   @override
   Widget build(BuildContext context) {
     return BaseSocialButton(

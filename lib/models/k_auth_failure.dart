@@ -90,6 +90,27 @@ class KAuthFailure {
   /// Provider 설정 오류인지 확인
   bool get isProviderNotConfigured => code == ErrorCodes.providerNotConfigured;
 
+  /// 재시도 가능한 에러인지 확인
+  ///
+  /// 네트워크 오류 등 일시적인 문제로 재시도하면 성공할 수 있는 경우.
+  ///
+  /// ```dart
+  /// if (failure.canRetry) {
+  ///   showRetryButton();
+  /// }
+  /// ```
+  bool get canRetry => isNetworkError || code == ErrorCodes.timeout;
+
+  /// 무시해도 되는 에러인지 확인
+  ///
+  /// 사용자 취소 등 에러 메시지를 표시하지 않아도 되는 경우.
+  ///
+  /// ```dart
+  /// if (failure.shouldIgnore) return;
+  /// showError(failure.message);
+  /// ```
+  bool get shouldIgnore => isCancelled;
+
   /// 사용자에게 표시할 메시지
   ///
   /// [message]가 없으면 기본 메시지를 반환합니다.
