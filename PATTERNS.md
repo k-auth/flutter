@@ -410,11 +410,11 @@ final result = await kAuth.signIn(AuthProvider.kakao);
 result.fold(
   onSuccess: (user) => navigateToHome(),
   onFailure: (failure) {
-    // 취소는 에러가 아니므로 무시
-    if (failure.isCancelled) return;
+    // 취소 등 무시해도 되는 에러
+    if (failure.shouldIgnore) return;
 
-    // 네트워크 에러면 재시도 안내
-    if (failure.isNetworkError) {
+    // 네트워크/타임아웃 에러면 재시도 가능
+    if (failure.canRetry) {
       showRetryDialog();
       return;
     }
@@ -424,6 +424,15 @@ result.fold(
   },
 );
 ```
+
+**KAuthFailure 편의 getter:**
+| getter | 설명 |
+|--------|------|
+| `isCancelled` | 사용자가 취소함 |
+| `isNetworkError` | 네트워크 오류 |
+| `isTokenExpired` | 토큰 만료 |
+| `canRetry` | 재시도 가능 (네트워크/타임아웃) |
+| `shouldIgnore` | 무시해도 됨 (취소) |
 
 ---
 
@@ -484,14 +493,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  AuthProvider? _loadingProvider;
+  AuthProvider? _loading;
 
   Future<void> _handleLogin(AuthProvider provider) async {
-    setState(() => _loadingProvider = provider);
-
+    setState(() => _loading = provider);
     final result = await kAuth.signIn(provider);
-
-    setState(() => _loadingProvider = null);
+    setState(() => _loading = null);
 
     result.when(
       success: (user) => print('로그인 성공!'),
@@ -510,20 +517,29 @@ class _LoginScreenState extends State<LoginScreen> {
         AuthProvider.apple,
       ],
       onPressed: _handleLogin,
+      loading: _loading,  // 로딩 중인 버튼, 나머지 자동 비활성화
       buttonSize: ButtonSize.large,
       spacing: 12,
-      // 로딩 상태 표시
-      loadingStates: {
-        for (final p in AuthProvider.values) p: _loadingProvider == p,
-      },
-      // 로딩 중일 때 다른 버튼 비활성화
-      disabledStates: {
-        for (final p in AuthProvider.values)
-          p: _loadingProvider != null && _loadingProvider != p,
-      },
     );
   }
 }
+```
+
+### 아이콘 버튼 (가로 배치용)
+
+```dart
+Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    KakaoLoginButton.icon(onPressed: () => _handleLogin(AuthProvider.kakao)),
+    SizedBox(width: 12),
+    NaverLoginButton.icon(onPressed: () => _handleLogin(AuthProvider.naver)),
+    SizedBox(width: 12),
+    GoogleLoginButton.icon(onPressed: () => _handleLogin(AuthProvider.google)),
+    SizedBox(width: 12),
+    AppleLoginButton.icon(onPressed: () => _handleLogin(AuthProvider.apple)),
+  ],
+)
 ```
 
 ---
