@@ -2,15 +2,33 @@
 
 > 이 문서는 AI 코드 생성 도구(Claude Code, GitHub Copilot 등)가 k-auth를 사용하는 코드를 쉽게 생성할 수 있도록 작성되었습니다.
 
-## 📋 목차
+## 5줄 퀵스타트
 
-- [패턴 1: 가장 간단한 로그인 (복붙 가능)](#패턴-1-가장-간단한-로그인)
-- [패턴 2: 백엔드 연동](#패턴-2-백엔드-연동)
-- [패턴 3: 자동 로그인 (세션 복원)](#패턴-3-자동-로그인)
-- [패턴 4: StreamBuilder 통합](#패턴-4-streambuilder-통합)
-- [패턴 5: 에러 처리 (4가지 방법)](#패턴-5-에러-처리)
-- [패턴 6: 버튼 위젯 사용](#패턴-6-버튼-위젯-사용)
-- [안티패턴 (하지 말아야 할 것)](#안티패턴)
+```dart
+// 1. 초기화 (main.dart)
+final kAuth = await KAuth.init(kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'));
+
+// 2. 로그인
+final result = await kAuth.signIn(AuthProvider.kakao);
+
+// 3. 결과 확인
+if (result.success) print('환영합니다, ${kAuth.name}!');
+```
+
+---
+
+## 목차
+
+| 패턴 | 설명 | 난이도 |
+|------|------|:------:|
+| [#1 가장 간단한 로그인](#패턴-1-가장-간단한-로그인) | 빠른 프로토타입 | ⭐ |
+| [#2 백엔드 연동](#패턴-2-백엔드-연동) | JWT 토큰 발급 | ⭐⭐ |
+| [#3 자동 로그인](#패턴-3-자동-로그인) | 세션 복원 | ⭐ |
+| [#4 화면 전환](#패턴-4-화면-전환) | 로그인/홈 자동 전환 | ⭐⭐ |
+| [#5 에러 처리](#패턴-5-에러-처리) | 5가지 방법 | ⭐ |
+| [#6 버튼 위젯](#패턴-6-버튼-위젯-사용) | 공식 디자인 버튼 | ⭐ |
+| [안티패턴](#안티패턴) | 하지 말아야 할 것 | - |
+| [빠른 참고](#빠른-참고) | API 레퍼런스 | - |
 
 ---
 
@@ -660,7 +678,20 @@ user.birthday     // 생일 (nullable)
 user.birthyear    // 출생연도 (nullable)
 user.age          // 나이 (nullable)
 user.displayName  // 표시용 이름 (name ?? email 앞부분)
-user.provider     // Provider 이름 (kakao, naver, google, apple)
+user.provider     // AuthProvider enum (kakao, naver, google, apple)
+```
+
+### KAuthFailure 필드 (에러 처리용)
+
+```dart
+failure.code           // 에러 코드 (예: USER_CANCELLED, NETWORK_ERROR)
+failure.message        // 에러 메시지
+failure.displayMessage // 사용자에게 보여줄 메시지 (message ?? 기본 메시지)
+
+// 편의 getter
+failure.isCancelled    // 사용자가 취소했는지
+failure.isNetworkError // 네트워크 오류인지
+failure.isTokenExpired // 토큰 만료인지
 ```
 
 ---

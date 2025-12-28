@@ -4,7 +4,7 @@
     <strong>한국 앱을 위한 소셜 로그인 SDK</strong>
   </p>
   <p align="center">
-한국 앱을 위한 소셜 로그인 SDK (v0.5.0). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.5.1). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
   </p>
 </p>
 
@@ -91,21 +91,35 @@ dart run k_auth doctor
 
 ## 빠른 시작
 
+### TL;DR (3줄 요약)
+
+```dart
+final kAuth = await KAuth.init(kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'));
+final result = await kAuth.signIn(AuthProvider.kakao);
+if (result.success) print('환영합니다, ${kAuth.name}!');
+```
+
 ### 1. 초기화
 
 ```dart
 import 'package:k_auth/k_auth.dart';
 
+// 권장: KAuth.init() - 한 줄로 초기화 + SecureStorage + 자동 로그인
+final kAuth = await KAuth.init(
+  kakao: KakaoConfig(appKey: 'YOUR_NATIVE_APP_KEY'),
+  naver: NaverConfig(
+    clientId: 'YOUR_CLIENT_ID',
+    clientSecret: 'YOUR_CLIENT_SECRET',
+    appName: 'Your App',
+  ),
+  google: GoogleConfig(),
+  apple: AppleConfig(),
+);
+
+// 또는 기존 방식 (더 세밀한 제어)
 final kAuth = KAuth(
   config: KAuthConfig(
     kakao: KakaoConfig(appKey: 'YOUR_NATIVE_APP_KEY'),
-    naver: NaverConfig(
-      clientId: 'YOUR_CLIENT_ID',
-      clientSecret: 'YOUR_CLIENT_SECRET',
-      appName: 'Your App',
-    ),
-    google: GoogleConfig(),
-    apple: AppleConfig(),
   ),
 );
 
@@ -461,17 +475,18 @@ final customUserOrNull = result.mapUserOr((user) => MyUser.fromKAuth(user), null
 
 ### KAuthUser 클래스
 
-| 프로퍼티      | 타입      | 설명                                          |
-| ------------- | --------- | --------------------------------------------- |
-| `id`          | `String`  | Provider 고유 ID                              |
-| `email`       | `String?` | 이메일                                        |
-| `name`        | `String?` | 이름                                          |
-| `avatar`      | `String?` | 프로필 이미지 URL                             |
-| `phone`       | `String?` | 전화번호                                      |
-| `gender`      | `String?` | 성별                                          |
-| `birthday`    | `String?` | 생일                                          |
-| `birthyear`   | `String?` | 출생연도                                      |
-| `displayName` | `String`  | 표시용 이름 (name ?? email의 앞부분)          |
+| 프로퍼티      | 타입           | 설명                                          |
+| ------------- | -------------- | --------------------------------------------- |
+| `id`          | `String`       | Provider 고유 ID                              |
+| `provider`    | `AuthProvider` | 로그인한 Provider (kakao, naver, google, apple) |
+| `email`       | `String?`      | 이메일                                        |
+| `name`        | `String?`      | 이름                                          |
+| `avatar`      | `String?`      | 프로필 이미지 URL                             |
+| `phone`       | `String?`      | 전화번호                                      |
+| `gender`      | `String?`      | 성별                                          |
+| `birthday`    | `String?`      | 생일                                          |
+| `birthyear`   | `String?`      | 출생연도                                      |
+| `displayName` | `String`       | 표시용 이름 (name ?? email의 앞부분)          |
 
 ---
 
