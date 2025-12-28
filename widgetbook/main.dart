@@ -6,6 +6,7 @@
 /// ```bash
 /// flutter run -t widgetbook/main.dart -d chrome
 /// ```
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';

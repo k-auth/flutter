@@ -205,17 +205,17 @@ class ErrorCodes {
     configNotFound: ErrorInfo(
       message: '설정을 찾을 수 없습니다.',
       hint: 'KAuth.initialize()를 먼저 호출해주세요.',
-      docs: '${_docsBase}공통',
+      docs: '$_docsBase공통',
     ),
     invalidConfig: ErrorInfo(
       message: '잘못된 설정입니다.',
       hint: '설정값이 올바른지 확인해주세요.',
-      docs: '${_docsBase}공통',
+      docs: '$_docsBase공통',
     ),
     noProviderConfigured: ErrorInfo(
       message: '설정된 Provider가 없습니다.',
       hint: 'KAuthConfig에 최소 하나의 Provider를 설정해주세요.',
-      docs: '${_docsBase}빠른-시작',
+      docs: '$_docsBase빠른-시작',
     ),
     missingClientId: ErrorInfo(
       message: 'Client ID가 설정되지 않았습니다.',
@@ -230,7 +230,7 @@ class ErrorCodes {
     missingAppKey: ErrorInfo(
       message: 'App Key가 설정되지 않았습니다.',
       hint: 'Provider 설정에 appKey를 추가해주세요.',
-      docs: '${_docsBase}카카오-kakao',
+      docs: '$_docsBase카카오-kakao',
     ),
 
     // 인증 에러
@@ -241,7 +241,7 @@ class ErrorCodes {
     loginFailed: ErrorInfo(
       message: '로그인에 실패했습니다.',
       hint: '네트워크 연결 상태와 설정을 확인해주세요.',
-      docs: '${_docsBase}트러블슈팅',
+      docs: '$_docsBase트러블슈팅',
     ),
     signOutFailed: ErrorInfo(
       message: '로그아웃에 실패했습니다.',
@@ -266,7 +266,7 @@ class ErrorCodes {
     accessTokenError: ErrorInfo(
       message: '액세스 토큰을 가져오는데 실패했습니다.',
       hint: 'OAuth 설정을 확인해주세요.',
-      docs: '${_docsBase}트러블슈팅',
+      docs: '$_docsBase트러블슈팅',
     ),
     userInfoError: ErrorInfo(
       message: '사용자 정보를 가져오는데 실패했습니다.',
@@ -275,7 +275,7 @@ class ErrorCodes {
     oauthCallbackError: ErrorInfo(
       message: 'OAuth 콜백 처리 중 오류가 발생했습니다.',
       hint: 'Redirect URI 설정을 확인해주세요.',
-      docs: '${_docsBase}플랫폼-설정',
+      docs: '$_docsBase플랫폼-설정',
     ),
 
     // Provider 에러
@@ -291,24 +291,24 @@ class ErrorCodes {
     providerNotInitialized: ErrorInfo(
       message: 'Provider가 초기화되지 않았습니다.',
       hint: 'KAuth.initialize()를 먼저 호출해주세요.',
-      docs: '${_docsBase}공통',
+      docs: '$_docsBase공통',
     ),
 
     // 카카오 에러
     kakaoInvalidRedirectUri: ErrorInfo(
       message: 'Redirect URI가 등록되지 않았습니다.',
       hint: '카카오 개발자센터 > 카카오 로그인 > Redirect URI에 앱의 URL을 추가하세요.',
-      docs: '${_docsBase}카카오',
+      docs: '$_docsBase카카오',
     ),
     kakaoPhoneNotEnabled: ErrorInfo(
       message: '전화번호 수집 권한이 활성화되지 않았습니다.',
       hint: '카카오 개발자센터 > 카카오 로그인 > 동의항목에서 전화번호 항목을 활성화하세요.',
-      docs: '${_docsBase}카카오',
+      docs: '$_docsBase카카오',
     ),
     kakaoConsentRequired: ErrorInfo(
       message: '사용자 동의가 필요합니다.',
       hint: '카카오 개발자센터에서 동의항목 설정을 확인하세요.',
-      docs: '${_docsBase}카카오',
+      docs: '$_docsBase카카오',
     ),
     kakaoAppKeyInvalid: ErrorInfo(
       message: '카카오 앱 키가 유효하지 않습니다.',
@@ -320,24 +320,24 @@ class ErrorCodes {
     naverInvalidCallback: ErrorInfo(
       message: '콜백 URL이 유효하지 않습니다.',
       hint: '네이버 개발자센터에서 Callback URL 설정을 확인하세요.',
-      docs: '${_docsBase}네이버',
+      docs: '$_docsBase네이버',
     ),
     naverServiceUrlMismatch: ErrorInfo(
       message: '서비스 URL이 일치하지 않습니다.',
       hint: '네이버 개발자센터에서 서비스 URL 설정을 확인하세요.',
-      docs: '${_docsBase}네이버',
+      docs: '$_docsBase네이버',
     ),
     naverClientInfoInvalid: ErrorInfo(
       message: '네이버 클라이언트 정보가 유효하지 않습니다.',
       hint: 'Client ID와 Client Secret이 올바른지 확인하세요.',
-      docs: '${_docsBase}인증-실패-invalid_request',
+      docs: '$_docsBase인증-실패-invalid_request',
     ),
 
     // 구글 에러
     googleSignInFailed: ErrorInfo(
       message: '구글 로그인에 실패했습니다.',
       hint: 'Google Cloud Console에서 OAuth 설정을 확인하세요.',
-      docs: '${_docsBase}구글',
+      docs: '$_docsBase구글',
     ),
     googleMissingIosClientId: ErrorInfo(
       message: 'iOS Client ID가 설정되지 않았습니다.',
@@ -349,17 +349,17 @@ class ErrorCodes {
     appleSignInFailed: ErrorInfo(
       message: '애플 로그인에 실패했습니다.',
       hint: 'Apple Developer 설정을 확인하세요.',
-      docs: '${_docsBase}애플',
+      docs: '$_docsBase애플',
     ),
     appleNotSupported: ErrorInfo(
       message: '이 기기에서 애플 로그인을 지원하지 않습니다.',
       hint: '애플 로그인은 iOS 13+, macOS에서만 지원됩니다.',
-      docs: '${_docsBase}애플',
+      docs: '$_docsBase애플',
     ),
     appleCredentialError: ErrorInfo(
       message: '애플 인증 정보를 가져오는데 실패했습니다.',
       hint: 'Apple ID 설정을 확인해주세요.',
-      docs: '${_docsBase}이름이메일이-null로-반환됨',
+      docs: '$_docsBase이름이메일이-null로-반환됨',
     ),
 
     // 플랫폼 에러

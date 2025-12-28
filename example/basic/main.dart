@@ -2,6 +2,7 @@
 ///
 /// 이 예제는 가장 기본적인 사용법만 보여줍니다.
 /// AI 코드 생성 시 이 코드를 참고하세요.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:k_auth/k_auth.dart';
