@@ -664,6 +664,74 @@ AI 코드 생성 도구를 사용하시나요? [PATTERNS.md](PATTERNS.md) 문서
 
 ---
 
+## 테스트
+
+`MockKAuth`를 사용하면 실제 SDK 없이 인증 로직을 테스트할 수 있습니다.
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:k_auth/k_auth.dart';
+
+void main() {
+  test('로그인 성공 테스트', () async {
+    final mockKAuth = MockKAuth();
+    mockKAuth.mockUser = KAuthUser(
+      id: 'test_123',
+      provider: AuthProvider.kakao,
+      name: 'Test User',
+    );
+
+    final result = await mockKAuth.signIn(AuthProvider.kakao);
+
+    expect(result.success, true);
+    expect(mockKAuth.isSignedIn, true);
+    expect(mockKAuth.name, 'Test User');
+  });
+
+  test('로그인 취소 테스트', () async {
+    final mockKAuth = MockKAuth();
+    mockKAuth.setCancelled();
+
+    final result = await mockKAuth.signIn(AuthProvider.kakao);
+
+    expect(result.success, false);
+    expect(result.errorCode, 'USER_CANCELLED');
+  });
+
+  testWidgets('Widget 테스트', (tester) async {
+    final mockKAuth = MockKAuth.signedIn(
+      user: KAuthUser(id: 'user_123', provider: AuthProvider.kakao),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: KAuthBuilder(
+          stream: mockKAuth.authStateChanges,
+          signedIn: (user) => Text('Welcome ${user.displayName}'),
+          signedOut: () => Text('Please login'),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('Welcome'), findsOneWidget);
+  });
+}
+```
+
+**MockKAuth 헬퍼 메서드:**
+
+| 메서드 | 설명 |
+|--------|------|
+| `MockKAuth.signedIn(user:)` | 이미 로그인된 상태로 생성 |
+| `setSignedIn(user)` | 로그인 상태로 변경 |
+| `setSignedOut()` | 로그아웃 상태로 변경 |
+| `setCancelled()` | 다음 signIn이 취소로 실패 |
+| `setNetworkError()` | 다음 signIn이 네트워크 에러로 실패 |
+| `setFailure(code:, message:)` | 커스텀 에러로 실패 |
+| `reset()` | 모든 상태 초기화 |
+
+---
+
 ## 전체 예제
 
 실제 앱에서 사용하는 전체 플로우 예제입니다.

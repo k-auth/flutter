@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2025-12
+
+### Added
+
+- **Testing**: `MockKAuth` 클래스 추가 - 테스트에서 실제 SDK 없이 인증 시뮬레이션
+  - `MockKAuth.signedIn()` - 이미 로그인된 상태로 생성
+  - `setCancelled()`, `setNetworkError()` - 실패 시뮬레이션
+  - Widget 테스트, 유닛 테스트 지원
+
+### Improved
+
+- **Error**: 에러 문서 링크 개선 - README 트러블슈팅 섹션 직접 연결
+  - `KAuthError.docs` → `https://github.com/k-auth/flutter#에러코드`
+
 ## [0.5.1] - 2025-12
 
 ### Changed
