@@ -486,7 +486,7 @@ final customUserOrNull = result.mapUserOr((user) => MyUser.fromKAuth(user), null
 | `gender`      | `String?`      | 성별                                          |
 | `birthday`    | `String?`      | 생일                                          |
 | `birthyear`   | `String?`      | 출생연도                                      |
-| `displayName` | `String`       | 표시용 이름 (name ?? email의 앞부분)          |
+| `displayName` | `String?`      | 표시용 이름 (name ?? email의 앞부분)          |
 
 ---
 
@@ -557,7 +557,7 @@ final kAuth = KAuth(
     final data = jsonDecode(response.body);
     return data['jwt'];  // serverToken에 저장됨
   },
-  onSignOut: () async {
+  onSignOut: (provider) async {
     // 로그아웃 시 백엔드에 알림
     await http.post(Uri.parse('https://api.myserver.com/auth/logout'));
   },
@@ -571,8 +571,9 @@ print(kAuth.serverToken);  // 백엔드에서 받은 JWT
 ### 토큰 갱신
 
 ```dart
-// 토큰 만료 여부 확인
-if (kAuth.isExpired) {
+// 마지막 로그인 결과에서 토큰 만료 여부 확인
+final lastResult = kAuth.lastResult;
+if (lastResult?.isExpired == true) {
   final result = await kAuth.refreshToken();
   result.fold(
     onSuccess: (user) => print('토큰 갱신 성공'),
@@ -581,12 +582,12 @@ if (kAuth.isExpired) {
 }
 
 // 토큰 만료 임박 확인 (기본 5분 전)
-if (kAuth.isExpiringSoon()) {
+if (lastResult?.isExpiringSoon() == true) {
   await kAuth.refreshToken();
 }
 
 // 커스텀 임계값 (10분 전)
-if (kAuth.isExpiringSoon(Duration(minutes: 10))) {
+if (lastResult?.isExpiringSoon(Duration(minutes: 10)) == true) {
   await kAuth.refreshToken();
 }
 ```

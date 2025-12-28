@@ -193,7 +193,7 @@ class ErrorCodes {
         ErrorInfo(
           message: '알 수 없는 에러가 발생했습니다.',
           hint: '문제가 지속되면 이슈를 등록해주세요.',
-          docs: 'https://github.com/k-auth/k-auth/issues',
+          docs: 'https://github.com/k-auth/flutter/issues',
         );
   }
 

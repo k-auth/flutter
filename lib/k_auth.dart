@@ -365,7 +365,7 @@ class KAuth {
 
   /// 서버 토큰 (백엔드에서 받은 JWT 등)
   ///
-  /// [onAuthenticated] 콜백의 반환값이 저장됩니다.
+  /// [onSignIn] 콜백의 반환값이 저장됩니다.
   String? get serverToken => _serverToken;
 
   /// 인증 상태 변화 스트림
