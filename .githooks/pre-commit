@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Dart 파일만 포맷팅 (staged files)
+STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.dart$')
+
+if [ -n "$STAGED_DART_FILES" ]; then
+  echo "Formatting staged Dart files..."
+
+  # 포맷팅 실행
+  dart format $STAGED_DART_FILES
+
+  # 수정된 파일 다시 staging
+  echo "$STAGED_DART_FILES" | xargs git add
+
+  echo "Dart files formatted and staged."
+fi
+
+exit 0
