@@ -48,6 +48,24 @@ void main() {
         expect(failure.isTokenExpired, false);
         expect(failure.isProviderNotConfigured, false);
       });
+
+      test('canRetry가 네트워크/타임아웃 에러에서 true를 반환한다', () {
+        final networkError = KAuthFailure.fromCode(ErrorCodes.networkError);
+        final timeoutError = KAuthFailure.fromCode(ErrorCodes.timeout);
+        final otherError = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+
+        expect(networkError.canRetry, true);
+        expect(timeoutError.canRetry, true);
+        expect(otherError.canRetry, false);
+      });
+
+      test('shouldIgnore가 취소 에러에서 true를 반환한다', () {
+        final cancelled = KAuthFailure.fromCode(ErrorCodes.userCancelled);
+        final otherError = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+
+        expect(cancelled.shouldIgnore, true);
+        expect(otherError.shouldIgnore, false);
+      });
     });
 
     group('displayMessage', () {
