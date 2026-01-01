@@ -1,0 +1,108 @@
+# K-Auth
+
+> Social login SDK for Korean apps. Unified API for Kakao, Naver, Google, and Apple login.
+
+K-Auth is a Flutter package that wraps Korean social login providers (Kakao, Naver) along with Google and Apple into a single, consistent API. It provides Korean error messages, functional programming patterns (fold/when), and official design guideline buttons.
+
+## Quick Start
+
+```dart
+import 'package:k_auth/k_auth.dart';
+
+final kAuth = await KAuth.init(
+  kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  google: GoogleConfig(),
+);
+
+final result = await kAuth.signIn(AuthProvider.kakao);
+result.fold(
+  onSuccess: (user) => print('Welcome, ${user.displayName}!'),
+  onFailure: (failure) => print('Error: ${failure.message}'),
+);
+```
+
+## Key Features
+
+- **Unified API**: Single `signIn(provider)` method for all providers
+- **Standardized Response**: `KAuthUser` model across all providers
+- **Korean Error Messages**: Human-readable Korean error messages with hints
+- **Functional Patterns**: `fold`, `when`, `onSuccess`, `onFailure` support
+- **Auto Login**: Built-in SecureStorage session persistence
+- **Auto Token Refresh**: Automatic token refresh on app resume (v0.5.6+)
+- **Official UI**: Design guideline compliant login buttons
+
+## Provider Support
+
+| Provider | Unlink | Token Refresh | Notes |
+|----------|:------:|:-------------:|-------|
+| Kakao    | ✅ | ✅ | Requires Native App Key |
+| Naver    | ✅ | ✅ | No scope support in code |
+| Google   | ✅ | ✅ | iOS requires clientId |
+| Apple    | ❌ | ❌ | iOS 13+/macOS only |
+
+## Requirements
+
+- Flutter 3.22.0+
+- Dart 3.4.0+
+- iOS 13.0+ / Android API 21+
+
+## Documentation
+
+- [README](https://github.com/k-auth/flutter#readme): Installation and usage guide
+- [API Reference](https://pub.dev/documentation/k_auth/latest/): Full API documentation
+- [PATTERNS.md](https://github.com/k-auth/flutter/blob/main/PATTERNS.md): Code patterns for AI tools
+- [Platform Setup](https://github.com/k-auth/flutter/blob/main/docs/SETUP.md): iOS/Android configuration
+- [Troubleshooting](https://github.com/k-auth/flutter/blob/main/docs/TROUBLESHOOTING.md): Common issues and solutions
+
+## Main Classes
+
+- `KAuth`: Main class with `init()`, `signIn()`, `signOut()`, `refreshToken()`
+- `KAuth.init()`: Factory method for initialization + SecureStorage + auto login
+- `AuthResult`: Login result with functional patterns (fold/when)
+- `KAuthUser`: Standardized user model
+- `AuthProvider`: Enum (kakao, naver, google, apple)
+- `KAuthBuilder`: Widget for auth state-based screen switching
+- `MockKAuth`: Mock class for testing
+
+## Common Patterns
+
+### Login with fold
+```dart
+result.fold(
+  onSuccess: (user) => navigateToHome(user),
+  onFailure: (failure) => showError(failure.message),
+);
+```
+
+### Login with when (success/cancelled/failure)
+```dart
+result.when(
+  success: (user) => navigateToHome(user),
+  cancelled: () => showToast('Login cancelled'),
+  failure: (failure) => showError(failure.message),
+);
+```
+
+### Auth State Builder
+```dart
+KAuthBuilder(
+  stream: kAuth.authStateChanges,
+  signedIn: (user) => HomeScreen(user: user),
+  signedOut: () => LoginScreen(),
+)
+```
+
+### Login Buttons
+```dart
+LoginButtonGroup(
+  providers: [AuthProvider.kakao, AuthProvider.naver],
+  loading: _loadingProvider,
+  onPressed: (p) => kAuth.signIn(p),
+)
+```
+
+## Links
+
+- [Package](https://pub.dev/packages/k_auth): pub.dev package page
+- [Repository](https://github.com/k-auth/flutter): GitHub source code
+- [Issues](https://github.com/k-auth/flutter/issues): Bug reports and feature requests
