@@ -1,6 +1,15 @@
 # K-Auth Flutter
 
-한국 앱을 위한 소셜 로그인 SDK (v0.5.5). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.5.6). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+
+## 요구사항
+
+| 환경 | 최소 버전 |
+|------|----------|
+| Flutter | 3.22.0 |
+| Dart | 3.4.0 |
+| iOS | 13.0 |
+| Android | API 21 |
 
 ## CLI 도구
 
@@ -32,12 +41,18 @@ lib/
 │   ├── naver_provider.dart  # 네이버 SDK 래퍼
 │   ├── google_provider.dart # 구글 SDK 래퍼
 │   └── apple_provider.dart  # 애플 SDK 래퍼
+├── testing/
+│   └── mock_k_auth.dart     # 테스트용 MockKAuth
 ├── utils/
 │   ├── diagnostic.dart      # 네이티브 설정 진단 (KAuthDiagnostic)
 │   ├── logger.dart          # 디버그 로깅 (KAuthLogger)
 │   └── session_storage.dart # 세션 저장소 (SecureSessionStorage)
 └── widgets/
     └── login_buttons.dart   # 공식 디자인 버튼 위젯 + KAuthBuilder
+
+docs/
+├── SETUP.md                 # iOS/Android 플랫폼 설정 가이드
+└── TROUBLESHOOTING.md       # 문제 해결 가이드
 
 test/
 ├── k_auth_test.dart         # KAuth 유닛 테스트
@@ -50,11 +65,12 @@ test/
 
 ### 메인 클래스
 - **KAuth**: 메인 클래스. `KAuth.init()` 또는 `initialize()`, `signIn()`, `signOut()`, `refreshToken()` 제공
-- **KAuth.init()**: 팩토리 메서드. 초기화 + SecureStorage + 자동 로그인을 한 번에
+- **KAuth.init()**: 팩토리 메서드. 초기화 + SecureStorage + 자동 로그인 + 토큰 자동 갱신
 - **AuthResult**: 로그인 결과. fold/when/onSuccess/onFailure 함수형 패턴
 - **KAuthUser**: Provider별로 다른 응답을 표준화한 사용자 모델
 - **AuthProvider**: enum (kakao, naver, google, apple)
 - **KAuthBuilder**: 인증 상태에 따른 화면 전환 위젯
+- **MockKAuth**: 테스트용 Mock 클래스
 
 ### 편의 Getter (KAuth)
 - `kAuth.userId` → `currentUser?.id`
@@ -62,16 +78,22 @@ test/
 - `kAuth.email` → `currentUser?.email`
 - `kAuth.avatar` → `currentUser?.avatar`
 
+### 토큰 관리
+- `kAuth.isExpired` → 토큰 만료 여부
+- `kAuth.isExpiringSoon()` → 만료 임박 여부 (기본 5분)
+- `kAuth.expiresAt` → 토큰 만료 시간
+- `kAuth.expiresIn` → 토큰 남은 시간
+
 ### 백엔드 연동
 - **AuthTokens**: 액세스/리프레시/ID 토큰 및 만료시간
 - **OnSignInCallback**: 로그인 성공 후 콜백 (백엔드 JWT 발급용)
 - **OnSignOutCallback**: 로그아웃 콜백 (JWT 무효화용)
 
-### 자동 로그인
+### 자동 로그인 & 자동 갱신
 - **SecureSessionStorage**: 기본 암호화 저장소 (flutter_secure_storage 기반)
 - **KAuthSessionStorage**: 세션 저장소 인터페이스 (커스텀 구현용)
 - **InMemorySessionStorage**: 테스트용 메모리 저장소
-- **KAuthSession**: 저장된 세션 데이터
+- **autoRefresh**: 앱 포그라운드 복귀 시 토큰 자동 갱신 (v0.5.6+)
 
 ### 설정 클래스
 - **KAuthConfig**: 전체 설정 컨테이너
@@ -88,6 +110,12 @@ test/
 | naver    | O | O | scope 미지원, 개발자센터에서 수집항목 설정 |
 | google   | O | O | iOS는 iosClientId 필요 |
 | apple    | X | X | iOS 13+/macOS만, 첫 로그인시만 이름 제공 |
+
+## 버전 호환성
+
+| k_auth | kakao_flutter_sdk | flutter_naver_login | google_sign_in | sign_in_with_apple |
+|--------|-------------------|---------------------|----------------|--------------------|
+| 0.5.x  | 1.10.x            | 2.1.x               | 7.2.x          | 7.0.x              |
 
 ## 개발 명령어
 
@@ -130,21 +158,34 @@ flutter test test/widgets_test.dart  # 위젯 테스트
 #### 1. 기본 초기화 (권장 - KAuth.init)
 
 ```dart
-// 한 줄로 초기화 + SecureStorage + 자동 로그인
-final kAuth = await KAuth.init(
-  kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
-  naver: NaverConfig(
-    clientId: 'YOUR_NAVER_CLIENT_ID',
-    clientSecret: 'YOUR_NAVER_CLIENT_SECRET',
-    appName: 'My App',
-  ),
-  google: GoogleConfig(),
-  apple: AppleConfig(),
-);
+import 'package:flutter/material.dart';
+import 'package:k_auth/k_auth.dart';
 
-// 이미 로그인되어 있으면 바로 사용자 정보 접근 가능
-if (kAuth.isSignedIn) {
-  print('환영합니다, ${kAuth.name}!');
+late final KAuth kAuth;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 한 줄로 초기화 + SecureStorage + 자동 로그인 + 토큰 자동 갱신
+  kAuth = await KAuth.init(
+    kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
+    naver: NaverConfig(
+      clientId: 'YOUR_NAVER_CLIENT_ID',
+      clientSecret: 'YOUR_NAVER_CLIENT_SECRET',
+      appName: 'My App',
+    ),
+    google: GoogleConfig(),
+    apple: AppleConfig(),
+    autoRestore: true,   // 자동 로그인 (기본값: true)
+    autoRefresh: true,   // 토큰 자동 갱신 (기본값: true)
+  );
+
+  // 이미 로그인되어 있으면 바로 사용자 정보 접근 가능
+  if (kAuth.isSignedIn) {
+    print('환영합니다, ${kAuth.name}!');
+  }
+
+  runApp(MyApp());
 }
 ```
 
@@ -155,9 +196,11 @@ final kAuth = KAuth(
   config: KAuthConfig(
     kakao: KakaoConfig(appKey: 'YOUR_KAKAO_APP_KEY'),
   ),
+  storage: SecureSessionStorage(),  // 커스텀 저장소
+  autoRefresh: true,
 );
 
-await kAuth.initialize();
+await kAuth.initialize(autoRestore: true);
 ```
 
 #### 2. 로그인 처리 (3가지 방법)
@@ -261,12 +304,36 @@ Row(children: [
 ])
 ```
 
+#### 5. 토큰 자동 갱신 (v0.5.6+)
+
+```dart
+// KAuth.init()에서 autoRefresh: true (기본값)
+// → 앱이 포그라운드로 돌아올 때 토큰 상태 확인 후 자동 갱신
+
+// 수동 갱신이 필요한 경우
+if (kAuth.isExpiringSoon()) {
+  final result = await kAuth.refreshToken();
+  result.fold(
+    onSuccess: (_) => print('토큰 갱신 성공'),
+    onFailure: (f) => print('토큰 갱신 실패: ${f.message}'),
+  );
+}
+
+// 토큰 상태 확인
+print('만료됨: ${kAuth.isExpired}');
+print('곧 만료: ${kAuth.isExpiringSoon()}');  // 5분 이내
+print('만료 시간: ${kAuth.expiresAt}');
+print('남은 시간: ${kAuth.expiresIn}');
+```
+
 ### 참고 파일
 
 AI 코드 생성 시 참고할 파일들:
 - **PATTERNS.md** - 모든 주요 패턴과 예제 (AI 전용)
 - **example/lib/main.dart** - 프로덕션 예제 (Demo 모드 포함)
 - **.vscode/k_auth.code-snippets** - VSCode 스니펫
+- **docs/SETUP.md** - 플랫폼별 설정 가이드
+- **docs/TROUBLESHOOTING.md** - 문제 해결 가이드
 
 ### 주의사항
 
@@ -288,10 +355,8 @@ await kAuth.refreshToken(AuthProvider.apple); // ❌ Apple은 토큰 갱신 미�
 #### ✅ 이렇게 하세요 (베스트 프랙티스)
 
 ```dart
-// 1. 반드시 initialize() 먼저 호출
-final kAuth = KAuth(config: config);
-await kAuth.initialize();
-await kAuth.signIn(AuthProvider.kakao); // ✅
+// 1. KAuth.init() 사용 (권장) 또는 반드시 initialize() 먼저 호출
+final kAuth = await KAuth.init(kakao: KakaoConfig(appKey: 'xxx')); // ✅
 
 // 2. 항상 fold/when 사용 (타입 안전)
 final result = await kAuth.signIn(AuthProvider.kakao);
@@ -310,7 +375,11 @@ if (kAuth.currentProvider?.supportsTokenRefresh ?? false) {
 
 ```dart
 // 초기화 (권장)
-final kAuth = await KAuth.init(kakao: KakaoConfig(appKey: 'xxx'));
+final kAuth = await KAuth.init(
+  kakao: KakaoConfig(appKey: 'xxx'),
+  autoRestore: true,   // 자동 로그인
+  autoRefresh: true,   // 토큰 자동 갱신
+);
 
 // 초기화 (기존 방식)
 await kAuth.initialize();
@@ -343,4 +412,10 @@ kAuth.isSignedIn
 kAuth.currentUser
 kAuth.currentProvider
 kAuth.configuredProviders
+
+// 토큰 상태 (v0.5.6+)
+kAuth.isExpired
+kAuth.isExpiringSoon()
+kAuth.expiresAt
+kAuth.expiresIn
 ```
