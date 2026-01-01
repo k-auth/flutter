@@ -152,11 +152,7 @@ print(user.provider.name.toUpperCase());
 
 ### Added
 
-- **CLI**: `dart run k_auth` - 대화형 설정 도우미
-  - Provider 선택 및 앱 키 입력
-  - `AndroidManifest.xml`, `Info.plist` 자동 수정
-  - `lib/k_auth_config.dart` 설정 파일 생성
-  - `dart run k_auth doctor` - 설정 진단
+- **CLI**: `dart run k_auth` - 설정 진단 도구
 - **API**: `KAuth.init()` 팩토리 메서드 - 한 줄 초기화 + 자동 세션 복원
 - **API**: 편의 getter 추가 - `userId`, `name`, `email`, `avatar`
 - **Model**: `KAuthFailure` 클래스 - 실패 정보를 담는 데이터 클래스
