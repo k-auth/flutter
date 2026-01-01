@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.6] - 2026-01
+
+### Added
+
+- **Core**: `autoRefresh` 파라미터 - 토큰 자동 갱신 (Supabase 스타일)
+  - `KAuth.init()`에서 기본값 `true`
+  - 앱이 포그라운드로 돌아올 때 자동으로 토큰 갱신
+- **Getter**: `expiresAt` - 토큰 만료 시간
+- **Getter**: `expiresIn` - 토큰 남은 시간 (Duration)
+- **Method**: `isExpiringSoon([Duration threshold])` - 만료 임박 여부 (기본 5분)
+- **Getter**: `isExpired` - 토큰 만료 여부
+
 ## [0.5.5] - 2025-01
 
 ### Improved
