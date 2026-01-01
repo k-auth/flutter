@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5] - 2025-01
+
+### Improved
+
+- **Refactor**: Provider 에러 처리 공통화
+  - `ErrorMapper.toFailure()`, `handleException()` 메서드 추가
+  - 모든 Provider의 중복 에러 처리 코드 제거 (-76줄)
+- **Security**: `kDebugMode` 민감정보 노출 제거 - 디버그 정보는 로거로만 출력
+- **Safety**: `NaverProvider` null-assertion 제거 - account null 시 안전한 에러 반환
+
+### Fixed
+
+- **CI**: pub.dev OIDC 인증 설정 추가
+
 ## [0.5.4] - 2025-12
 
 ### Added
