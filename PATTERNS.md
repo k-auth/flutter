@@ -27,6 +27,7 @@ if (result.success) print('환영합니다, ${kAuth.name}!');
 | [#4 화면 전환](#패턴-4-화면-전환) | 로그인/홈 자동 전환 | ⭐⭐ |
 | [#5 에러 처리](#패턴-5-에러-처리) | 5가지 방법 | ⭐ |
 | [#6 버튼 위젯](#패턴-6-버튼-위젯-사용) | 공식 디자인 버튼 | ⭐ |
+| [#7 토큰 자동 갱신](#패턴-7-토큰-자동-갱신) | 앱 포그라운드 복귀 시 | ⭐ |
 | [안티패턴](#안티패턴) | 하지 말아야 할 것 | - |
 | [빠른 참고](#빠른-참고) | API 레퍼런스 | - |
 
@@ -544,6 +545,72 @@ Row(
 
 ---
 
+## 패턴 7: 토큰 자동 갱신
+
+**사용 케이스**: 앱이 포그라운드로 돌아올 때 토큰 자동 갱신 (v0.5.6+)
+
+### 기본 사용 (권장)
+
+```dart
+// KAuth.init()에서 autoRefresh: true (기본값)
+// → 앱이 포그라운드로 돌아올 때 토큰 상태 확인 후 자동 갱신
+final kAuth = await KAuth.init(
+  kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
+  autoRefresh: true,   // 기본값
+);
+```
+
+### 토큰 상태 확인
+
+```dart
+// 만료 여부
+if (kAuth.isExpired) {
+  print('토큰이 만료되었습니다');
+}
+
+// 만료 임박 여부 (기본 5분 이내)
+if (kAuth.isExpiringSoon()) {
+  print('토큰이 곧 만료됩니다');
+}
+
+// 커스텀 threshold
+if (kAuth.isExpiringSoon(const Duration(minutes: 10))) {
+  print('10분 이내 만료');
+}
+
+// 만료 시간/남은 시간
+print('만료 시간: ${kAuth.expiresAt}');   // DateTime?
+print('남은 시간: ${kAuth.expiresIn}');   // Duration?
+```
+
+### 수동 토큰 갱신
+
+```dart
+if (kAuth.isExpiringSoon()) {
+  final result = await kAuth.refreshToken();
+  result.fold(
+    onSuccess: (_) => print('토큰 갱신 성공'),
+    onFailure: (failure) {
+      if (failure.isTokenExpired) {
+        // 재로그인 필요
+        kAuth.signOut();
+      }
+    },
+  );
+}
+```
+
+### 갱신 가능 여부 확인
+
+```dart
+// Apple은 토큰 갱신 미지원
+if (kAuth.currentProvider?.supportsTokenRefresh == true) {
+  await kAuth.refreshToken();
+}
+```
+
+---
+
 ## 안티패턴
 
 ### ❌ 잘못된 방법
@@ -658,6 +725,16 @@ kAuth.currentProvider             // 현재 Provider
 kAuth.serverToken                 // 백엔드 JWT 토큰
 kAuth.configuredProviders         // 설정된 Provider 목록
 kAuth.isConfigured(provider)      // 특정 Provider 설정 여부
+```
+
+### 토큰 상태 확인 (v0.5.6+)
+
+```dart
+kAuth.isExpired                   // 토큰 만료 여부
+kAuth.isExpiringSoon()            // 만료 임박 여부 (기본 5분)
+kAuth.isExpiringSoon(Duration)    // 커스텀 threshold
+kAuth.expiresAt                   // 만료 시간 (DateTime?)
+kAuth.expiresIn                   // 남은 시간 (Duration?)
 ```
 
 ---

@@ -301,6 +301,13 @@ print(kAuth.serverToken);  // 백엔드에서 받은 JWT
 ### 토큰 갱신
 
 ```dart
+// 토큰 상태 확인 (v0.5.6+)
+kAuth.isExpired         // 만료 여부
+kAuth.isExpiringSoon()  // 만료 임박 (기본 5분)
+kAuth.expiresAt         // 만료 시간 (DateTime?)
+kAuth.expiresIn         // 남은 시간 (Duration?)
+
+// 수동 갱신
 if (kAuth.isExpiringSoon()) {
   final result = await kAuth.refreshToken();
   result.fold(
@@ -313,11 +320,18 @@ if (kAuth.isExpiringSoon()) {
 ### 편의 Getter
 
 ```dart
+// 사용자 정보
 kAuth.userId      // currentUser?.id
 kAuth.name        // currentUser?.displayName
 kAuth.email       // currentUser?.email
 kAuth.avatar      // currentUser?.avatar
 kAuth.isSignedIn  // 로그인 여부
+
+// 토큰 상태 (v0.5.6+)
+kAuth.isExpired         // 토큰 만료 여부
+kAuth.isExpiringSoon()  // 만료 임박 여부
+kAuth.expiresAt         // 토큰 만료 시간
+kAuth.expiresIn         // 토큰 남은 시간
 ```
 
 ---

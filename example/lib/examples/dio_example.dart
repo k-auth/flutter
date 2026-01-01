@@ -350,9 +350,10 @@ Authorization: Bearer $tokenPreview
             if (kAuth.currentProvider?.supportsTokenRefresh == true)
               OutlinedButton.icon(
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   final result = await kAuth.refreshToken();
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text(
                           result.success ? '토큰 갱신 성공' : '토큰 갱신 실패',

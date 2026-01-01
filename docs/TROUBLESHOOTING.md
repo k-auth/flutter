@@ -37,7 +37,7 @@ print(result.prettyPrint());
 CLI로 진단:
 
 ```bash
-dart run k_auth doctor
+dart run k_auth
 ```
 
 ---
