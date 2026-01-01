@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze & Test
@@ -31,6 +35,12 @@ jobs:
 
       - name: Run tests
         run: flutter test --coverage
+
+      - name: Analyze example app
+        run: |
+          cd example
+          flutter pub get
+          dart analyze --fatal-infos
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

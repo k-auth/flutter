@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     name: Publish Package
@@ -14,6 +18,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify version tag
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          PUBSPEC_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
+            echo "Error: 버전 불일치 - 태그($TAG_VERSION) != pubspec($PUBSPEC_VERSION)"
+            exit 1
+          fi
+          echo "버전 일치: $TAG_VERSION"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
