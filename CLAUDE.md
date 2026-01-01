@@ -14,15 +14,15 @@
 ## CLI 도구
 
 ```bash
-dart run k_auth          # 초기 설정 (대화형)
-dart run k_auth doctor   # 설정 진단
+dart run k_auth          # 설정 진단 (기본)
+dart run k_auth help     # 도움말
 ```
 
 ## 프로젝트 구조
 
 ```
 bin/
-└── k_auth.dart              # CLI 도구 (dart run k_auth)
+└── k_auth.dart              # CLI 설정 진단 도구
 
 lib/
 ├── k_auth.dart              # 메인 엔트리포인트 (KAuth, AuthTokens)

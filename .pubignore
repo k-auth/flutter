@@ -1,10 +1,7 @@
-# 작업 중인 문서
-docs/
-
 # 개발 도구
 widgetbook/
 build/
 coverage/
 
-# 예제 앱
-example/
+# 생성된 API 문서 (pub.dev가 자동 생성)
+doc/

@@ -2,7 +2,7 @@
 
 K-Auth를 사용하기 위한 iOS/Android 플랫폼별 설정 가이드입니다.
 
-> **팁**: `dart run k_auth` CLI 도구를 사용하면 대부분의 설정을 자동으로 처리할 수 있습니다.
+> **팁**: `dart run k_auth` 명령어로 현재 설정 상태를 확인하고 누락된 설정을 찾을 수 있습니다.
 
 ## 목차
 
@@ -201,7 +201,7 @@ keytool -exportcert -alias {YOUR_ALIAS} -keystore {YOUR_KEYSTORE_PATH} | openssl
 설정이 올바른지 확인하려면:
 
 ```bash
-dart run k_auth doctor
+dart run k_auth
 ```
 
 또는 코드에서:

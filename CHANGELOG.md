@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `simulateTokenExpiry()` - 토큰 만료 시뮬레이션
   - `simulateAuthStateChange()` - 상태 변경 이벤트 발생
 
+### Changed
+
+- **CLI**: `dart run k_auth` 명령어 개선
+  - `init` 대화형 설정 제거, `doctor` 설정 진단을 기본 명령어로 변경
+  - 비전공자도 이해하기 쉬운 친절한 가이드 제공
+  - 누락된 설정별 파일 위치, 해결 방법, 복사 가능한 코드 안내
+
 ### Improved
 
 - **Error**: Google/Naver 에러 매핑 안정화

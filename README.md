@@ -71,20 +71,13 @@
 flutter pub add k_auth
 ```
 
-### CLI로 빠른 설정 (권장)
+### 설정 진단
 
 ```bash
 dart run k_auth
 ```
 
-대화형으로 Provider를 선택하고 앱 키를 입력하면:
-- `AndroidManifest.xml`, `Info.plist` 자동 수정
-- `lib/k_auth_config.dart` 설정 파일 생성
-
-설정 진단:
-```bash
-dart run k_auth doctor
-```
+현재 프로젝트의 설정 상태를 확인하고, 누락된 설정이 있으면 해결 방법을 안내합니다.
 
 ---
 
