@@ -197,6 +197,17 @@ void main() {
       expect(error.code, ErrorCodes.userCancelled);
     });
 
+    test('interrupted → USER_CANCELLED', () {
+      final exception = GoogleSignInException(
+        code: GoogleSignInExceptionCode.interrupted,
+        description: '로그인 중단됨',
+      );
+
+      final error = ErrorMapper.google(exception);
+
+      expect(error.code, ErrorCodes.userCancelled);
+    });
+
     test('network 키워드 → NETWORK_ERROR', () {
       final exception = GoogleSignInException(
         code: GoogleSignInExceptionCode.unknownError,
@@ -479,6 +490,127 @@ void main() {
       final errors = config.validate(targetPlatform: TargetPlatform.iOS);
 
       expect(errors, isNotEmpty);
+    });
+  });
+
+  // ============================================
+  // 엣지 케이스 테스트
+  // ============================================
+  group('ErrorMapper 엣지 케이스', () {
+    group('Google', () {
+      test('알 수 없는 에러도 안전하게 처리', () {
+        final exception = GoogleSignInException(
+          code: GoogleSignInExceptionCode.unknownError,
+          description: '완전히 새로운 에러 메시지 xyz123',
+        );
+
+        final error = ErrorMapper.google(exception);
+
+        expect(error.code, isNotNull);
+        expect(error.code, ErrorCodes.googleSignInFailed);
+        expect(error.message, isNotEmpty);
+      });
+
+      test('대소문자 혼합 에러 메시지', () {
+        final exception = GoogleSignInException(
+          code: GoogleSignInExceptionCode.unknownError,
+          description: 'NETWORK Connection Failed',
+        );
+
+        final error = ErrorMapper.google(exception);
+
+        expect(error.code, ErrorCodes.networkError);
+      });
+
+      test('특수문자 포함 에러 메시지', () {
+        final exception = GoogleSignInException(
+          code: GoogleSignInExceptionCode.unknownError,
+          description: 'Error: [network] connection failed (code: -1)',
+        );
+
+        final error = ErrorMapper.google(exception);
+
+        expect(error.code, ErrorCodes.networkError);
+      });
+    });
+
+    group('Naver', () {
+      test('특수문자 포함 에러 메시지', () {
+        final error = ErrorMapper.naver('Error: [네트워크] 연결 실패 (code: -1)');
+
+        expect(error.code, ErrorCodes.networkError);
+      });
+
+      test('혼합 언어 에러 메시지', () {
+        final error = ErrorMapper.naver('Connection 시간 초과');
+
+        expect(error.code, ErrorCodes.networkError);
+      });
+
+      test('대소문자 혼합 에러 메시지', () {
+        final error = ErrorMapper.naver('USER CANCELLED the login');
+
+        expect(error.code, ErrorCodes.userCancelled);
+      });
+
+      test('URL과 invalid가 함께 있으면 콜백 에러 우선', () {
+        // "invalid redirect url"은 콜백 에러로 분류되어야 함
+        final error = ErrorMapper.naver('invalid redirect url');
+
+        expect(error.code, ErrorCodes.naverInvalidCallback);
+      });
+
+      test('빈 문자열은 기본 에러 반환', () {
+        final error = ErrorMapper.naver('');
+
+        expect(error.code, ErrorCodes.loginFailed);
+        expect(error.hint, contains('다시 시도'));
+      });
+
+      test('공백만 있는 문자열', () {
+        final error = ErrorMapper.naver('   ');
+
+        expect(error.code, ErrorCodes.loginFailed);
+      });
+
+      test('originalError가 전달됨', () {
+        final originalException = Exception('원본 에러');
+        final error =
+            ErrorMapper.naver('취소됨', originalError: originalException);
+
+        expect(error.originalError, originalException);
+      });
+    });
+
+    group('공통', () {
+      test('handleException이 로그 출력 후 에러 반환', () {
+        final result = ErrorMapper.handleException(
+          AuthProvider.kakao,
+          Exception('테스트 에러'),
+          operation: '테스트 작업',
+          errorCode: ErrorCodes.loginFailed,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, ErrorCodes.loginFailed);
+        expect(result.errorMessage, contains('카카오'));
+        expect(result.errorMessage, contains('테스트 작업'));
+      });
+
+      test('toFailure가 KAuthError를 AuthResult로 변환', () {
+        final kError = KAuthError(
+          code: ErrorCodes.userCancelled,
+          message: '테스트 메시지',
+          hint: '테스트 힌트',
+        );
+
+        final result = ErrorMapper.toFailure(AuthProvider.naver, kError);
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, ErrorCodes.userCancelled);
+        expect(result.errorMessage, '테스트 메시지');
+        expect(result.errorHint, '테스트 힌트');
+      });
     });
   });
 }

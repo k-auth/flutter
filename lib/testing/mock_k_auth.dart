@@ -440,4 +440,38 @@ class MockKAuth {
       hint: '인터넷 연결 상태를 확인해주세요.',
     );
   }
+
+  /// 타임아웃 에러로 설정
+  void setTimeout() {
+    setFailure(
+      code: 'TIMEOUT',
+      message: '요청 시간이 초과되었습니다.',
+      hint: '다시 시도해주세요.',
+    );
+  }
+
+  /// 토큰 만료 시뮬레이션
+  void simulateTokenExpiry() {
+    setFailure(
+      code: 'TOKEN_EXPIRED',
+      message: '인증 정보가 만료되었습니다.',
+      hint: '다시 로그인해주세요.',
+    );
+  }
+
+  /// 상태 변경 이벤트 발생 (Widget 테스트용)
+  ///
+  /// ```dart
+  /// // Widget이 상태 변경에 반응하는지 테스트
+  /// await tester.pumpWidget(MyApp(kAuth: mockKAuth));
+  ///
+  /// mockKAuth.simulateAuthStateChange(newUser);
+  /// await tester.pump();
+  ///
+  /// expect(find.byType(HomeScreen), findsOneWidget);
+  /// ```
+  void simulateAuthStateChange(KAuthUser? user) {
+    _currentUser = user;
+    _authStateController.add(user);
+  }
 }

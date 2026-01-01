@@ -2,7 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.5.6] - 2026-01
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- **Testing**: `MockKAuth` 헬퍼 메서드 추가
+  - `setTimeout()` - 타임아웃 에러 시뮬레이션
+  - `simulateTokenExpiry()` - 토큰 만료 시뮬레이션
+  - `simulateAuthStateChange()` - 상태 변경 이벤트 발생
+
+### Improved
+
+- **Error**: Google/Naver 에러 매핑 안정화
+  - 패턴을 `_GoogleErrorPatterns`, `_NaverErrorPatterns` 상수로 분리
+  - Google: `interrupted`, `clientConfigurationError`, `providerConfigurationError` 에러 코드 지원
+  - 엣지 케이스 테스트 14개 추가
+- **Docs**: Provider dartdoc 대폭 강화
+  - Apple: 토큰 갱신 불가, 연결 해제 서버 전용, 이름 첫 로그인만 등 제약사항
+  - Naver: scope 미지원, 자동 토큰 갱신, 플랫폼별 설정 가이드
+  - Google: iosClientId 필수, refreshToken 미제공, 서버 연동 설정
+
+## [0.5.6] - 2026-01-02
 
 ### Added
 

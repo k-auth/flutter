@@ -265,6 +265,40 @@ void main() {
         expect(result.errorCode, 'NETWORK_ERROR');
       });
 
+      test('setTimeout', () async {
+        mockKAuth.setTimeout();
+
+        final result = await mockKAuth.signIn(AuthProvider.kakao);
+
+        expect(result.success, false);
+        expect(result.errorCode, 'TIMEOUT');
+      });
+
+      test('simulateTokenExpiry', () async {
+        mockKAuth.simulateTokenExpiry();
+
+        final result = await mockKAuth.signIn(AuthProvider.kakao);
+
+        expect(result.success, false);
+        expect(result.errorCode, 'TOKEN_EXPIRED');
+      });
+
+      test('simulateAuthStateChange', () async {
+        final states = <KAuthUser?>[];
+        final subscription = mockKAuth.authStateChanges.listen(states.add);
+
+        final user =
+            KAuthUser(id: 'state_change', provider: AuthProvider.naver);
+        mockKAuth.simulateAuthStateChange(user);
+        await Future.delayed(Duration.zero);
+
+        expect(states.length, 1);
+        expect(states.first?.id, 'state_change');
+        expect(mockKAuth.currentUser?.id, 'state_change');
+
+        await subscription.cancel();
+      });
+
       test('reset', () async {
         mockKAuth.mockUser =
             KAuthUser(id: 'user', provider: AuthProvider.kakao);

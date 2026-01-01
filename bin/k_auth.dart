@@ -1,12 +1,11 @@
 #!/usr/bin/env dart
 
-/// K-Auth CLI - 한국 앱을 위한 소셜 로그인 설정 도구
+/// K-Auth CLI - 설정 진단 도구
 
-import 'dart:async';
 import 'dart:io';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ANSI
+// ANSI Colors
 // ═══════════════════════════════════════════════════════════════════════════
 
 const _reset = '\x1B[0m';
@@ -14,350 +13,411 @@ const _bold = '\x1B[1m';
 const _dim = '\x1B[2m';
 const _green = '\x1B[32m';
 const _yellow = '\x1B[33m';
-const _cyan = '\x1B[36m';
 const _red = '\x1B[31m';
-const _magenta = '\x1B[35m';
-
-// Cursor
-const _cursorUp = '\x1B[A';
-const _cursorDown = '\x1B[B';
-const _cursorHide = '\x1B[?25l';
-const _cursorShow = '\x1B[?25h';
-const _clearLine = '\x1B[2K';
-
-String _cursorTo(int row) => '\x1B[${row}G';
-String _moveUp(int n) => '\x1B[${n}A';
+const _cyan = '\x1B[36m';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Main
 // ═══════════════════════════════════════════════════════════════════════════
 
-void main(List<String> args) async {
-  final cmd = args.isEmpty ? 'init' : args[0];
+void main(List<String> args) {
+  final cmd = args.isEmpty ? 'doctor' : args[0];
 
   switch (cmd) {
-    case 'init' || 'setup':
-      await _runInit();
-    case 'doctor' || 'check':
-      await _runDoctor();
+    case 'doctor' || 'check' || '':
+      _runDoctor();
     case 'help' || '--help' || '-h':
       _printHelp();
     case 'version' || '--version' || '-v':
-      print('${_dim}k_auth $_reset${_bold}0.5.3$_reset');
+      _printVersion();
     default:
-      _log('error', '알 수 없는 명령어: $cmd');
+      print('');
+      print('  $_red✗$_reset  알 수 없는 명령어: $cmd');
+      print('     $_dim→ dart run k_auth help$_reset');
+      print('');
       exit(1);
   }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Init
-// ═══════════════════════════════════════════════════════════════════════════
-
-Future<void> _runInit() async {
-  print('');
-  print('  $_cyan$_bold K-Auth$_reset $_dim·$_reset 소셜 로그인 설정');
-  print('');
-
-  // 프로젝트 확인
-  if (!File('pubspec.yaml').existsSync()) {
-    _log('error', 'Flutter 프로젝트를 찾을 수 없습니다');
-    _log('hint', '프로젝트 루트 디렉토리에서 실행해주세요');
-    print('');
-    exit(1);
-  }
-
-  // Provider 선택 (인터랙티브)
-  final providers = ['카카오', '네이버', '구글', '애플'];
-  final selected = await _multiSelect(
-    '로그인 방식을 선택하세요',
-    providers,
-  );
-
-  if (selected.isEmpty) {
-    print('');
-    _log('warn', '선택된 항목이 없습니다');
-    print('');
-    exit(0);
-  }
-
-  print('');
-
-  // 설정 수집
-  final config = <String, String>{};
-
-  if (selected.contains(0)) {
-    _section('카카오');
-    _hint('developers.kakao.com → 내 애플리케이션 → 앱 키');
-    config['kakao_app_key'] = _prompt('Native App Key');
-    print('');
-  }
-
-  if (selected.contains(1)) {
-    _section('네이버');
-    _hint('developers.naver.com → 애플리케이션 → 개요');
-    config['naver_client_id'] = _prompt('Client ID');
-    config['naver_client_secret'] = _prompt('Client Secret');
-    config['naver_app_name'] = _prompt('앱 이름', required: false);
-    print('');
-  }
-
-  if (selected.contains(2)) {
-    _section('구글');
-    _hint('console.cloud.google.com → OAuth 2.0 클라이언트');
-    config['google_ios_client_id'] = _prompt('iOS Client ID', required: false);
-    print('');
-  }
-
-  if (selected.contains(3)) {
-    _section('애플');
-    _hint('Xcode → Signing & Capabilities → + Sign in with Apple');
-    config['apple'] = 'true';
-    print('');
-  }
-
-  // 적용
-  final spinner = _Spinner('설정 적용 중');
-  spinner.start();
-
-  final results = await _applyConfig(config);
-
-  spinner.stop();
-
-  // 결과
-  final success = results.where((r) => r.ok).toList();
-  final skipped = results.where((r) => !r.ok).toList();
-
-  if (success.isNotEmpty) {
-    _log('success', '완료');
-    print('');
-    for (final r in success) {
-      print('  $_dim│$_reset  $_green●$_reset ${r.file}');
-    }
-  }
-
-  if (skipped.isNotEmpty) {
-    print('');
-    for (final r in skipped) {
-      print(
-          '  $_dim│$_reset  $_dim○$_reset ${r.file} $_dim(${r.reason})$_reset');
-    }
-  }
-
-  print('');
-  print('  $_dim┌$_reset  다음 단계');
-  print('  $_dim│$_reset');
-  print(
-      '  $_dim│$_reset  ${_dim}1.$_reset $_bold.gitignore$_reset에 k_auth_config.dart 추가');
-  print('  $_dim│$_reset  ${_dim}2.$_reset flutter pub get');
-  print('  $_dim│$_reset  ${_dim}3.$_reset 앱 실행 및 테스트');
-  print('  $_dim│$_reset');
-  print('  $_dim└$_reset');
-  print('');
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Interactive Multi-Select
-// ═══════════════════════════════════════════════════════════════════════════
-
-Future<Set<int>> _multiSelect(String title, List<String> options) async {
-  final selected = <int>{};
-  var cursor = 0;
-
-  void render({bool final_ = false}) {
-    // Move cursor up to redraw
-    if (!final_) {
-      stdout.write(_cursorHide);
-    }
-
-    for (var i = 0; i < options.length; i++) {
-      stdout.write(_clearLine);
-      final isSelected = selected.contains(i);
-      final isCursor = cursor == i;
-
-      if (final_) {
-        // 최종 결과 표시
-        if (isSelected) {
-          print('  $_green◼$_reset  ${options[i]}');
-        }
-      } else {
-        // 선택 중
-        final checkbox = isSelected ? '$_green◼$_reset' : '$_dim◻$_reset';
-        final label = isCursor ? '$_cyan${options[i]}$_reset' : options[i];
-        final pointer = isCursor ? '$_cyan❯$_reset' : ' ';
-        print('  $pointer $checkbox  $label');
-      }
-    }
-
-    if (!final_) {
-      // 안내 메시지
-      stdout.write(_clearLine);
-      print('');
-      stdout.write(_clearLine);
-      print('  $_dim↑↓ 이동  space 선택  enter 완료$_reset');
-
-      // 커서를 다시 위로
-      stdout.write(_moveUp(options.length + 2));
-    }
-  }
-
-  print('  $_dim┌$_reset  $title');
-  print('  $_dim│$_reset');
-
-  // 초기 렌더링
-  render();
-
-  // Raw mode로 키 입력 받기
-  stdin.echoMode = false;
-  stdin.lineMode = false;
-
-  try {
-    while (true) {
-      final byte = stdin.readByteSync();
-
-      if (byte == 27) {
-        // Escape sequence (화살표 키)
-        final next1 = stdin.readByteSync();
-        final next2 = stdin.readByteSync();
-
-        if (next1 == 91) {
-          if (next2 == 65) {
-            // Up
-            cursor = (cursor - 1 + options.length) % options.length;
-          } else if (next2 == 66) {
-            // Down
-            cursor = (cursor + 1) % options.length;
-          }
-        }
-      } else if (byte == 32) {
-        // Space - 토글
-        if (selected.contains(cursor)) {
-          selected.remove(cursor);
-        } else {
-          selected.add(cursor);
-        }
-      } else if (byte == 13 || byte == 10) {
-        // Enter - 완료
-        break;
-      } else if (byte == 3) {
-        // Ctrl+C
-        stdout.write(_cursorShow);
-        exit(0);
-      }
-
-      render();
-    }
-  } finally {
-    stdin.echoMode = true;
-    stdin.lineMode = true;
-    stdout.write(_cursorShow);
-  }
-
-  // 최종 결과로 다시 그리기
-  for (var i = 0; i < options.length + 2; i++) {
-    stdout.write(_clearLine);
-    if (i < options.length + 1) stdout.write('$_cursorDown');
-  }
-  stdout.write(_moveUp(options.length + 2));
-
-  render(final_: true);
-
-  // 선택 안된 항목 수만큼 줄 정리
-  final unselectedCount = options.length - selected.length;
-  if (unselectedCount > 0 && selected.isNotEmpty) {
-    // 이미 선택된 것만 출력됨
-  } else if (selected.isEmpty) {
-    stdout.write(_moveUp(options.length));
-  }
-
-  print('  $_dim└$_reset');
-
-  return selected;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Doctor
 // ═══════════════════════════════════════════════════════════════════════════
 
-Future<void> _runDoctor() async {
+void _runDoctor() {
   print('');
-  print('  $_cyan$_bold K-Auth$_reset $_dim·$_reset 설정 진단');
+  print('  $_bold$_cyan K-Auth$_reset 설정 진단');
   print('');
 
-  var issues = 0;
-
-  // Dependencies
-  print('  $_dim┌$_reset  의존성');
-  final pubspec = File('pubspec.yaml');
-  if (!pubspec.existsSync()) {
-    print('  $_dim│$_reset  $_red✗$_reset pubspec.yaml 없음');
-    issues++;
-  } else {
-    final content = pubspec.readAsStringSync();
-    if (content.contains('k_auth:')) {
-      print('  $_dim│$_reset  $_green✓$_reset k_auth');
-    } else {
-      print('  $_dim│$_reset  $_red✗$_reset k_auth 미설치');
-      print('  $_dim│$_reset    $_dim→ flutter pub add k_auth$_reset');
-      issues++;
-    }
+  // 프로젝트 확인
+  if (!File('pubspec.yaml').existsSync()) {
+    print('  $_red✗$_reset  Flutter 프로젝트 폴더에서 실행해주세요');
+    print('');
+    print('     ${_dim}cd your_flutter_project$_reset');
+    print('     ${_dim}dart run k_auth$_reset');
+    print('');
+    exit(1);
   }
-  print('  $_dim└$_reset');
-  print('');
 
-  // Android
-  print('  $_dim┌$_reset  Android');
-  final manifest = File('android/app/src/main/AndroidManifest.xml');
-  if (!manifest.existsSync()) {
-    print('  $_dim│$_reset  $_dim○$_reset AndroidManifest.xml 없음');
-  } else {
-    final content = manifest.readAsStringSync();
-    _checkItem('카카오', content.contains('kakao'));
-    _checkItem('네이버', content.contains('naver'));
-  }
-  print('  $_dim└$_reset');
-  print('');
+  final results = <_CheckResult>[];
 
-  // iOS
-  print('  $_dim┌$_reset  iOS');
-  final plist = File('ios/Runner/Info.plist');
-  if (!plist.existsSync()) {
-    print('  $_dim│$_reset  $_dim○$_reset Info.plist 없음');
-  } else {
-    final content = plist.readAsStringSync();
-    _checkItem('카카오', content.contains('kakao'));
-    _checkItem('네이버', content.contains('naversearchapp'));
-    _checkItem('구글', content.contains('com.googleusercontent.apps'));
-  }
-  print('  $_dim└$_reset');
-  print('');
+  // 패키지 체크
+  results.add(_checkPackage());
 
-  // Config
-  print('  $_dim┌$_reset  설정 파일');
-  final configFile = File('lib/k_auth_config.dart');
-  if (configFile.existsSync()) {
-    print('  $_dim│$_reset  $_green✓$_reset k_auth_config.dart');
-  } else {
-    print('  $_dim│$_reset  $_dim○$_reset k_auth_config.dart $_dim(선택)$_reset');
-  }
-  print('  $_dim└$_reset');
-  print('');
+  // 플랫폼 파일 읽기
+  final androidManifest = _readFile('android/app/src/main/AndroidManifest.xml');
+  final infoPlist = _readFile('ios/Runner/Info.plist');
 
-  if (issues == 0) {
-    _log('success', '문제 없음');
-  } else {
-    _log('warn', '$issues개 문제 발견');
-    print('  $_dim│$_reset  $_dim→ dart run k_auth$_reset');
+  // 플랫폼 폴더 존재 여부
+  final hasAndroid = androidManifest != null;
+  final hasIos = infoPlist != null;
+
+  if (!hasAndroid && !hasIos) {
+    results.add(_CheckResult(
+      category: '플랫폼',
+      name: 'Android / iOS',
+      ok: false,
+      guide: _Guide(
+        what: 'Android, iOS 폴더가 없습니다',
+        how: '터미널에서 다음 명령어를 실행하세요',
+        code: 'flutter create .',
+      ),
+    ));
   }
-  print('');
+
+  // Provider별 체크
+  if (hasAndroid || hasIos) {
+    results.addAll(_checkKakao(androidManifest, infoPlist));
+    results.addAll(_checkNaver(androidManifest, infoPlist));
+    results.addAll(_checkGoogle(androidManifest, infoPlist));
+    results.addAll(_checkApple(infoPlist));
+  }
+
+  // 결과 출력
+  _printResults(results);
 }
 
-void _checkItem(String name, bool ok) {
-  if (ok) {
-    print('  $_dim│$_reset  $_green✓$_reset $name');
-  } else {
-    print('  $_dim│$_reset  $_dim○$_reset $name');
+// ═══════════════════════════════════════════════════════════════════════════
+// Checks
+// ═══════════════════════════════════════════════════════════════════════════
+
+_CheckResult _checkPackage() {
+  final pubspec = File('pubspec.yaml');
+  final content = pubspec.readAsStringSync();
+
+  if (content.contains('k_auth:')) {
+    return _CheckResult(
+      category: '패키지',
+      name: 'k_auth',
+      ok: true,
+    );
   }
+
+  return _CheckResult(
+    category: '패키지',
+    name: 'k_auth',
+    ok: false,
+    guide: _Guide(
+      what: 'k_auth 패키지가 설치되지 않았습니다',
+      how: '터미널에서 다음 명령어를 실행하세요',
+      code: 'flutter pub add k_auth',
+    ),
+  );
+}
+
+List<_CheckResult> _checkKakao(String? android, String? ios) {
+  final results = <_CheckResult>[];
+
+  // Android
+  if (android != null) {
+    final hasKakao = android.contains('kakao') &&
+        android.contains('AuthCodeHandlerActivity');
+
+    results.add(_CheckResult(
+      category: '카카오',
+      name: 'Android',
+      ok: hasKakao,
+      guide: hasKakao
+          ? null
+          : _Guide(
+              what: '카카오 로그인을 위한 Android 설정이 필요합니다',
+              where: 'android/app/src/main/AndroidManifest.xml',
+              how: '<application> 태그 안에 아래 코드를 붙여넣기',
+              code: '''
+<activity
+    android:name="com.kakao.sdk.flutter.AuthCodeHandlerActivity"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="kakao{앱키}" android:host="oauth" />
+    </intent-filter>
+</activity>''',
+              tip: '{앱키} 부분을 카카오 Native App Key로 교체하세요\n'
+                  '      앱키 확인: developers.kakao.com → 내 애플리케이션 → 앱 키',
+            ),
+    ));
+  }
+
+  // iOS
+  if (ios != null) {
+    final hasUrlScheme = ios.contains('kakao');
+    final hasQueryScheme = ios.contains('kakaokompassauth');
+    final ok = hasUrlScheme && hasQueryScheme;
+
+    results.add(_CheckResult(
+      category: '카카오',
+      name: 'iOS',
+      ok: ok,
+      guide: ok
+          ? null
+          : _Guide(
+              what: '카카오 로그인을 위한 iOS 설정이 필요합니다',
+              where: 'ios/Runner/Info.plist',
+              how: '</dict> 바로 위에 아래 코드를 붙여넣기',
+              code: '''
+<key>LSApplicationQueriesSchemes</key>
+<array>
+    <string>kakaokompassauth</string>
+    <string>kakaolink</string>
+</array>
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>kakao{앱키}</string>
+        </array>
+    </dict>
+</array>''',
+              tip: '{앱키} 부분을 카카오 Native App Key로 교체하세요',
+            ),
+    ));
+  }
+
+  return results;
+}
+
+List<_CheckResult> _checkNaver(String? android, String? ios) {
+  final results = <_CheckResult>[];
+
+  // Android
+  if (android != null) {
+    results.add(_CheckResult(
+      category: '네이버',
+      name: 'Android',
+      ok: true,
+    ));
+  }
+
+  // iOS
+  if (ios != null) {
+    final hasQueryScheme = ios.contains('naversearchapp');
+
+    results.add(_CheckResult(
+      category: '네이버',
+      name: 'iOS',
+      ok: hasQueryScheme,
+      guide: hasQueryScheme
+          ? null
+          : _Guide(
+              what: '네이버 로그인을 위한 iOS 설정이 필요합니다',
+              where: 'ios/Runner/Info.plist',
+              how: '</dict> 바로 위에 아래 코드를 붙여넣기',
+              code: '''
+<key>LSApplicationQueriesSchemes</key>
+<array>
+    <string>naversearchapp</string>
+    <string>naversearchthirdlogin</string>
+</array>
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>{URL스킴}</string>
+        </array>
+    </dict>
+</array>''',
+              tip: '{URL스킴}은 네이버 개발자센터에서 설정한 값입니다\n'
+                  '      확인: developers.naver.com → 애플리케이션 → API 설정',
+            ),
+    ));
+  }
+
+  return results;
+}
+
+List<_CheckResult> _checkGoogle(String? android, String? ios) {
+  final results = <_CheckResult>[];
+
+  // Android
+  if (android != null) {
+    final hasGoogleServices =
+        File('android/app/google-services.json').existsSync();
+
+    results.add(_CheckResult(
+      category: '구글',
+      name: 'Android',
+      ok: hasGoogleServices,
+      guide: hasGoogleServices
+          ? null
+          : _Guide(
+              what: '구글 로그인을 위한 설정 파일이 필요합니다',
+              where: 'android/app/google-services.json',
+              how: '파일을 다운로드하여 위 경로에 저장하세요',
+              tip: '다운로드: console.firebase.google.com\n'
+                  '      → 프로젝트 설정 → Android 앱 → google-services.json',
+            ),
+    ));
+  }
+
+  // iOS
+  if (ios != null) {
+    final hasGoogleScheme = ios.contains('com.googleusercontent.apps');
+
+    results.add(_CheckResult(
+      category: '구글',
+      name: 'iOS',
+      ok: hasGoogleScheme,
+      guide: hasGoogleScheme
+          ? null
+          : _Guide(
+              what: '구글 로그인을 위한 iOS 설정이 필요합니다',
+              where: 'ios/Runner/Info.plist',
+              how: '</dict> 바로 위에 아래 코드를 붙여넣기',
+              code: '''
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>com.googleusercontent.apps.{클라이언트ID}</string>
+        </array>
+    </dict>
+</array>''',
+              tip: '{클라이언트ID}는 Firebase/GCP 콘솔에서 확인하세요\n'
+                  '      iOS 클라이언트 ID의 앞부분 (숫자-문자.apps... 형식)',
+            ),
+    ));
+  }
+
+  return results;
+}
+
+List<_CheckResult> _checkApple(String? ios) {
+  final results = <_CheckResult>[];
+
+  if (ios == null) return results;
+
+  final entitlements = _readFile('ios/Runner/Runner.entitlements');
+  final hasApple =
+      entitlements?.contains('com.apple.developer.applesignin') ?? false;
+
+  results.add(_CheckResult(
+    category: '애플',
+    name: 'iOS',
+    ok: hasApple,
+    guide: hasApple
+        ? null
+        : _Guide(
+            what: '애플 로그인을 위한 설정이 필요합니다',
+            how: 'Xcode에서 설정해야 합니다 (코드 수정 아님)',
+            code: '''
+1. Xcode로 ios/Runner.xcworkspace 열기
+2. 왼쪽에서 Runner 선택
+3. Signing & Capabilities 탭 클릭
+4. + Capability 버튼 클릭
+5. "Sign in with Apple" 검색 후 추가''',
+            tip: '시뮬레이터에서는 테스트 불가, 실제 기기 필요',
+          ),
+  ));
+
+  return results;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Output
+// ═══════════════════════════════════════════════════════════════════════════
+
+void _printResults(List<_CheckResult> results) {
+  final grouped = <String, List<_CheckResult>>{};
+  for (final r in results) {
+    grouped.putIfAbsent(r.category, () => []).add(r);
+  }
+
+  var hasIssues = false;
+  final issues = <_CheckResult>[];
+
+  // 상태 출력
+  for (final category in grouped.keys) {
+    final items = grouped[category]!;
+    print('  $_bold$category$_reset');
+
+    for (final item in items) {
+      if (item.ok) {
+        print('    $_green✓$_reset ${item.name}');
+      } else {
+        print('    $_red✗$_reset ${item.name}');
+        hasIssues = true;
+        if (item.guide != null) issues.add(item);
+      }
+    }
+    print('');
+  }
+
+  // 해결 가이드 출력
+  if (issues.isNotEmpty) {
+    print('  $_cyan$_bold━━━ 해결 방법 ━━━$_reset');
+    print('');
+
+    for (var i = 0; i < issues.length; i++) {
+      final issue = issues[i];
+      final guide = issue.guide!;
+      final num = i + 1;
+
+      print('  $_yellow$num. ${issue.category} ${issue.name}$_reset');
+      print('');
+      print('     ${guide.what}');
+      if (guide.where != null) {
+        print('');
+        print('     $_dim파일:$_reset ${guide.where}');
+      }
+      print('');
+      print('     $_dim방법:$_reset ${guide.how}');
+
+      if (guide.code != null) {
+        print('');
+        print('     $_dim┌──────────────────────────────────────$_reset');
+        for (final line in guide.code!.split('\n')) {
+          print('     $_dim│$_reset $line');
+        }
+        print('     $_dim└──────────────────────────────────────$_reset');
+      }
+
+      if (guide.tip != null) {
+        print('');
+        print('     $_dim💡 ${guide.tip}$_reset');
+      }
+
+      if (i < issues.length - 1) {
+        print('');
+        print('  $_dim───────────────────────────────────────────$_reset');
+      }
+      print('');
+    }
+  }
+
+  // 요약
+  print('  ─────────────────────────────────────────');
+  if (hasIssues) {
+    final count = issues.length;
+    print('  $_yellow⚠$_reset  $count개 설정이 필요합니다');
+    print('     $_dim위 가이드를 따라 설정해주세요$_reset');
+  } else {
+    print('  $_green✓$_reset  모든 설정이 완료되었습니다!');
+  }
+  print('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -367,263 +427,64 @@ void _checkItem(String name, bool ok) {
 void _printHelp() {
   print('''
 
-  $_cyan$_bold K-Auth CLI$_reset
+  $_bold$_cyan K-Auth CLI$_reset - 소셜 로그인 설정 도우미
 
-  ${_bold}사용법$_reset
-    dart run k_auth ${_dim}[명령어]$_reset
+  $_bold사용법$_reset
+    dart run k_auth
 
-  ${_bold}명령어$_reset
-    ${_cyan}init$_reset     대화형 설정 가이드 ${_dim}(기본)$_reset
-    ${_cyan}doctor$_reset   프로젝트 설정 진단
-    ${_cyan}help$_reset     도움말
+  $_bold명령어$_reset
+    ${_cyan}doctor$_reset    현재 설정 상태 확인 $_dim(기본)$_reset
+    ${_cyan}help$_reset      이 도움말 보기
+    ${_cyan}version$_reset   버전 확인
 
-  ${_bold}예시$_reset
-    ${_dim}\$ dart run k_auth$_reset
-    ${_dim}\$ dart run k_auth doctor$_reset
+  $_bold문제가 있나요?$_reset
+    $_dim→ https://github.com/user/k-auth/issues$_reset
 
 ''');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// UI Helpers
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _log(String type, String msg) {
-  final icon = switch (type) {
-    'success' => '$_green✓$_reset',
-    'error' => '$_red✗$_reset',
-    'warn' => '$_yellow!$_reset',
-    'hint' => '$_dim→$_reset',
-    _ => ' ',
-  };
-  print('  $icon  $msg');
-}
-
-void _section(String title) {
-  print('  $_dim┌$_reset  $_bold$title$_reset');
-}
-
-void _hint(String text) {
-  print('  $_dim│$_reset  $_dim$text$_reset');
-}
-
-String _prompt(String label, {bool required = true}) {
-  stdout.write('  $_dim│$_reset  $label: ');
-  final value = stdin.readLineSync()?.trim() ?? '';
-
-  if (required && value.isEmpty) {
-    print('  $_dim│$_reset  $_red↑ 필수 항목입니다$_reset');
-    return _prompt(label, required: required);
-  }
-
-  return value;
+void _printVersion() {
+  print('');
+  print('  $_bold$_cyan K-Auth$_reset ${_dim}v$_reset${_bold}0.5.6$_reset');
+  print('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Spinner
+// Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _Spinner {
-  final String message;
-  Timer? _timer;
-  int _index = 0;
-  static const _frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-
-  _Spinner(this.message);
-
-  void start() {
-    _timer = Timer.periodic(Duration(milliseconds: 80), (_) {
-      stdout.write('\r  $_magenta${_frames[_index]}$_reset  $message');
-      _index = (_index + 1) % _frames.length;
-    });
-  }
-
-  void stop() {
-    _timer?.cancel();
-    stdout.write('\r${' ' * (message.length + 10)}\r');
-  }
+String? _readFile(String path) {
+  final file = File(path);
+  if (!file.existsSync()) return null;
+  return file.readAsStringSync();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Config Generation
-// ═══════════════════════════════════════════════════════════════════════════
+class _Guide {
+  final String what;
+  final String? where;
+  final String how;
+  final String? code;
+  final String? tip;
 
-class _Result {
-  final String file;
+  _Guide({
+    required this.what,
+    this.where,
+    required this.how,
+    this.code,
+    this.tip,
+  });
+}
+
+class _CheckResult {
+  final String category;
+  final String name;
   final bool ok;
-  final String? reason;
-  _Result(this.file, {this.ok = true, this.reason});
-}
+  final _Guide? guide;
 
-Future<List<_Result>> _applyConfig(Map<String, String> config) async {
-  final results = <_Result>[];
-
-  results.add(await _generateConfigFile(config));
-
-  if (config.containsKey('kakao_app_key')) {
-    results.add(await _modifyAndroid(config));
-  }
-
-  if (config.containsKey('kakao_app_key') ||
-      config.containsKey('google_ios_client_id')) {
-    results.add(await _modifyIos(config));
-  }
-
-  return results;
-}
-
-Future<_Result> _generateConfigFile(Map<String, String> config) async {
-  final buf = StringBuffer();
-
-  buf.writeln('// K-Auth 설정');
-  buf.writeln('// 생성: dart run k_auth');
-  buf.writeln('// ⚠️ .gitignore에 추가하세요');
-  buf.writeln('');
-  buf.writeln("import 'package:k_auth/k_auth.dart';");
-  buf.writeln('');
-  buf.writeln('Future<KAuth> createKAuth() async {');
-  buf.writeln('  return await KAuth.init(');
-
-  if (config.containsKey('kakao_app_key')) {
-    buf.writeln(
-        "    kakao: KakaoConfig(appKey: '${config['kakao_app_key']}'),");
-  }
-  if (config.containsKey('naver_client_id')) {
-    buf.writeln('    naver: NaverConfig(');
-    buf.writeln("      clientId: '${config['naver_client_id']}',");
-    buf.writeln(
-        "      clientSecret: '${config['naver_client_secret'] ?? ''}',");
-    if (config['naver_app_name']?.isNotEmpty ?? false) {
-      buf.writeln("      appName: '${config['naver_app_name']}',");
-    }
-    buf.writeln('    ),');
-  }
-  if (config.containsKey('google_ios_client_id')) {
-    final id = config['google_ios_client_id'];
-    if (id != null && id.isNotEmpty) {
-      buf.writeln("    google: GoogleConfig(iosClientId: '$id'),");
-    } else {
-      buf.writeln('    google: GoogleConfig(),');
-    }
-  }
-  if (config.containsKey('apple')) {
-    buf.writeln('    apple: AppleConfig(),');
-  }
-
-  buf.writeln('  );');
-  buf.writeln('}');
-
-  try {
-    if (!Directory('lib').existsSync()) {
-      return _Result('lib/k_auth_config.dart', ok: false, reason: 'lib 폴더 없음');
-    }
-    File('lib/k_auth_config.dart').writeAsStringSync(buf.toString());
-    return _Result('lib/k_auth_config.dart');
-  } catch (e) {
-    return _Result('lib/k_auth_config.dart', ok: false, reason: '$e');
-  }
-}
-
-Future<_Result> _modifyAndroid(Map<String, String> config) async {
-  final file = File('android/app/src/main/AndroidManifest.xml');
-  if (!file.existsSync()) {
-    return _Result('AndroidManifest.xml', ok: false, reason: '파일 없음');
-  }
-
-  try {
-    var content = file.readAsStringSync();
-    final kakaoKey = config['kakao_app_key'];
-
-    if (kakaoKey != null && !content.contains('kakao$kakaoKey')) {
-      final activity = '''
-        <!-- K-Auth: 카카오 -->
-        <activity
-            android:name="com.kakao.sdk.flutter.AuthCodeHandlerActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="kakao$kakaoKey" android:host="oauth" />
-            </intent-filter>
-        </activity>''';
-
-      content = content.replaceFirst(
-          '</application>', '$activity\n    </application>');
-      file.writeAsStringSync(content);
-      return _Result('AndroidManifest.xml');
-    }
-
-    return _Result('AndroidManifest.xml', ok: false, reason: '이미 설정됨');
-  } catch (e) {
-    return _Result('AndroidManifest.xml', ok: false, reason: '$e');
-  }
-}
-
-Future<_Result> _modifyIos(Map<String, String> config) async {
-  final file = File('ios/Runner/Info.plist');
-  if (!file.existsSync()) {
-    return _Result('Info.plist', ok: false, reason: '파일 없음');
-  }
-
-  try {
-    var content = file.readAsStringSync();
-    var modified = false;
-
-    // URL Schemes
-    final schemes = <String>[];
-    final kakaoKey = config['kakao_app_key'];
-    if (kakaoKey != null) schemes.add('kakao$kakaoKey');
-
-    final googleId = config['google_ios_client_id'];
-    if (googleId != null && googleId.isNotEmpty) {
-      schemes.add(googleId.split('.').reversed.join('.'));
-    }
-
-    if (schemes.isNotEmpty && !content.contains('CFBundleURLSchemes')) {
-      final xml = '''
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-${schemes.map((s) => '\t\t\t\t<string>$s</string>').join('\n')}
-			</array>
-		</dict>
-	</array>''';
-
-      final i = content.lastIndexOf('</dict>');
-      if (i != -1) {
-        content = '${content.substring(0, i)}$xml\n${content.substring(i)}';
-        modified = true;
-      }
-    }
-
-    // Query Schemes
-    if (kakaoKey != null && !content.contains('LSApplicationQueriesSchemes')) {
-      final xml = '''
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>kakaokompassauth</string>
-		<string>kakaolink</string>
-		<string>kakaoplus</string>
-		<string>naversearchapp</string>
-	</array>''';
-
-      final i = content.lastIndexOf('</dict>');
-      if (i != -1) {
-        content = '${content.substring(0, i)}$xml\n${content.substring(i)}';
-        modified = true;
-      }
-    }
-
-    if (modified) {
-      file.writeAsStringSync(content);
-      return _Result('Info.plist');
-    }
-
-    return _Result('Info.plist', ok: false, reason: '이미 설정됨');
-  } catch (e) {
-    return _Result('Info.plist', ok: false, reason: '$e');
-  }
+  _CheckResult({
+    required this.category,
+    required this.name,
+    required this.ok,
+    this.guide,
+  });
 }
