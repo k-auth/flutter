@@ -50,7 +50,7 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final token = kAuth.tokens?.accessToken;
+    final token = kAuth.lastResult?.accessToken;
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -81,7 +81,7 @@ class AuthInterceptor extends Interceptor {
 
     if (result.success) {
       // 갱신 성공 → 원래 요청 재시도
-      final newToken = kAuth.tokens?.accessToken;
+      final newToken = kAuth.lastResult?.accessToken;
       err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
 
       try {
@@ -156,7 +156,7 @@ void onRequest(RequestOptions options, RequestInterceptorHandler handler) async 
     }
   }
 
-  final token = kAuth.tokens?.accessToken;
+  final token = kAuth.lastResult?.accessToken;
   if (token != null) {
     options.headers['Authorization'] = 'Bearer $token';
   }

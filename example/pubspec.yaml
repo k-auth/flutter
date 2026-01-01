@@ -12,6 +12,9 @@ dependencies:
     sdk: flutter
   k_auth:
     path: ../
+  # 통합 예제용 (선택)
+  dio: ^5.4.0
+  flutter_riverpod: ^2.4.0
 
 dev_dependencies:
   flutter_test:
