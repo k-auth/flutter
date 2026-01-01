@@ -77,7 +77,7 @@ export 'widgets/login_buttons.dart';
 
 // Main
 import 'dart:async';
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/widgets.dart';
 import 'models/auth_config.dart';
 import 'models/auth_result.dart';
 import 'models/k_auth_user.dart';
@@ -157,7 +157,7 @@ typedef OnSignOutCallback = Future<void> Function(AuthProvider provider);
 /// ## 간단한 사용법 (권장)
 ///
 /// ```dart
-/// // 한 줄로 초기화 + 자동 로그인
+/// // 한 줄로 초기화 + 자동 로그인 + 자동 갱신
 /// final kAuth = await KAuth.init(
 ///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
 ///   google: GoogleConfig(),
@@ -197,7 +197,7 @@ typedef OnSignOutCallback = Future<void> Function(AuthProvider provider);
 ///   },
 /// );
 /// ```
-class KAuth {
+class KAuth with WidgetsBindingObserver {
   /// 설정
   final KAuthConfig config;
 
@@ -221,6 +221,12 @@ class KAuth {
   /// 자동 로그인을 위해 세션을 저장/복원합니다.
   final KAuthSessionStorage? storage;
 
+  /// 토큰 자동 갱신 여부
+  ///
+  /// true이면 앱이 포그라운드로 돌아올 때 토큰 상태를 확인하고
+  /// 만료 임박 시 자동으로 갱신합니다.
+  final bool autoRefresh;
+
   /// 세션 저장 키
   static const String _sessionKey = 'k_auth_session';
 
@@ -231,6 +237,7 @@ class KAuth {
   AuthResult? _lastResult;
   String? _serverToken;
   Completer<AuthResult>? _signInLock;
+  bool _isRefreshing = false;
 
   /// 인증 상태 변화 스트림 컨트롤러
   final _authStateController = StreamController<KAuthUser?>.broadcast();
@@ -242,12 +249,14 @@ class KAuth {
   /// [onSignIn]: 로그인 성공 콜백 (선택)
   /// [onSignOut]: 로그아웃 콜백 (선택)
   /// [storage]: 세션 저장소 (자동 로그인용, 선택)
+  /// [autoRefresh]: 토큰 자동 갱신 여부 (기본: false)
   KAuth({
     required this.config,
     this.validateOnInitialize = true,
     this.onSignIn,
     this.onSignOut,
     this.storage,
+    this.autoRefresh = false,
   });
 
   /// KAuth 초기화 (권장)
@@ -301,6 +310,7 @@ class KAuth {
     OnSignOutCallback? onSignOut,
     // 옵션
     bool autoRestore = true,
+    bool autoRefresh = true,
     bool validateOnInitialize = true,
   }) async {
     // config가 있으면 그대로 사용, 없으면 개별 설정으로 생성
@@ -318,6 +328,7 @@ class KAuth {
       onSignIn: onSignIn,
       onSignOut: onSignOut,
       storage: SecureSessionStorage(),
+      autoRefresh: autoRefresh,
     );
 
     await kAuth.initialize(autoRestore: autoRestore);
@@ -367,6 +378,35 @@ class KAuth {
   ///
   /// [onSignIn] 콜백의 반환값이 저장됩니다.
   String? get serverToken => _serverToken;
+
+  /// 토큰 만료 시간
+  DateTime? get expiresAt => _lastResult?.expiresAt;
+
+  /// 토큰 남은 시간
+  ///
+  /// 만료 시간이 없거나 이미 만료되었으면 [Duration.zero]를 반환합니다.
+  Duration get expiresIn {
+    final exp = expiresAt;
+    if (exp == null) return Duration.zero;
+    final remaining = exp.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  /// 토큰이 곧 만료되는지 확인
+  ///
+  /// 기본값은 5분 이내 만료 예정이면 true를 반환합니다.
+  bool isExpiringSoon([Duration threshold = const Duration(minutes: 5)]) {
+    final exp = expiresAt;
+    if (exp == null) return false;
+    return DateTime.now().isAfter(exp.subtract(threshold));
+  }
+
+  /// 토큰이 만료되었는지 확인
+  bool get isExpired {
+    final exp = expiresAt;
+    if (exp == null) return false;
+    return DateTime.now().isAfter(exp);
+  }
 
   /// 인증 상태 변화 스트림
   ///
@@ -511,6 +551,53 @@ class KAuth {
     // 자동 로그인 (세션 복원)
     if (autoRestore && storage != null) {
       await _restoreSession();
+    }
+
+    // 자동 갱신 (앱 생명주기 감지)
+    if (autoRefresh) {
+      WidgetsBinding.instance.addObserver(this);
+      KAuthLogger.debug('토큰 자동 갱신 활성화');
+
+      // 복원된 세션이 만료 임박이면 즉시 갱신
+      if (isSignedIn && isExpiringSoon()) {
+        _refreshIfNeeded();
+      }
+    }
+  }
+
+  /// 앱 생명주기 변화 감지
+  ///
+  /// 앱이 포그라운드로 돌아올 때 토큰 상태를 확인하고
+  /// 필요시 자동으로 갱신합니다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && autoRefresh) {
+      _refreshIfNeeded();
+    }
+  }
+
+  /// 토큰 갱신이 필요하면 자동 갱신
+  Future<void> _refreshIfNeeded() async {
+    if (!isSignedIn || _isRefreshing) return;
+
+    final provider = currentProvider;
+    if (provider == null || !provider.supportsTokenRefresh) return;
+
+    // 만료 5분 전부터 갱신
+    if (!isExpiringSoon()) return;
+
+    _isRefreshing = true;
+    KAuthLogger.debug('토큰 자동 갱신 시작', provider: provider.name);
+
+    try {
+      final result = await refreshToken();
+      if (result.success) {
+        KAuthLogger.info('토큰 자동 갱신 성공', provider: provider.name);
+      } else {
+        KAuthLogger.warning('토큰 자동 갱신 실패', provider: provider.name);
+      }
+    } finally {
+      _isRefreshing = false;
     }
   }
 
@@ -1061,6 +1148,9 @@ class KAuth {
   /// }
   /// ```
   void dispose() {
+    if (autoRefresh) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
     _authStateController.close();
   }
 

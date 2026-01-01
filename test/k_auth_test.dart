@@ -2317,6 +2317,242 @@ void main() {
       expect(options.fullName, false);
     });
   });
+
+  // ============================================
+  // KAuth 토큰 만료 및 자동 갱신 테스트
+  // ============================================
+
+  group('KAuth Token Expiration', () {
+    late KAuth kAuth;
+    late MockAuthProvider mockKakao;
+
+    setUp(() {
+      kAuth = KAuth(
+        config: KAuthConfig(
+          kakao: KakaoConfig(appKey: 'test_key'),
+        ),
+      );
+      mockKakao = MockAuthProvider(AuthProvider.kakao);
+    });
+
+    tearDown(() {
+      kAuth.dispose();
+    });
+
+    test('expiresAt가 토큰 만료 시간을 반환한다', () async {
+      final expiresAt = DateTime.now().add(const Duration(hours: 1));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.expiresAt, expiresAt);
+    });
+
+    test('expiresAt가 로그인 전에는 null이다', () {
+      expect(kAuth.expiresAt, isNull);
+    });
+
+    test('expiresIn이 남은 시간을 반환한다', () async {
+      final expiresAt = DateTime.now().add(const Duration(hours: 1));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      // 약 1시간 남음 (오차 범위 내)
+      expect(kAuth.expiresIn.inMinutes, greaterThanOrEqualTo(59));
+      expect(kAuth.expiresIn.inMinutes, lessThanOrEqualTo(60));
+    });
+
+    test('expiresIn이 만료된 경우 Duration.zero를 반환한다', () async {
+      final expiresAt = DateTime.now().subtract(const Duration(hours: 1));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.expiresIn, Duration.zero);
+    });
+
+    test('expiresIn이 로그인 전에는 Duration.zero이다', () {
+      expect(kAuth.expiresIn, Duration.zero);
+    });
+
+    test('isExpiringSoon이 5분 이내 만료 시 true를 반환한다', () async {
+      final expiresAt = DateTime.now().add(const Duration(minutes: 3));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.isExpiringSoon(), true);
+    });
+
+    test('isExpiringSoon이 5분 이상 남았으면 false를 반환한다', () async {
+      final expiresAt = DateTime.now().add(const Duration(minutes: 10));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.isExpiringSoon(), false);
+    });
+
+    test('isExpiringSoon이 커스텀 threshold를 지원한다', () async {
+      final expiresAt = DateTime.now().add(const Duration(minutes: 8));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.isExpiringSoon(const Duration(minutes: 5)), false);
+      expect(kAuth.isExpiringSoon(const Duration(minutes: 10)), true);
+    });
+
+    test('isExpiringSoon이 expiresAt가 null이면 false를 반환한다', () {
+      expect(kAuth.isExpiringSoon(), false);
+    });
+
+    test('isExpired가 만료된 토큰에서 true를 반환한다', () async {
+      final expiresAt = DateTime.now().subtract(const Duration(hours: 1));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.isExpired, true);
+    });
+
+    test('isExpired가 유효한 토큰에서 false를 반환한다', () async {
+      final expiresAt = DateTime.now().add(const Duration(hours: 1));
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(id: '1', provider: AuthProvider.kakao),
+        accessToken: 'token',
+        expiresAt: expiresAt,
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.isExpired, false);
+    });
+
+    test('isExpired가 expiresAt가 null이면 false를 반환한다', () {
+      expect(kAuth.isExpired, false);
+    });
+  });
+
+  group('KAuth Auto Refresh', () {
+    late MockAuthProvider mockKakao;
+
+    test('autoRefresh 기본값은 false이다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+      );
+
+      expect(kAuth.autoRefresh, false);
+      kAuth.dispose();
+    });
+
+    test('autoRefresh를 true로 설정할 수 있다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+        autoRefresh: true,
+      );
+
+      expect(kAuth.autoRefresh, true);
+      // autoRefresh가 true여도 dispose는 WidgetsBinding 없이 에러 없이 동작해야 함
+      // 단, TestWidgetsFlutterBinding가 필요하므로 testWidgets로 테스트
+    });
+
+    testWidgets('autoRefresh가 true면 dispose시 observer가 제거된다', (tester) async {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+        autoRefresh: true,
+      );
+
+      // dispose 호출이 에러 없이 완료되어야 함
+      expect(() => kAuth.dispose(), returnsNormally);
+    });
+
+    test('편의 getter들이 currentUser와 동기화된다', () async {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+      );
+      mockKakao = MockAuthProvider(AuthProvider.kakao);
+      mockKakao.signInResult = AuthResult.success(
+        provider: AuthProvider.kakao,
+        user: KAuthUser(
+          id: 'user123',
+          name: '홍길동',
+          email: 'test@example.com',
+          avatar: 'https://example.com/avatar.jpg',
+          provider: AuthProvider.kakao,
+        ),
+        accessToken: 'token',
+      );
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      await kAuth.signIn(AuthProvider.kakao);
+
+      expect(kAuth.userId, 'user123');
+      expect(kAuth.name, '홍길동');
+      expect(kAuth.email, 'test@example.com');
+      expect(kAuth.avatar, 'https://example.com/avatar.jpg');
+
+      kAuth.dispose();
+    });
+
+    test('로그인 전 편의 getter들이 null을 반환한다', () {
+      final kAuth = KAuth(
+        config: KAuthConfig(kakao: KakaoConfig(appKey: 'key')),
+      );
+
+      expect(kAuth.userId, isNull);
+      expect(kAuth.name, isNull);
+      expect(kAuth.email, isNull);
+      expect(kAuth.avatar, isNull);
+
+      kAuth.dispose();
+    });
+  });
 }
 
 /// 테스트용 인메모리 세션 저장소
