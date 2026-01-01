@@ -66,6 +66,118 @@ void main() {
         expect(cancelled.shouldIgnore, true);
         expect(otherError.shouldIgnore, false);
       });
+
+      test('isConfigError가 설정 관련 에러에서 true를 반환한다', () {
+        final configErrors = [
+          KAuthFailure.fromCode(ErrorCodes.providerNotConfigured),
+          KAuthFailure.fromCode(ErrorCodes.missingAppKey),
+          KAuthFailure.fromCode(ErrorCodes.missingClientId),
+          KAuthFailure.fromCode(ErrorCodes.missingClientSecret),
+          KAuthFailure.fromCode(ErrorCodes.invalidConfig),
+          KAuthFailure.fromCode(ErrorCodes.noProviderConfigured),
+        ];
+
+        for (final error in configErrors) {
+          expect(error.isConfigError, true, reason: 'code: ${error.code}');
+        }
+
+        final otherError = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+        expect(otherError.isConfigError, false);
+      });
+
+      test('isTemporary가 canRetry와 동일하다', () {
+        final networkError = KAuthFailure.fromCode(ErrorCodes.networkError);
+        final timeoutError = KAuthFailure.fromCode(ErrorCodes.timeout);
+        final otherError = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+
+        expect(networkError.isTemporary, networkError.canRetry);
+        expect(timeoutError.isTemporary, timeoutError.canRetry);
+        expect(otherError.isTemporary, otherError.canRetry);
+      });
+
+      test('isPermanent가 재시도/무시 불가능한 에러에서 true를 반환한다', () {
+        final permanentErrors = [
+          KAuthFailure.fromCode(ErrorCodes.loginFailed),
+          KAuthFailure.fromCode(ErrorCodes.invalidConfig),
+        ];
+
+        for (final error in permanentErrors) {
+          expect(error.isPermanent, true, reason: 'code: ${error.code}');
+        }
+
+        // 재시도 가능하면 false
+        final networkError = KAuthFailure.fromCode(ErrorCodes.networkError);
+        expect(networkError.isPermanent, false);
+
+        // 무시 가능하면 false
+        final cancelled = KAuthFailure.fromCode(ErrorCodes.userCancelled);
+        expect(cancelled.isPermanent, false);
+      });
+
+      test('requiresReauth가 재인증 필요 에러에서 true를 반환한다', () {
+        final reauthErrors = [
+          KAuthFailure.fromCode(ErrorCodes.tokenExpired),
+          KAuthFailure.fromCode(ErrorCodes.refreshFailed),
+          KAuthFailure.fromCode(ErrorCodes.accessTokenError),
+        ];
+
+        for (final error in reauthErrors) {
+          expect(error.requiresReauth, true, reason: 'code: ${error.code}');
+        }
+
+        final otherError = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+        expect(otherError.requiresReauth, false);
+      });
+    });
+
+    group('severity', () {
+      test('취소 에러는 ignorable', () {
+        final cancelled = KAuthFailure.fromCode(ErrorCodes.userCancelled);
+        expect(cancelled.severity, ErrorSeverity.ignorable);
+      });
+
+      test('네트워크/타임아웃 에러는 retryable', () {
+        final networkError = KAuthFailure.fromCode(ErrorCodes.networkError);
+        final timeoutError = KAuthFailure.fromCode(ErrorCodes.timeout);
+
+        expect(networkError.severity, ErrorSeverity.retryable);
+        expect(timeoutError.severity, ErrorSeverity.retryable);
+      });
+
+      test('토큰 만료 에러는 authRequired', () {
+        final tokenExpired = KAuthFailure.fromCode(ErrorCodes.tokenExpired);
+        final refreshFailed = KAuthFailure.fromCode(ErrorCodes.refreshFailed);
+
+        expect(tokenExpired.severity, ErrorSeverity.authRequired);
+        expect(refreshFailed.severity, ErrorSeverity.authRequired);
+      });
+
+      test('설정/기타 에러는 fixRequired', () {
+        final configError = KAuthFailure.fromCode(ErrorCodes.invalidConfig);
+        final loginFailed = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+
+        expect(configError.severity, ErrorSeverity.fixRequired);
+        expect(loginFailed.severity, ErrorSeverity.fixRequired);
+      });
+
+      test('severity 우선순위: ignorable > retryable > authRequired > fixRequired',
+          () {
+        // shouldIgnore가 true면 ignorable (canRetry여도)
+        final cancelled = KAuthFailure.fromCode(ErrorCodes.userCancelled);
+        expect(cancelled.severity, ErrorSeverity.ignorable);
+
+        // canRetry가 true면 retryable
+        final networkError = KAuthFailure.fromCode(ErrorCodes.networkError);
+        expect(networkError.severity, ErrorSeverity.retryable);
+
+        // requiresReauth가 true면 authRequired
+        final tokenExpired = KAuthFailure.fromCode(ErrorCodes.tokenExpired);
+        expect(tokenExpired.severity, ErrorSeverity.authRequired);
+
+        // 나머지는 fixRequired
+        final loginFailed = KAuthFailure.fromCode(ErrorCodes.loginFailed);
+        expect(loginFailed.severity, ErrorSeverity.fixRequired);
+      });
     });
 
     group('displayMessage', () {
