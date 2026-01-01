@@ -1,11 +1,49 @@
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../models/auth_result.dart';
+import '../utils/logger.dart';
 import 'k_auth_error.dart';
 
 /// 각 Provider의 네이티브 에러를 KAuthError로 변환하는 매퍼
 class ErrorMapper {
   ErrorMapper._();
+
+  // ============================================
+  // 공통 에러 처리
+  // ============================================
+
+  /// KAuthError를 AuthResult.failure로 변환
+  static AuthResult toFailure(AuthProvider provider, KAuthError error) {
+    return AuthResult.failure(
+      provider: provider,
+      errorMessage: error.message,
+      errorCode: error.code,
+      errorHint: error.hint,
+    );
+  }
+
+  /// 알 수 없는 에러를 AuthResult.failure로 변환
+  ///
+  /// [operation]: 작업 이름 (로그인, 로그아웃, 토큰 갱신 등)
+  /// [errorCode]: 에러 코드 (기본값: ErrorCodes.loginFailed)
+  static AuthResult handleException(
+    AuthProvider provider,
+    Object error, {
+    required String operation,
+    String errorCode = ErrorCodes.loginFailed,
+  }) {
+    // 디버그 정보는 로거로만 출력 (보안)
+    KAuthLogger.error('${provider.displayName} $operation 실패', error: error);
+
+    final kError = KAuthError.fromCode(errorCode, originalError: error);
+    return AuthResult.failure(
+      provider: provider,
+      errorMessage: '${provider.displayName} $operation 실패',
+      errorCode: kError.code,
+      errorHint: kError.hint,
+    );
+  }
 
   // ============================================
   // Kakao

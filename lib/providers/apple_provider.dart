@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../errors/error_mapper.dart';
+import '../errors/k_auth_error.dart';
 import '../models/auth_config.dart';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
-import '../errors/k_auth_error.dart';
 import 'base_auth_provider.dart';
 
 /// 애플 로그인 Provider
@@ -33,12 +33,9 @@ class AppleProvider implements BaseAuthProvider {
     try {
       // 플랫폼 지원 확인
       if (!await isAvailable()) {
-        final error = KAuthError.fromCode(ErrorCodes.appleNotSupported);
-        return AuthResult.failure(
-          provider: AuthProvider.apple,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: error.hint,
+        return ErrorMapper.toFailure(
+          AuthProvider.apple,
+          KAuthError.fromCode(ErrorCodes.appleNotSupported),
         );
       }
 
@@ -60,47 +57,34 @@ class AppleProvider implements BaseAuthProvider {
         'state': credential.state,
       };
 
-      // KAuthUser 생성
-      final user = KAuthUser.fromApple(rawData);
-
       return AuthResult.success(
         provider: AuthProvider.apple,
-        user: user,
+        user: KAuthUser.fromApple(rawData),
         accessToken: credential.authorizationCode,
         idToken: credential.identityToken,
         rawData: rawData,
       );
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
-        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
-        return AuthResult.failure(
-          provider: AuthProvider.apple,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: error.hint,
+        return ErrorMapper.toFailure(
+          AuthProvider.apple,
+          KAuthError.fromCode(ErrorCodes.userCancelled),
         );
       }
-      final error = KAuthError.fromCode(
-        ErrorCodes.appleSignInFailed,
-        details: {'appleError': e.message},
-        originalError: e,
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.apple,
-        errorMessage: '애플 로그인 실패: ${e.message}',
-        errorCode: error.code,
-        errorHint: error.hint,
+      return ErrorMapper.toFailure(
+        AuthProvider.apple,
+        KAuthError.fromCode(
+          ErrorCodes.appleSignInFailed,
+          details: {'appleError': e.message},
+          originalError: e,
+        ),
       );
     } catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.appleSignInFailed,
-        originalError: e,
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.apple,
-        errorMessage: kDebugMode ? '애플 로그인 실패: $e' : '애플 로그인 실패',
-        errorCode: error.code,
-        errorHint: error.hint,
+      return ErrorMapper.handleException(
+        AuthProvider.apple,
+        e,
+        operation: '로그인',
+        errorCode: ErrorCodes.appleSignInFailed,
       );
     }
   }
@@ -121,23 +105,28 @@ class AppleProvider implements BaseAuthProvider {
   Future<AuthResult> unlink() async {
     // Apple은 클라이언트에서 연결 해제를 지원하지 않음
     // 서버에서 Apple REST API를 통해 처리해야 함
-    return AuthResult.failure(
-      provider: AuthProvider.apple,
-      errorMessage:
-          'Apple은 클라이언트에서 연결 해제를 지원하지 않습니다. 서버에서 Apple REST API를 통해 처리하세요.',
-      errorCode: ErrorCodes.providerNotSupported,
-      errorHint:
-          'https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens',
+    return ErrorMapper.toFailure(
+      AuthProvider.apple,
+      KAuthError(
+        code: ErrorCodes.providerNotSupported,
+        message: 'Apple은 클라이언트에서 연결 해제를 지원하지 않습니다.',
+        hint: '서버에서 Apple REST API를 통해 처리하세요.',
+        docs:
+            'https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens',
+      ),
     );
   }
 
   /// 애플 토큰 갱신 (지원하지 않음)
   @override
   Future<AuthResult> refreshToken() async {
-    return AuthResult.failure(
-      provider: AuthProvider.apple,
-      errorMessage: 'Apple은 토큰 갱신을 지원하지 않습니다.',
-      errorCode: ErrorCodes.providerNotSupported,
+    return ErrorMapper.toFailure(
+      AuthProvider.apple,
+      KAuthError(
+        code: ErrorCodes.providerNotSupported,
+        message: 'Apple은 토큰 갱신을 지원하지 않습니다.',
+        hint: '다시 로그인해주세요.',
+      ),
     );
   }
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../errors/error_mapper.dart';
@@ -69,12 +68,9 @@ class GoogleProvider implements BaseAuthProvider {
       // 실패하면 전체 로그인 플로우
       if (account == null) {
         if (!GoogleSignIn.instance.supportsAuthenticate()) {
-          final error = KAuthError.fromCode(ErrorCodes.platformNotSupported);
-          return AuthResult.failure(
-            provider: AuthProvider.google,
-            errorMessage: error.message,
-            errorCode: error.code,
-            errorHint: error.hint,
+          return ErrorMapper.toFailure(
+            AuthProvider.google,
+            KAuthError.fromCode(ErrorCodes.platformNotSupported),
           );
         }
         account = await GoogleSignIn.instance.authenticate();
@@ -82,17 +78,12 @@ class GoogleProvider implements BaseAuthProvider {
 
       return _buildResult(account);
     } on GoogleSignInException catch (e) {
-      final err = ErrorMapper.google(e);
-      return AuthResult.failure(
-        provider: AuthProvider.google,
-        errorMessage: err.message,
-        errorCode: err.code,
-        errorHint: err.hint,
-      );
+      return ErrorMapper.toFailure(AuthProvider.google, ErrorMapper.google(e));
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.google,
-        errorMessage: kDebugMode ? '구글 로그인 실패: $e' : '구글 로그인 실패',
+      return ErrorMapper.handleException(
+        AuthProvider.google,
+        e,
+        operation: '로그인',
         errorCode: ErrorCodes.googleSignInFailed,
       );
     }
@@ -103,14 +94,12 @@ class GoogleProvider implements BaseAuthProvider {
   Future<AuthResult> signOut() async {
     try {
       await GoogleSignIn.instance.signOut();
-      return AuthResult.success(
-        provider: AuthProvider.google,
-        user: null,
-      );
+      return AuthResult.success(provider: AuthProvider.google, user: null);
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.google,
-        errorMessage: kDebugMode ? '구글 로그아웃 실패: $e' : '구글 로그아웃 실패',
+      return ErrorMapper.handleException(
+        AuthProvider.google,
+        e,
+        operation: '로그아웃',
         errorCode: ErrorCodes.signOutFailed,
       );
     }
@@ -121,14 +110,12 @@ class GoogleProvider implements BaseAuthProvider {
   Future<AuthResult> unlink() async {
     try {
       await GoogleSignIn.instance.disconnect();
-      return AuthResult.success(
-        provider: AuthProvider.google,
-        user: null,
-      );
+      return AuthResult.success(provider: AuthProvider.google, user: null);
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.google,
-        errorMessage: kDebugMode ? '구글 연결 해제 실패: $e' : '구글 연결 해제 실패',
+      return ErrorMapper.handleException(
+        AuthProvider.google,
+        e,
+        operation: '연결 해제',
         errorCode: ErrorCodes.unlinkFailed,
       );
     }
@@ -146,26 +133,19 @@ class GoogleProvider implements BaseAuthProvider {
           await GoogleSignIn.instance.attemptLightweightAuthentication();
 
       if (account == null) {
-        final error = KAuthError.fromCode(ErrorCodes.tokenExpired);
-        return AuthResult.failure(
-          provider: AuthProvider.google,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: '다시 로그인해주세요.',
+        return ErrorMapper.toFailure(
+          AuthProvider.google,
+          KAuthError.fromCode(ErrorCodes.tokenExpired),
         );
       }
 
       return _buildResult(account);
     } catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.tokenExpired,
-        originalError: e,
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.google,
-        errorMessage: kDebugMode ? '구글 토큰 갱신 실패: $e' : '구글 토큰 갱신 실패',
-        errorCode: error.code,
-        errorHint: error.hint,
+      return ErrorMapper.handleException(
+        AuthProvider.google,
+        e,
+        operation: '토큰 갱신',
+        errorCode: ErrorCodes.refreshFailed,
       );
     }
   }

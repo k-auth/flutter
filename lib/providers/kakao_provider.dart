@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 
 import '../errors/error_mapper.dart';
@@ -60,26 +59,15 @@ class KakaoProvider implements BaseAuthProvider {
       final user = await kakao.UserApi.instance.me();
       return _buildResult(token, user);
     } on kakao.KakaoAuthException catch (e) {
-      final err = ErrorMapper.kakaoAuth(e);
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: err.message,
-        errorCode: err.code,
-        errorHint: err.hint,
-      );
+      return ErrorMapper.toFailure(
+          AuthProvider.kakao, ErrorMapper.kakaoAuth(e));
     } on kakao.KakaoApiException catch (e) {
-      final err = ErrorMapper.kakaoApi(e);
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: err.message,
-        errorCode: err.code,
-        errorHint: err.hint,
-      );
+      return ErrorMapper.toFailure(AuthProvider.kakao, ErrorMapper.kakaoApi(e));
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: kDebugMode ? '카카오 로그인 실패: $e' : '카카오 로그인 실패',
-        errorCode: ErrorCodes.loginFailed,
+      return ErrorMapper.handleException(
+        AuthProvider.kakao,
+        e,
+        operation: '로그인',
       );
     }
   }
@@ -89,14 +77,12 @@ class KakaoProvider implements BaseAuthProvider {
   Future<AuthResult> signOut() async {
     try {
       await kakao.UserApi.instance.logout();
-      return AuthResult.success(
-        provider: AuthProvider.kakao,
-        user: null,
-      );
+      return AuthResult.success(provider: AuthProvider.kakao, user: null);
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: kDebugMode ? '카카오 로그아웃 실패: $e' : '카카오 로그아웃 실패',
+      return ErrorMapper.handleException(
+        AuthProvider.kakao,
+        e,
+        operation: '로그아웃',
         errorCode: ErrorCodes.signOutFailed,
       );
     }
@@ -107,14 +93,12 @@ class KakaoProvider implements BaseAuthProvider {
   Future<AuthResult> unlink() async {
     try {
       await kakao.UserApi.instance.unlink();
-      return AuthResult.success(
-        provider: AuthProvider.kakao,
-        user: null,
-      );
+      return AuthResult.success(provider: AuthProvider.kakao, user: null);
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: kDebugMode ? '카카오 연결 해제 실패: $e' : '카카오 연결 해제 실패',
+      return ErrorMapper.handleException(
+        AuthProvider.kakao,
+        e,
+        operation: '연결 해제',
         errorCode: ErrorCodes.unlinkFailed,
       );
     }
@@ -128,27 +112,14 @@ class KakaoProvider implements BaseAuthProvider {
       final user = await kakao.UserApi.instance.me();
       return _buildResult(token, user);
     } on kakao.KakaoAuthException catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.tokenExpired,
-        details: {'kakaoError': e.message},
-        originalError: e,
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: '카카오 토큰 갱신 실패: ${e.message}',
-        errorCode: error.code,
-        errorHint: error.hint,
-      );
+      return ErrorMapper.toFailure(
+          AuthProvider.kakao, ErrorMapper.kakaoAuth(e));
     } catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.tokenExpired,
-        originalError: e,
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.kakao,
-        errorMessage: kDebugMode ? '카카오 토큰 갱신 실패: $e' : '카카오 토큰 갱신 실패',
-        errorCode: error.code,
-        errorHint: error.hint,
+      return ErrorMapper.handleException(
+        AuthProvider.kakao,
+        e,
+        operation: '토큰 갱신',
+        errorCode: ErrorCodes.refreshFailed,
       );
     }
   }

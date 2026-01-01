@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:flutter_naver_login/interface/types/naver_account_result.dart';
 import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
@@ -59,37 +58,35 @@ class NaverProvider implements BaseAuthProvider {
       final result = await FlutterNaverLogin.logIn();
 
       if (result.status == NaverLoginStatus.error) {
-        final err = ErrorMapper.naver(result.errorMessage ?? '');
-        return AuthResult.failure(
-          provider: AuthProvider.naver,
-          errorMessage: err.message,
-          errorCode: err.code,
-          errorHint: err.hint,
+        return ErrorMapper.toFailure(
+          AuthProvider.naver,
+          ErrorMapper.naver(result.errorMessage ?? ''),
         );
       }
 
       if (result.status == NaverLoginStatus.loggedOut) {
-        final error = KAuthError.fromCode(ErrorCodes.userCancelled);
-        return AuthResult.failure(
-          provider: AuthProvider.naver,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: error.hint,
+        return ErrorMapper.toFailure(
+          AuthProvider.naver,
+          KAuthError.fromCode(ErrorCodes.userCancelled),
+        );
+      }
+
+      // null 체크: account가 없으면 실패
+      final account = result.account;
+      if (account == null) {
+        return ErrorMapper.toFailure(
+          AuthProvider.naver,
+          KAuthError.fromCode(ErrorCodes.userInfoError),
         );
       }
 
       final token = await FlutterNaverLogin.getCurrentAccessToken();
-      return _buildResult(result.account!, token);
+      return _buildResult(account, token);
     } catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.loginFailed,
-        originalError: e,
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.naver,
-        errorMessage: kDebugMode ? '네이버 로그인 실패: $e' : '네이버 로그인 실패',
-        errorCode: error.code,
-        errorHint: error.hint,
+      return ErrorMapper.handleException(
+        AuthProvider.naver,
+        e,
+        operation: '로그인',
       );
     }
   }
@@ -99,14 +96,12 @@ class NaverProvider implements BaseAuthProvider {
   Future<AuthResult> signOut() async {
     try {
       await FlutterNaverLogin.logOut();
-      return AuthResult.success(
-        provider: AuthProvider.naver,
-        user: null,
-      );
+      return AuthResult.success(provider: AuthProvider.naver, user: null);
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.naver,
-        errorMessage: kDebugMode ? '네이버 로그아웃 실패: $e' : '네이버 로그아웃 실패',
+      return ErrorMapper.handleException(
+        AuthProvider.naver,
+        e,
+        operation: '로그아웃',
         errorCode: ErrorCodes.signOutFailed,
       );
     }
@@ -117,14 +112,12 @@ class NaverProvider implements BaseAuthProvider {
   Future<AuthResult> unlink() async {
     try {
       await FlutterNaverLogin.logOutAndDeleteToken();
-      return AuthResult.success(
-        provider: AuthProvider.naver,
-        user: null,
-      );
+      return AuthResult.success(provider: AuthProvider.naver, user: null);
     } catch (e) {
-      return AuthResult.failure(
-        provider: AuthProvider.naver,
-        errorMessage: kDebugMode ? '네이버 연결 해제 실패: $e' : '네이버 연결 해제 실패',
+      return ErrorMapper.handleException(
+        AuthProvider.naver,
+        e,
+        operation: '연결 해제',
         errorCode: ErrorCodes.unlinkFailed,
       );
     }
@@ -139,27 +132,20 @@ class NaverProvider implements BaseAuthProvider {
       final token = await FlutterNaverLogin.getCurrentAccessToken();
 
       if (token.accessToken.isEmpty) {
-        final error = KAuthError.fromCode(ErrorCodes.tokenExpired);
-        return AuthResult.failure(
-          provider: AuthProvider.naver,
-          errorMessage: error.message,
-          errorCode: error.code,
-          errorHint: '다시 로그인해주세요.',
+        return ErrorMapper.toFailure(
+          AuthProvider.naver,
+          KAuthError.fromCode(ErrorCodes.tokenExpired),
         );
       }
 
       final account = await FlutterNaverLogin.getCurrentAccount();
       return _buildResult(account, token);
     } catch (e) {
-      final error = KAuthError.fromCode(
-        ErrorCodes.tokenExpired,
-        originalError: e,
-      );
-      return AuthResult.failure(
-        provider: AuthProvider.naver,
-        errorMessage: kDebugMode ? '네이버 토큰 갱신 실패: $e' : '네이버 토큰 갱신 실패',
-        errorCode: error.code,
-        errorHint: error.hint,
+      return ErrorMapper.handleException(
+        AuthProvider.naver,
+        e,
+        operation: '토큰 갱신',
+        errorCode: ErrorCodes.refreshFailed,
       );
     }
   }
