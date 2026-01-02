@@ -117,10 +117,6 @@ class LoginButtonGroup extends StatelessWidget {
           isLoading: isLoading,
           disabled: isDisabled,
         ),
-      AuthProvider.phone => throw UnsupportedError(
-          '전화번호 로그인은 LoginButtonGroup에서 지원하지 않습니다. '
-          'kAuth.sendCode()와 kAuth.verifyCode()를 사용하세요.',
-        ),
     };
   }
 

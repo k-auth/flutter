@@ -393,6 +393,7 @@ final myUser = result.mapUser((user) => MyUser.from(user));
 
 | k_auth | kakao_flutter_sdk | flutter_naver_login | google_sign_in | sign_in_with_apple |
 |--------|-------------------|---------------------|----------------|--------------------|
+| 0.7.x  | 1.10.x            | 2.1.x               | 7.2.x          | 7.0.x              |
 | 0.5.x  | 1.10.x            | 2.1.x               | 7.2.x          | 7.0.x              |
 
 > **업그레이드 가이드**: [CHANGELOG.md](CHANGELOG.md)

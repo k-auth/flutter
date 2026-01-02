@@ -218,15 +218,11 @@ void main() {
     });
 
     testWidgets('모든 소셜 Provider 버튼을 렌더링한다', (tester) async {
-      // phone은 LoginButtonGroup에서 지원하지 않음 (sendCode/verifyCode 사용)
-      final socialProviders =
-          AuthProvider.values.where((p) => p != AuthProvider.phone).toList();
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: LoginButtonGroup(
-              providers: socialProviders,
+              providers: AuthProvider.values,
             ),
           ),
         ),

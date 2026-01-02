@@ -75,9 +75,6 @@ export 'utils/session_storage.dart';
 // Widgets
 export 'widgets/login_buttons.dart';
 
-// Phone
-export 'phone/k_phone.dart';
-
 // Main
 import 'dart:async';
 import 'package:flutter/widgets.dart';
@@ -92,8 +89,6 @@ import 'providers/kakao_provider.dart';
 import 'providers/naver_provider.dart';
 import 'providers/google_provider.dart';
 import 'providers/apple_provider.dart';
-import 'phone/phone_config.dart';
-import 'phone/k_auth_phone.dart';
 
 // Testing
 export 'testing/mock_k_auth.dart';
@@ -232,9 +227,6 @@ class KAuth with WidgetsBindingObserver {
   /// 만료 임박 시 자동으로 갱신합니다.
   final bool autoRefresh;
 
-  /// 전화번호 인증 인스턴스
-  KAuthPhone? _phone;
-
   /// 세션 저장 키
   static const String _sessionKey = 'k_auth_session';
 
@@ -265,11 +257,7 @@ class KAuth with WidgetsBindingObserver {
     this.onSignOut,
     this.storage,
     this.autoRefresh = false,
-  }) {
-    if (config.phone != null) {
-      _phone = KAuthPhone(config.phone!);
-    }
-  }
+  });
 
   /// KAuth 초기화 (권장)
   ///
@@ -315,8 +303,6 @@ class KAuth with WidgetsBindingObserver {
     NaverConfig? naver,
     GoogleConfig? google,
     AppleConfig? apple,
-    // 전화번호 인증 설정
-    PhoneConfig? phone,
     // 기존 config 방식
     KAuthConfig? config,
     // 콜백
@@ -334,7 +320,6 @@ class KAuth with WidgetsBindingObserver {
           naver: naver,
           google: google,
           apple: apple,
-          phone: phone,
         );
 
     final kAuth = KAuth(
@@ -377,143 +362,6 @@ class KAuth with WidgetsBindingObserver {
   ///
   /// `currentUser?.avatar`와 동일합니다.
   String? get avatar => currentUser?.avatar;
-
-  /// 전화번호 인증
-  ///
-  /// ```dart
-  /// // 인증번호 발송
-  /// await kAuth.phone.send('01012345678');
-  ///
-  /// // 인증번호 확인
-  /// final result = await kAuth.phone.verify('123456');
-  /// result.fold(
-  ///   ok: (user) => navigateToHome(),
-  ///   err: (e) => showError(e.message),
-  /// );
-  ///
-  /// // 상태 확인
-  /// kAuth.phone.isVerified
-  /// kAuth.phone.number
-  /// ```
-  KAuthPhone get phone {
-    if (_phone == null) {
-      throw StateError(
-        '전화번호 인증이 설정되지 않았습니다.\n'
-        'KAuth.init(phone: PhoneConfig())를 설정하세요.',
-      );
-    }
-    return _phone!;
-  }
-
-  /// 전화번호 인증 설정 여부
-  bool get hasPhoneAuth => _phone != null;
-
-  // ============================================
-  // 전화번호 로그인
-  // ============================================
-
-  /// 인증번호 발송
-  ///
-  /// 전화번호로 인증번호를 발송합니다.
-  /// 어떤 형식이든 자동으로 정규화합니다.
-  ///
-  /// ```dart
-  /// await kAuth.sendCode('010-1234-5678');
-  /// // 또는
-  /// await kAuth.sendCode('01012345678');
-  /// ```
-  Future<AuthResult> sendCode(String phoneNumber) async {
-    _ensureInitialized();
-
-    if (_phone == null) {
-      return AuthResult.failure(
-        provider: AuthProvider.phone,
-        errorMessage: '전화번호 인증이 설정되지 않았습니다.',
-        errorCode: 'PHONE_NOT_CONFIGURED',
-        errorHint: 'KAuth.init(phone: PhoneConfig())를 설정하세요.',
-      );
-    }
-
-    final result = await _phone!.send(phoneNumber);
-
-    if (result.ok) {
-      return AuthResult.success(provider: AuthProvider.phone);
-    }
-
-    return AuthResult.failure(
-      provider: AuthProvider.phone,
-      errorMessage: result.failure.message ?? '인증번호 발송에 실패했습니다.',
-      errorCode: result.failure.code,
-      errorHint: result.failure.hint,
-    );
-  }
-
-  /// 인증번호 확인 및 로그인
-  ///
-  /// 발송된 인증번호를 확인하고 로그인합니다.
-  ///
-  /// ```dart
-  /// final result = await kAuth.verifyCode('123456');
-  /// result.fold(
-  ///   onSuccess: (user) => navigateToHome(),
-  ///   onFailure: (f) => showError(f.message),
-  /// );
-  /// ```
-  Future<AuthResult> verifyCode(String code) async {
-    _ensureInitialized();
-
-    if (_phone == null) {
-      return AuthResult.failure(
-        provider: AuthProvider.phone,
-        errorMessage: '전화번호 인증이 설정되지 않았습니다.',
-        errorCode: 'PHONE_NOT_CONFIGURED',
-        errorHint: 'KAuth.init(phone: PhoneConfig())를 설정하세요.',
-      );
-    }
-
-    final result = await _phone!.verify(code);
-
-    if (result.ok && result.user != null) {
-      // KAuthUser 생성
-      final user = KAuthUser(
-        id: result.user!.uid ?? result.user!.phoneNumber,
-        provider: AuthProvider.phone,
-        phone: result.user!.phoneNumber,
-      );
-
-      final authResult = AuthResult.success(
-        provider: AuthProvider.phone,
-        user: user,
-      );
-
-      _lastResult = authResult;
-      _authStateController.add(user);
-
-      // 세션 저장
-      await _saveSession(authResult);
-
-      KAuthLogger.info(
-        '전화번호 로그인 성공',
-        provider: 'phone',
-        data: {'phoneNumber': result.user!.phoneNumber},
-      );
-
-      return authResult;
-    }
-
-    return AuthResult.failure(
-      provider: AuthProvider.phone,
-      errorMessage: result.failure.message ?? '인증번호 확인에 실패했습니다.',
-      errorCode: result.failure.code,
-      errorHint: result.failure.hint,
-    );
-  }
-
-  /// 인증번호 재발송 가능 여부
-  bool get canResendCode => _phone?.canResend ?? false;
-
-  /// 재발송까지 남은 시간
-  Duration get resendCodeIn => _phone?.resendIn ?? Duration.zero;
 
   /// 로그인 여부
   bool get isSignedIn =>
@@ -582,7 +430,6 @@ class KAuth with WidgetsBindingObserver {
     if (config.naver != null) providers.add(AuthProvider.naver);
     if (config.google != null) providers.add(AuthProvider.google);
     if (config.apple != null) providers.add(AuthProvider.apple);
-    if (config.phone != null) providers.add(AuthProvider.phone);
     return providers;
   }
 
@@ -1304,7 +1151,6 @@ class KAuth with WidgetsBindingObserver {
     if (autoRefresh) {
       WidgetsBinding.instance.removeObserver(this);
     }
-    _phone?.dispose();
     _authStateController.close();
   }
 

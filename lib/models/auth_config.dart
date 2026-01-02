@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 
 import '../errors/k_auth_error.dart';
-import '../phone/phone_config.dart';
 
 /// KAuth 설정
 class KAuthConfig {
@@ -18,15 +17,11 @@ class KAuthConfig {
   /// 애플 설정
   final AppleConfig? apple;
 
-  /// 전화번호 설정
-  final PhoneConfig? phone;
-
   const KAuthConfig({
     this.kakao,
     this.naver,
     this.google,
     this.apple,
-    this.phone,
   });
 
   /// 설정 유효성 검증
@@ -44,11 +39,7 @@ class KAuthConfig {
     final platform = targetPlatform ?? defaultTargetPlatform;
 
     // 최소 하나의 Provider가 설정되어 있어야 함
-    if (kakao == null &&
-        naver == null &&
-        google == null &&
-        apple == null &&
-        phone == null) {
+    if (kakao == null && naver == null && google == null && apple == null) {
       errors.add(KAuthError.fromCode(ErrorCodes.noProviderConfigured));
     }
 
@@ -86,7 +77,6 @@ class KAuthConfig {
     if (naver != null) providers.add('naver');
     if (google != null) providers.add('google');
     if (apple != null) providers.add('apple');
-    if (phone != null) providers.add('phone');
     return providers;
   }
 }

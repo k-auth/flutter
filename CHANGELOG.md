@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-01-02
+
+### Breaking Changes
+
+- **Phone Auth 제거**: 전화번호 인증 기능이 제거되었습니다
+  - `AuthProvider.phone` 제거
+  - `KAuth.init(phone: ...)` 파라미터 제거
+  - `kAuth.sendCode()` / `kAuth.verifyCode()` 메서드 제거
+  - `kAuth.canResendCode` / `kAuth.resendCodeIn` 제거
+  - `lib/phone/` 모듈 전체 제거
+  - `firebase_auth` 의존성 제거
+
+### Why?
+
+k_auth는 **한국 소셜 로그인**(카카오, 네이버, 구글, 애플)에 집중합니다.
+전화번호 로그인은 Supabase나 Firebase를 직접 사용하는 것이 더 간단합니다.
+
+### Migration
+
+전화번호 로그인이 필요한 경우 직접 Supabase 또는 Firebase를 사용하세요:
+
+```dart
+// Supabase 사용 예시
+final supabase = Supabase.instance.client;
+await supabase.auth.signInWithOtp(phone: '+821012345678');
+
+// Firebase 사용 예시
+await FirebaseAuth.instance.verifyPhoneNumber(...);
+```
+
 ## [0.6.1] - 2026-01-02
 
 ### Fixed

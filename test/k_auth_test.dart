@@ -1117,8 +1117,7 @@ void main() {
       expect(AuthProvider.values, contains(AuthProvider.naver));
       expect(AuthProvider.values, contains(AuthProvider.google));
       expect(AuthProvider.values, contains(AuthProvider.apple));
-      expect(AuthProvider.values, contains(AuthProvider.phone));
-      expect(AuthProvider.values.length, 5);
+      expect(AuthProvider.values.length, 4);
     });
 
     test('displayName이 올바르다', () {
@@ -1126,7 +1125,6 @@ void main() {
       expect(AuthProvider.naver.displayName, '네이버');
       expect(AuthProvider.google.displayName, 'Google');
       expect(AuthProvider.apple.displayName, 'Apple');
-      expect(AuthProvider.phone.displayName, '전화번호');
     });
 
     test('supportsUnlink가 올바르다', () {
@@ -1134,7 +1132,6 @@ void main() {
       expect(AuthProvider.naver.supportsUnlink, true);
       expect(AuthProvider.google.supportsUnlink, true);
       expect(AuthProvider.apple.supportsUnlink, false);
-      expect(AuthProvider.phone.supportsUnlink, false);
     });
   });
 
