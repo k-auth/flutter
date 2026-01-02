@@ -1,6 +1,8 @@
 #!/usr/bin/env dart
+// ignore_for_file: avoid_print
 
 /// K-Auth CLI - 설정 진단 도구
+library;
 
 import 'dart:io';
 
