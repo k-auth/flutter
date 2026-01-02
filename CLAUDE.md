@@ -1,6 +1,6 @@
 # K-Auth Flutter
 
-한국 앱을 위한 소셜 로그인 SDK (v0.5.6). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.6.0). 카카오, 네이버, 구글, 애플, 전화번호 로그인을 통합 API로 제공.
 
 ## 요구사항
 
@@ -47,6 +47,13 @@ lib/
 │   ├── diagnostic.dart      # 네이티브 설정 진단 (KAuthDiagnostic)
 │   ├── logger.dart          # 디버그 로깅 (KAuthLogger)
 │   └── session_storage.dart # 세션 저장소 (SecureSessionStorage)
+├── phone/
+│   ├── phone_config.dart    # 전화번호 인증 설정
+│   ├── phone_result.dart    # 결과 (PhoneResult, PhoneUser, PhoneFailure)
+│   ├── phone_state.dart     # 상태 enum
+│   ├── k_auth_phone.dart    # KAuthPhone 클래스
+│   ├── providers/           # Firebase, Custom 구현
+│   └── widgets/             # OtpInput, PhoneAuthBuilder
 └── widgets/
     └── login_buttons.dart   # 공식 디자인 버튼 위젯 + KAuthBuilder
 
@@ -68,7 +75,7 @@ test/
 - **KAuth.init()**: 팩토리 메서드. 초기화 + SecureStorage + 자동 로그인 + 토큰 자동 갱신
 - **AuthResult**: 로그인 결과. fold/when/onSuccess/onFailure 함수형 패턴
 - **KAuthUser**: Provider별로 다른 응답을 표준화한 사용자 모델
-- **AuthProvider**: enum (kakao, naver, google, apple)
+- **AuthProvider**: enum (kakao, naver, google, apple, phone)
 - **KAuthBuilder**: 인증 상태에 따른 화면 전환 위젯
 - **MockKAuth**: 테스트용 Mock 클래스
 
@@ -101,6 +108,7 @@ test/
 - **NaverConfig** (scope 미지원, 개발자센터에서 설정)
 - **GoogleConfig** + GoogleCollectOptions
 - **AppleConfig** + AppleCollectOptions
+- **PhoneConfig** (Firebase 또는 커스텀 백엔드)
 
 ## Provider별 특징
 
@@ -110,6 +118,7 @@ test/
 | naver    | O | O | scope 미지원, 개발자센터에서 수집항목 설정 |
 | google   | O | O | iOS는 iosClientId 필요 |
 | apple    | X | X | iOS 13+/macOS만, 첫 로그인시만 이름 제공 |
+| phone    | X | X | Firebase 또는 커스텀 백엔드, sendCode/verifyCode 사용 |
 
 ## 버전 호환성
 
@@ -385,11 +394,17 @@ final kAuth = await KAuth.init(
 await kAuth.initialize();
 await kAuth.initialize(autoRestore: true);
 
-// 로그인
+// 소셜 로그인
 await kAuth.signIn(AuthProvider.kakao);
 await kAuth.signIn(AuthProvider.naver);
 await kAuth.signIn(AuthProvider.google);
 await kAuth.signIn(AuthProvider.apple);
+
+// 전화번호 로그인
+await kAuth.sendCode('01012345678');
+await kAuth.verifyCode('123456');
+kAuth.canResendCode   // 재발송 가능 여부
+kAuth.resendCodeIn    // 재발송까지 남은 시간
 
 // 로그아웃
 await kAuth.signOut();

@@ -7,30 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-01-02
+
 ### Added
+
+- **Phone Auth**: 전화번호 인증 로그인 지원
+  - `AuthProvider.phone` 추가
+  - `kAuth.sendCode('01012345678')` - 인증번호 발송
+  - `kAuth.verifyCode('123456')` - 인증번호 확인 및 로그인
+  - `kAuth.canResendCode` / `kAuth.resendCodeIn` - 재발송 상태
+  - Firebase Phone Auth / 커스텀 백엔드 지원
+- **Phone Config**: `PhoneConfig`, `PhoneConfig.firebase()`, `PhoneConfig.custom()`
+- **Phone Result**: `PhoneResult` (fold/when 패턴), `PhoneFailure`, `PhoneUser`
+- **Phone State**: `PhoneState` enum (idle, sending, codeSent, verifying, verified, error)
+- **Widgets**: `OtpInput`, `SimpleOtpInput`, `PhoneAuthBuilder`, `PhoneAuthWidget`
+- **Testing**: 26개 phone 테스트 추가
+
+### Changed
 
 - **Testing**: `MockKAuth` 헬퍼 메서드 추가
   - `setTimeout()` - 타임아웃 에러 시뮬레이션
   - `simulateTokenExpiry()` - 토큰 만료 시뮬레이션
   - `simulateAuthStateChange()` - 상태 변경 이벤트 발생
-
-### Changed
-
 - **CLI**: `dart run k_auth` 명령어 개선
   - `init` 대화형 설정 제거, `doctor` 설정 진단을 기본 명령어로 변경
   - 비전공자도 이해하기 쉬운 친절한 가이드 제공
-  - 누락된 설정별 파일 위치, 해결 방법, 복사 가능한 코드 안내
 
 ### Improved
 
 - **Error**: Google/Naver 에러 매핑 안정화
-  - 패턴을 `_GoogleErrorPatterns`, `_NaverErrorPatterns` 상수로 분리
-  - Google: `interrupted`, `clientConfigurationError`, `providerConfigurationError` 에러 코드 지원
-  - 엣지 케이스 테스트 14개 추가
 - **Docs**: Provider dartdoc 대폭 강화
-  - Apple: 토큰 갱신 불가, 연결 해제 서버 전용, 이름 첫 로그인만 등 제약사항
-  - Naver: scope 미지원, 자동 토큰 갱신, 플랫폼별 설정 가이드
-  - Google: iosClientId 필수, refreshToken 미제공, 서버 연동 설정
 
 ## [0.5.6] - 2026-01-02
 
