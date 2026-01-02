@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-01-02
+
+### Fixed
+
+- **Firebase Phone Auth**: 실제 Firebase 인증 구현 완료
+  - `FirebasePhoneProvider`가 `firebase_auth` 패키지 사용
+  - 자동 인증 (Android SMS 자동 읽기) 지원
+  - Firebase 에러 코드 한글 매핑 추가
+- **Lint**: `library;` 선언 추가로 dangling doc comment 경고 해결
+- **Testing**: Phone 테스트에서 Custom provider 사용 (Firebase 초기화 불필요)
+
 ## [0.6.0] - 2026-01-02
 
 ### Added

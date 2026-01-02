@@ -208,8 +208,15 @@ void main() {
   });
 
   group('KAuthPhone', () {
+    // Custom provider 사용 (Firebase 초기화 불필요)
+    const testConfig = PhoneConfig(
+      provider: PhoneProvider.custom,
+      sendUrl: 'https://test.com/send',
+      verifyUrl: 'https://test.com/verify',
+    );
+
     test('초기 상태는 idle', () {
-      final phone = KAuthPhone(const PhoneConfig());
+      final phone = KAuthPhone(testConfig);
       expect(phone.state, PhoneState.idle);
       expect(phone.isVerified, false);
       expect(phone.number, null);
@@ -217,7 +224,7 @@ void main() {
     });
 
     test('reset 호출 시 상태 초기화', () {
-      final phone = KAuthPhone(const PhoneConfig());
+      final phone = KAuthPhone(testConfig);
       phone.reset();
       expect(phone.state, PhoneState.idle);
       expect(phone.canResend, true);
@@ -226,13 +233,13 @@ void main() {
     });
 
     test('stateChanges 스트림 존재', () {
-      final phone = KAuthPhone(const PhoneConfig());
+      final phone = KAuthPhone(testConfig);
       expect(phone.stateChanges, isA<Stream<PhoneState>>());
       phone.dispose();
     });
 
     test('resendTimer 스트림 존재', () {
-      final phone = KAuthPhone(const PhoneConfig());
+      final phone = KAuthPhone(testConfig);
       expect(phone.resendTimer, isA<Stream<Duration>>());
       phone.dispose();
     });
