@@ -1,5 +1,4 @@
 import 'dart:async';
-import '../phone_config.dart';
 import '../phone_result.dart';
 import 'phone_auth_provider.dart';
 
@@ -26,6 +25,7 @@ class FirebasePhoneProvider extends BasePhoneAuthProvider {
   // Firebase Auth 인스턴스는 런타임에 동적으로 로드
   dynamic _auth;
   String? _verificationId;
+  // ignore: unused_field - Firebase 재발송 시 사용 예정
   int? _resendToken;
   Completer<PhoneResult>? _completer;
 

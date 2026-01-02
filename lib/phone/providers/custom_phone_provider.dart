@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../phone_config.dart';
 import '../phone_result.dart';
 import 'phone_auth_provider.dart';
 

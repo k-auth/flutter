@@ -389,6 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         AuthProvider.naver => const Color(0xFF03C75A),
         AuthProvider.google => const Color(0xFF4285F4),
         AuthProvider.apple => Colors.black,
+        AuthProvider.phone => const Color(0xFF1976D2),
       };
 }
 

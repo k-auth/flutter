@@ -376,6 +376,7 @@ class AuthResult {
 /// | naver | O | O | scope 미지원 (개발자센터에서 설정) |
 /// | google | O | O | iOS는 iosClientId 필요 |
 /// | apple | X | X | iOS 13+, macOS만 지원 |
+/// | phone | X | X | 전화번호 인증 (Firebase) |
 enum AuthProvider {
   /// 카카오 로그인
   ///
@@ -400,7 +401,13 @@ enum AuthProvider {
   /// [AppleConfig]로 설정합니다.
   /// iOS 13+, macOS에서만 지원됩니다.
   /// 첫 로그인 시에만 이름을 제공합니다.
-  apple;
+  apple,
+
+  /// 전화번호 로그인
+  ///
+  /// [PhoneConfig]로 설정합니다.
+  /// Firebase Phone Auth 또는 커스텀 백엔드를 사용합니다.
+  phone;
 
   /// 표시용 이름
   String get displayName {
@@ -413,6 +420,8 @@ enum AuthProvider {
         return 'Google';
       case AuthProvider.apple:
         return 'Apple';
+      case AuthProvider.phone:
+        return '전화번호';
     }
   }
 
@@ -427,6 +436,8 @@ enum AuthProvider {
         return 'Google';
       case AuthProvider.apple:
         return 'Apple';
+      case AuthProvider.phone:
+        return 'Phone';
     }
   }
 
@@ -438,7 +449,8 @@ enum AuthProvider {
       case AuthProvider.google:
         return true;
       case AuthProvider.apple:
-        return false; // Apple은 서버사이드 revoke만 지원
+      case AuthProvider.phone:
+        return false;
     }
   }
 
@@ -450,6 +462,7 @@ enum AuthProvider {
       case AuthProvider.google:
         return true;
       case AuthProvider.apple:
+      case AuthProvider.phone:
         return false;
     }
   }
