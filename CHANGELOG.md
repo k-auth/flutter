@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-01-04
+
+### Docs
+
+- **KAuth.init() dartdoc 개선**: 모든 파라미터에 대한 상세 설명 추가
+  - Provider 설정 (kakao, naver, google, apple, config)
+  - 콜백 (onSignIn, onSignOut)
+  - 옵션 (autoRestore, autoRefresh, validateOnInitialize)
+
 ## [0.7.0] - 2026-01-02
 
 ### Breaking Changes
