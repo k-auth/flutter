@@ -264,38 +264,38 @@ class KAuth with WidgetsBindingObserver {
   /// 인스턴스 생성과 초기화를 한 번에 수행합니다.
   /// SecureStorage를 기본으로 사용하여 자동 로그인을 지원합니다.
   ///
-  /// ## 간단한 사용법
+  /// ## 파라미터
+  ///
+  /// **Provider 설정** (사용할 Provider만 설정):
+  /// - [kakao]: 카카오 로그인 설정 (Native App Key 필요)
+  /// - [naver]: 네이버 로그인 설정 (Client ID/Secret 필요)
+  /// - [google]: 구글 로그인 설정 (iOS는 iosClientId 필요)
+  /// - [apple]: 애플 로그인 설정 (iOS 13+ 전용)
+  /// - [config]: 기존 KAuthConfig 객체 사용 시
+  ///
+  /// **콜백**:
+  /// - [onSignIn]: 로그인 성공 후 호출. 반환값은 serverToken에 저장
+  /// - [onSignOut]: 로그아웃 시 호출. 백엔드 JWT 무효화 등에 사용
+  ///
+  /// **옵션**:
+  /// - [autoRestore]: 앱 시작 시 저장된 세션 자동 복원 (기본: true)
+  /// - [autoRefresh]: 앱 포그라운드 복귀 시 토큰 자동 갱신 (기본: true)
+  /// - [validateOnInitialize]: 초기화 시 설정 검증 (기본: true)
+  ///
+  /// ## 사용 예시
   ///
   /// ```dart
   /// final kAuth = await KAuth.init(
   ///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
   ///   google: GoogleConfig(),
+  ///   onSignIn: (provider, tokens, user) async {
+  ///     return await myApi.socialLogin(tokens.accessToken);
+  ///   },
   /// );
   ///
   /// if (kAuth.isSignedIn) {
   ///   print('자동 로그인됨: ${kAuth.name}');
   /// }
-  /// ```
-  ///
-  /// ## 백엔드 연동
-  ///
-  /// ```dart
-  /// final kAuth = await KAuth.init(
-  ///   kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
-  ///   onSignIn: (provider, tokens, user) async {
-  ///     return await myApi.socialLogin(tokens.accessToken);
-  ///   },
-  /// );
-  /// ```
-  ///
-  /// ## 기존 config 사용
-  ///
-  /// ```dart
-  /// final kAuth = await KAuth.init(
-  ///   config: KAuthConfig(
-  ///     kakao: KakaoConfig(appKey: 'YOUR_APP_KEY'),
-  ///   ),
-  /// );
   /// ```
   static Future<KAuth> init({
     // 개별 Provider 설정 (간단한 방식)
