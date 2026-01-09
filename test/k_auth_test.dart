@@ -558,7 +558,7 @@ void main() {
 
   group('KAuthFailure', () {
     test('기본 생성자로 생성한다', () {
-      const failure = KAuthFailure(
+      const failure = AuthError(
         code: 'LOGIN_FAILED',
         message: '로그인 실패',
         hint: '다시 시도하세요',
@@ -586,15 +586,15 @@ void main() {
     });
 
     test('displayMessage가 올바르게 동작한다', () {
-      const withMessage = KAuthFailure(message: '에러 메시지');
-      const withoutMessage = KAuthFailure();
+      const withMessage = AuthError(message: '에러 메시지');
+      const withoutMessage = AuthError();
 
       expect(withMessage.displayMessage, '에러 메시지');
       expect(withoutMessage.displayMessage, '알 수 없는 오류가 발생했습니다.');
     });
 
     test('JSON 직렬화가 동작한다', () {
-      const original = KAuthFailure(
+      const original = AuthError(
         code: 'TEST_CODE',
         message: '테스트 메시지',
         hint: '테스트 힌트',
@@ -609,17 +609,17 @@ void main() {
     });
 
     test('equality가 동작한다', () {
-      const failure1 = KAuthFailure(code: 'A', message: 'B');
-      const failure2 = KAuthFailure(code: 'A', message: 'B');
-      const failure3 = KAuthFailure(code: 'A', message: 'C');
+      const failure1 = AuthError(code: 'A', message: 'B');
+      const failure2 = AuthError(code: 'A', message: 'B');
+      const failure3 = AuthError(code: 'A', message: 'C');
 
       expect(failure1 == failure2, true);
       expect(failure1 == failure3, false);
     });
 
     test('toString이 올바른 형식을 반환한다', () {
-      const failure = KAuthFailure(code: 'CODE', message: '메시지');
-      expect(failure.toString(), 'KAuthFailure[CODE]: 메시지');
+      const failure = AuthError(code: 'CODE', message: '메시지');
+      expect(failure.toString(), 'AuthError[CODE]: 메시지');
     });
   });
 

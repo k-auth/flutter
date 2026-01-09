@@ -225,7 +225,25 @@ class AuthResult {
   /// 실패 정보를 KAuthFailure로 반환
   ///
   /// fold, when, onFailure에서 사용됩니다.
-  KAuthFailure get failure => KAuthFailure(
+  /// 에러 코드에 따라 적절한 서브타입 (NetworkError, TokenError 등)을 반환합니다.
+  ///
+  /// ```dart
+  /// result.onFailure((failure) {
+  ///   switch (failure) {
+  ///     case NetworkError():
+  ///       showRetryButton();
+  ///     case TokenError():
+  ///       navigateToLogin();
+  ///     case ConfigError():
+  ///       showSetupGuide();
+  ///     case CancelledError():
+  ///       return; // 무시
+  ///     case AuthError():
+  ///       showError(failure.message);
+  ///   }
+  /// });
+  /// ```
+  KAuthFailure get failure => KAuthFailure.create(
         code: errorCode,
         message: errorMessage,
         hint: errorHint,
