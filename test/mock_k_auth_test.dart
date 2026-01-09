@@ -74,7 +74,7 @@ void main() {
       });
 
       test('mockFailure가 있으면 실패', () async {
-        mockKAuth.mockFailure = KAuthFailure(
+        mockKAuth.mockFailure = const CancelledError(
           code: 'USER_CANCELLED',
           message: '사용자가 로그인을 취소했습니다',
         );
@@ -275,12 +275,17 @@ void main() {
       });
 
       test('simulateTokenExpiry', () async {
+        // 먼저 로그인
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+        expect(mockKAuth.isExpired, false);
+
+        // 토큰 만료 시뮬레이션
         mockKAuth.simulateTokenExpiry();
 
-        final result = await mockKAuth.signIn(AuthProvider.kakao);
-
-        expect(result.success, false);
-        expect(result.errorCode, 'TOKEN_EXPIRED');
+        expect(mockKAuth.isExpired, true);
+        expect(mockKAuth.isSignedIn, true); // 로그인 상태는 유지
       });
 
       test('simulateAuthStateChange', () async {
@@ -314,9 +319,9 @@ void main() {
       });
     });
 
-    group('mockDelay', () {
+    group('delay', () {
       test('지연 시간 적용', () async {
-        mockKAuth.mockDelay = Duration(milliseconds: 100);
+        mockKAuth.delay = Duration(milliseconds: 100);
 
         final stopwatch = Stopwatch()..start();
         await mockKAuth.signIn(AuthProvider.kakao);

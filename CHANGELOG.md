@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-01-10
+
+### Added
+
+- **에러 타입 세분화 (sealed class)**
+  - `KAuthFailure`가 sealed class로 변경됨
+  - 5개의 서브타입: `NetworkError`, `TokenError`, `ConfigError`, `CancelledError`, `AuthError`
+  - 타입 기반 switch 문으로 에러 분기 가능
+  - `ErrorSeverity` enum: `ignorable`, `retryable`, `authRequired`, `fixRequired`
+  - 각 서브타입에 편의 메서드 추가 (예: `NetworkError.isTimeout`, `TokenError.isExpired`)
+
+- **KAuthBuilder 토큰 만료 처리**
+  - `expiring` 콜백: 토큰 만료 임박 시 표시할 위젯
+  - `isExpiring` 함수: 만료 임박 여부 판단
+  - `TokenBanner` 위젯: 토큰 갱신 배너 (기본 제공)
+
+- **MockKAuth 강화**
+  - `MockKAuth.demo()`: 데모 모드 팩토리 (앱 키 없이 UI 테스트)
+  - 호출 카운터: `signInCount`, `signOutCount`, `refreshCount`, `unlinkCount`
+  - Provider별 호출 카운터: `signInCountFor(provider)`, `signOutCountFor(provider)`
+  - 토큰 만료 시뮬레이션: `expireAfter(duration)`, `expireNow()`
+  - 재시도 테스트: `failThenSucceed(times: n)`
+  - 지연 시뮬레이션: `delay` (기존 `mockDelay`에서 이름 변경)
+
+### Changed
+
+- `mockDelay` → `delay`로 이름 변경 (MockKAuth)
+- `KAuthFailure`는 더 이상 직접 인스턴스화 불가 (서브타입 사용)
+
 ## [0.7.1] - 2026-01-04
 
 ### Docs

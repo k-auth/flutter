@@ -1,6 +1,6 @@
 # K-Auth Flutter
 
-한국 앱을 위한 소셜 로그인 SDK (v0.7.0). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
+한국 앱을 위한 소셜 로그인 SDK (v0.8.0). 카카오, 네이버, 구글, 애플 로그인을 통합 API로 제공.
 
 ## 요구사항
 
@@ -34,7 +34,7 @@ lib/
 ├── models/
 │   ├── auth_config.dart     # Provider별 설정 및 수집 옵션
 │   ├── auth_result.dart     # 로그인 결과 (fold, when 함수형 패턴)
-│   ├── k_auth_failure.dart  # 실패 정보 (isCancelled, canRetry, shouldIgnore 등)
+│   ├── k_auth_failure.dart  # 에러 타입 (sealed class: NetworkError, TokenError, ConfigError, CancelledError, AuthError)
 │   └── k_auth_user.dart     # 표준화된 사용자 정보
 ├── providers/
 │   ├── kakao_provider.dart  # 카카오 SDK 래퍼
@@ -48,7 +48,8 @@ lib/
 │   ├── logger.dart          # 디버그 로깅 (KAuthLogger)
 │   └── session_storage.dart # 세션 저장소 (SecureSessionStorage)
 └── widgets/
-    └── login_buttons.dart   # 공식 디자인 버튼 위젯 + KAuthBuilder
+    ├── login_buttons.dart   # 공식 디자인 버튼 위젯
+    └── k_auth_builder.dart  # 인증 상태 기반 화면 전환 + TokenBanner
 
 docs/
 ├── SETUP.md                 # iOS/Android 플랫폼 설정 가이드
@@ -69,8 +70,17 @@ test/
 - **AuthResult**: 로그인 결과. fold/when/onSuccess/onFailure 함수형 패턴
 - **KAuthUser**: Provider별로 다른 응답을 표준화한 사용자 모델
 - **AuthProvider**: enum (kakao, naver, google, apple)
-- **KAuthBuilder**: 인증 상태에 따른 화면 전환 위젯
-- **MockKAuth**: 테스트용 Mock 클래스
+- **KAuthBuilder**: 인증 상태에 따른 화면 전환 위젯 (expiring 콜백 지원)
+- **MockKAuth**: 테스트용 Mock 클래스 (데모 모드, 호출 카운터, 토큰 만료 시뮬레이션)
+
+### 에러 타입 (v0.8.0+)
+- **KAuthFailure**: sealed class (타입 기반 분기 가능)
+- **NetworkError**: 네트워크/타임아웃 에러 (canRetry: true)
+- **TokenError**: 토큰 만료/갱신 실패 (requiresReauth: true)
+- **ConfigError**: 설정 오류 (Provider 미설정 등)
+- **CancelledError**: 사용자 취소 (shouldIgnore: true)
+- **AuthError**: 기타 인증 에러
+- **ErrorSeverity**: enum (ignorable, retryable, authRequired, fixRequired)
 
 ### 편의 Getter (KAuth)
 - `kAuth.userId` → `currentUser?.id`
@@ -115,6 +125,7 @@ test/
 
 | k_auth | kakao_flutter_sdk | flutter_naver_login | google_sign_in | sign_in_with_apple |
 |--------|-------------------|---------------------|----------------|--------------------|
+| 0.8.x  | 1.10.x            | 2.1.x               | 7.2.x          | 7.0.x              |
 | 0.7.x  | 1.10.x            | 2.1.x               | 7.2.x          | 7.0.x              |
 | 0.5.x  | 1.10.x            | 2.1.x               | 7.2.x          | 7.0.x              |
 
@@ -247,6 +258,36 @@ result.onFailure((failure) {
 });
 ```
 
+**타입 기반 에러 처리 (v0.8.0+ - 권장)**
+```dart
+result.onFailure((failure) {
+  switch (failure) {
+    case CancelledError():
+      return;  // 무시
+    case NetworkError():
+      showRetryButton();
+    case TokenError():
+      navigateToLogin();
+    case ConfigError():
+      showSetupGuide();
+    case AuthError():
+      showError(failure.displayMessage);
+  }
+});
+
+// 또는 severity 활용
+switch (failure.severity) {
+  case ErrorSeverity.ignorable:
+    return;
+  case ErrorSeverity.retryable:
+    showRetryDialog();
+  case ErrorSeverity.authRequired:
+    navigateToLogin();
+  case ErrorSeverity.fixRequired:
+    showErrorDialog(failure.message);
+}
+```
+
 #### 3. 화면 전환 (KAuthBuilder 사용 - 권장)
 
 ```dart
@@ -257,6 +298,18 @@ KAuthBuilder(
   signedOut: () => LoginScreen(),
   loading: () => SplashScreen(),  // 선택
   error: (e) => ErrorScreen(e),   // 선택
+)
+
+// 토큰 만료 알림 포함 (v0.8.0+)
+KAuthBuilder(
+  stream: kAuth.authStateChanges,
+  signedIn: (user) => HomeScreen(user: user),
+  signedOut: () => LoginScreen(),
+  expiring: () => TokenBanner(
+    onRefresh: () => kAuth.refreshToken(),
+    message: '세션이 곧 만료됩니다',
+  ),
+  isExpiring: kAuth.isExpiringSoon,
 )
 ```
 
@@ -325,6 +378,35 @@ print('만료됨: ${kAuth.isExpired}');
 print('곧 만료: ${kAuth.isExpiringSoon()}');  // 5분 이내
 print('만료 시간: ${kAuth.expiresAt}');
 print('남은 시간: ${kAuth.expiresIn}');
+```
+
+#### 6. 테스트 및 데모 모드 (v0.8.0+)
+
+```dart
+// 데모 모드 (앱 키 없이 UI 테스트)
+final mockKAuth = MockKAuth.demo(
+  user: KAuthUser(id: 'demo', name: '데모 사용자', provider: AuthProvider.kakao),
+);
+
+// 호출 카운터 (테스트에서 검증용)
+await mockKAuth.signIn(AuthProvider.kakao);
+await mockKAuth.signIn(AuthProvider.google);
+expect(mockKAuth.signInCount, 2);
+expect(mockKAuth.signInCountFor(AuthProvider.kakao), 1);
+
+// 토큰 만료 시뮬레이션
+mockKAuth.expireAfter(Duration(minutes: 3));  // 3분 후 만료
+mockKAuth.expireNow();  // 즉시 만료
+expect(mockKAuth.isExpired, true);
+
+// 재시도 테스트
+mockKAuth.failThenSucceed(times: 2);  // 처음 2번 실패 후 성공
+await mockKAuth.signIn(AuthProvider.kakao);  // 실패
+await mockKAuth.signIn(AuthProvider.kakao);  // 실패
+await mockKAuth.signIn(AuthProvider.kakao);  // 성공!
+
+// 지연 시뮬레이션
+mockKAuth.delay = Duration(milliseconds: 500);
 ```
 
 ### 참고 파일

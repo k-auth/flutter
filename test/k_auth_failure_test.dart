@@ -41,7 +41,7 @@ void main() {
       });
 
       test('code가 null일 때 편의 getter가 false를 반환한다', () {
-        const failure = KAuthFailure(message: '에러');
+        const failure = AuthError(message: '에러');
 
         expect(failure.isCancelled, false);
         expect(failure.isNetworkError, false);
@@ -182,13 +182,13 @@ void main() {
 
     group('displayMessage', () {
       test('message가 있으면 message를 반환', () {
-        const failure = KAuthFailure(message: '커스텀 메시지');
+        const failure = AuthError(message: '커스텀 메시지');
 
         expect(failure.displayMessage, '커스텀 메시지');
       });
 
       test('message가 null이면 기본 메시지를 반환', () {
-        const failure = KAuthFailure();
+        const failure = AuthError();
 
         expect(failure.displayMessage, '알 수 없는 오류가 발생했습니다.');
       });
@@ -209,9 +209,49 @@ void main() {
       });
     });
 
+    group('타입 분기', () {
+      test('fromCode가 올바른 서브타입을 반환한다', () {
+        expect(KAuthFailure.fromCode(ErrorCodes.userCancelled),
+            isA<CancelledError>());
+        expect(KAuthFailure.fromCode(ErrorCodes.networkError),
+            isA<NetworkError>());
+        expect(KAuthFailure.fromCode(ErrorCodes.timeout), isA<NetworkError>());
+        expect(
+            KAuthFailure.fromCode(ErrorCodes.tokenExpired), isA<TokenError>());
+        expect(
+            KAuthFailure.fromCode(ErrorCodes.refreshFailed), isA<TokenError>());
+        expect(KAuthFailure.fromCode(ErrorCodes.invalidConfig),
+            isA<ConfigError>());
+        expect(KAuthFailure.fromCode(ErrorCodes.providerNotConfigured),
+            isA<ConfigError>());
+        expect(KAuthFailure.fromCode(ErrorCodes.loginFailed), isA<AuthError>());
+      });
+
+      test('switch 문으로 타입 분기가 가능하다', () {
+        final failures = [
+          KAuthFailure.fromCode(ErrorCodes.userCancelled),
+          KAuthFailure.fromCode(ErrorCodes.networkError),
+          KAuthFailure.fromCode(ErrorCodes.tokenExpired),
+          KAuthFailure.fromCode(ErrorCodes.invalidConfig),
+          KAuthFailure.fromCode(ErrorCodes.loginFailed),
+        ];
+
+        for (final failure in failures) {
+          final result = switch (failure) {
+            CancelledError() => 'cancelled',
+            NetworkError() => 'network',
+            TokenError() => 'token',
+            ConfigError() => 'config',
+            AuthError() => 'auth',
+          };
+          expect(result, isNotNull);
+        }
+      });
+    });
+
     group('toJson/fromJson', () {
       test('모든 필드가 있는 경우', () {
-        const failure = KAuthFailure(
+        const failure = AuthError(
           code: 'ERROR_CODE',
           message: '에러 메시지',
           hint: '힌트',
@@ -229,7 +269,7 @@ void main() {
       });
 
       test('null 필드가 있는 경우', () {
-        const failure = KAuthFailure(message: '메시지만');
+        const failure = AuthError(message: '메시지만');
 
         final json = failure.toJson();
         expect(json.containsKey('code'), false);
@@ -240,31 +280,31 @@ void main() {
 
     group('toString', () {
       test('code가 있는 경우', () {
-        const failure = KAuthFailure(code: 'CODE', message: '메시지');
+        const failure = AuthError(code: 'CODE', message: '메시지');
 
         final str = failure.toString();
-        expect(str, contains('KAuthFailure'));
+        expect(str, contains('AuthError'));
         expect(str, contains('CODE'));
         expect(str, contains('메시지'));
       });
 
       test('code가 없는 경우', () {
-        const failure = KAuthFailure(message: '메시지만');
+        const failure = AuthError(message: '메시지만');
 
         final str = failure.toString();
-        expect(str, contains('KAuthFailure'));
+        expect(str, contains('AuthError'));
         expect(str, contains('메시지만'));
       });
     });
 
     group('equality', () {
       test('같은 값이면 equal', () {
-        const failure1 = KAuthFailure(
+        const failure1 = AuthError(
           code: 'CODE',
           message: '메시지',
           hint: '힌트',
         );
-        const failure2 = KAuthFailure(
+        const failure2 = AuthError(
           code: 'CODE',
           message: '메시지',
           hint: '힌트',
@@ -275,10 +315,52 @@ void main() {
       });
 
       test('다른 값이면 not equal', () {
-        const failure1 = KAuthFailure(code: 'CODE1', message: '메시지');
-        const failure2 = KAuthFailure(code: 'CODE2', message: '메시지');
+        const failure1 = AuthError(code: 'CODE1', message: '메시지');
+        const failure2 = AuthError(code: 'CODE2', message: '메시지');
 
         expect(failure1, isNot(equals(failure2)));
+      });
+
+      test('다른 타입이면 not equal', () {
+        const failure1 = NetworkError(code: 'CODE', message: '메시지');
+        const failure2 = AuthError(code: 'CODE', message: '메시지');
+
+        expect(failure1, isNot(equals(failure2)));
+      });
+    });
+
+    group('서브타입 특정 메서드', () {
+      test('NetworkError.isTimeout', () {
+        final timeout =
+            KAuthFailure.fromCode(ErrorCodes.timeout) as NetworkError;
+        final network =
+            KAuthFailure.fromCode(ErrorCodes.networkError) as NetworkError;
+
+        expect(timeout.isTimeout, true);
+        expect(network.isTimeout, false);
+      });
+
+      test('TokenError.isExpired / isRefreshFailed', () {
+        final expired =
+            KAuthFailure.fromCode(ErrorCodes.tokenExpired) as TokenError;
+        final refreshFailed =
+            KAuthFailure.fromCode(ErrorCodes.refreshFailed) as TokenError;
+
+        expect(expired.isExpired, true);
+        expect(expired.isRefreshFailed, false);
+        expect(refreshFailed.isExpired, false);
+        expect(refreshFailed.isRefreshFailed, true);
+      });
+
+      test('ConfigError.isProviderMissing / isNotInitialized', () {
+        final providerMissing =
+            KAuthFailure.fromCode(ErrorCodes.providerNotConfigured)
+                as ConfigError;
+        final notInitialized =
+            KAuthFailure.fromCode(ErrorCodes.configNotFound) as ConfigError;
+
+        expect(providerMissing.isProviderMissing, true);
+        expect(notInitialized.isNotInitialized, true);
       });
     });
   });
