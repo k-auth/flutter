@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-01-10
+
+### Added
+
+- **TokenUtils**: 토큰 만료 로직 중앙화
+  - `isExpired`, `isExpiringSoon`, `timeUntilExpiry` 로직 통합
+  - KAuth, AuthResult, MockKAuth 간 일관성 확보
+
+### Fixed
+
+- `AuthResult.when()`의 하드코딩된 문자열을 `ErrorCodes.userCancelled` 상수로 변경
+
+### Changed
+
+- `configuredProviders`를 `late final`로 캐싱하여 성능 최적화
+
 ## [0.8.0] - 2026-01-10
 
 ### Added

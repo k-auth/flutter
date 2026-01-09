@@ -84,6 +84,7 @@ import 'models/k_auth_user.dart';
 import 'errors/k_auth_error.dart';
 import 'utils/logger.dart';
 import 'utils/session_storage.dart';
+import 'utils/token_utils.dart';
 import 'providers/base_auth_provider.dart';
 import 'providers/kakao_provider.dart';
 import 'providers/naver_provider.dart';
@@ -385,28 +386,16 @@ class KAuth with WidgetsBindingObserver {
   /// 토큰 남은 시간
   ///
   /// 만료 시간이 없거나 이미 만료되었으면 [Duration.zero]를 반환합니다.
-  Duration get expiresIn {
-    final exp = expiresAt;
-    if (exp == null) return Duration.zero;
-    final remaining = exp.difference(DateTime.now());
-    return remaining.isNegative ? Duration.zero : remaining;
-  }
+  Duration get expiresIn => TokenUtils.timeUntilExpiry(expiresAt);
 
   /// 토큰이 곧 만료되는지 확인
   ///
   /// 기본값은 5분 이내 만료 예정이면 true를 반환합니다.
-  bool isExpiringSoon([Duration threshold = const Duration(minutes: 5)]) {
-    final exp = expiresAt;
-    if (exp == null) return false;
-    return DateTime.now().isAfter(exp.subtract(threshold));
-  }
+  bool isExpiringSoon([Duration threshold = const Duration(minutes: 5)]) =>
+      TokenUtils.isExpiringSoon(expiresAt, threshold);
 
   /// 토큰이 만료되었는지 확인
-  bool get isExpired {
-    final exp = expiresAt;
-    if (exp == null) return false;
-    return DateTime.now().isAfter(exp);
-  }
+  bool get isExpired => TokenUtils.isExpired(expiresAt);
 
   /// 인증 상태 변화 스트림
   ///
@@ -424,14 +413,12 @@ class KAuth with WidgetsBindingObserver {
   Stream<KAuthUser?> get authStateChanges => _authStateController.stream;
 
   /// 설정된 Provider 목록
-  List<AuthProvider> get configuredProviders {
-    final providers = <AuthProvider>[];
-    if (config.kakao != null) providers.add(AuthProvider.kakao);
-    if (config.naver != null) providers.add(AuthProvider.naver);
-    if (config.google != null) providers.add(AuthProvider.google);
-    if (config.apple != null) providers.add(AuthProvider.apple);
-    return providers;
-  }
+  late final List<AuthProvider> configuredProviders = [
+    if (config.kakao != null) AuthProvider.kakao,
+    if (config.naver != null) AuthProvider.naver,
+    if (config.google != null) AuthProvider.google,
+    if (config.apple != null) AuthProvider.apple,
+  ];
 
   /// KAuth 초기화
   ///

@@ -2,6 +2,7 @@ import 'dart:async';
 import '../models/auth_result.dart';
 import '../models/k_auth_user.dart';
 import '../models/k_auth_failure.dart';
+import '../utils/token_utils.dart';
 
 /// 테스트용 Mock KAuth
 ///
@@ -252,23 +253,14 @@ class MockKAuth {
   DateTime? get expiresAt => _expiresAt;
 
   /// 토큰 남은 시간
-  Duration get expiresIn {
-    if (_expiresAt == null) return Duration.zero;
-    final remaining = _expiresAt!.difference(DateTime.now());
-    return remaining.isNegative ? Duration.zero : remaining;
-  }
+  Duration get expiresIn => TokenUtils.timeUntilExpiry(_expiresAt);
 
   /// 토큰이 만료되었는지 확인
-  bool get isExpired {
-    if (_expiresAt == null) return false;
-    return DateTime.now().isAfter(_expiresAt!);
-  }
+  bool get isExpired => TokenUtils.isExpired(_expiresAt);
 
   /// 토큰이 곧 만료되는지 확인 (기본 5분 전)
-  bool isExpiringSoon([Duration threshold = const Duration(minutes: 5)]) {
-    if (_expiresAt == null) return false;
-    return DateTime.now().add(threshold).isAfter(_expiresAt!);
-  }
+  bool isExpiringSoon([Duration threshold = const Duration(minutes: 5)]) =>
+      TokenUtils.isExpiringSoon(_expiresAt, threshold);
 
   // ============================================
   // 연속 실패 시뮬레이션

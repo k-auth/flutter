@@ -1,5 +1,7 @@
 import 'k_auth_user.dart';
 import 'k_auth_failure.dart';
+import '../errors/k_auth_error.dart';
+import '../utils/token_utils.dart';
 
 /// 소셜 로그인 결과를 나타내는 클래스
 ///
@@ -166,22 +168,16 @@ class AuthResult {
   }
 
   /// 토큰이 만료되었는지 확인
-  bool get isExpired {
-    if (expiresAt == null) return false;
-    return DateTime.now().isAfter(expiresAt!);
-  }
+  bool get isExpired => TokenUtils.isExpired(expiresAt);
 
   /// 토큰이 곧 만료되는지 확인 (기본 5분 전)
-  bool isExpiringSoon([Duration threshold = const Duration(minutes: 5)]) {
-    if (expiresAt == null) return false;
-    return DateTime.now().add(threshold).isAfter(expiresAt!);
-  }
+  bool isExpiringSoon([Duration threshold = const Duration(minutes: 5)]) =>
+      TokenUtils.isExpiringSoon(expiresAt, threshold);
 
   /// 토큰 만료까지 남은 시간
   Duration? get timeUntilExpiry {
     if (expiresAt == null) return null;
-    final remaining = expiresAt!.difference(DateTime.now());
-    return remaining.isNegative ? Duration.zero : remaining;
+    return TokenUtils.timeUntilExpiry(expiresAt);
   }
 
   /// JSON으로 변환
@@ -296,7 +292,7 @@ class AuthResult {
     if (this.success && user != null) {
       return success(user!);
     }
-    if (errorCode == 'USER_CANCELLED') {
+    if (errorCode == ErrorCodes.userCancelled) {
       return cancelled();
     }
     return failure(this.failure);
