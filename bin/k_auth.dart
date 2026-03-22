@@ -459,7 +459,7 @@ String _getVersion() {
         RegExp(r'^version:\s*(.+)$', multiLine: true).firstMatch(content);
     if (match != null) return match.group(1)!.trim();
   }
-  return '0.8.2'; // fallback
+  return '0.8.3'; // fallback
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

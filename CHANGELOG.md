@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-03-22
+
+### Fixed
+
+- **signIn 잠금 해제 보장**: Provider 예외 시 `_signInLock`이 해제되지 않아 이후 로그인이 영구 차단될 수 있던 문제 수정
+- **카카오 refreshToken 에러 매핑**: `KakaoApiException`이 누락되어 토큰 갱신 실패 시 에러 정보가 부정확했던 문제 수정
+- **Google/Apple 사용자 ID 방어 처리**: `id`와 `sub` 필드가 모두 없을 때 `TypeError` 크래시 방지
+- **dispose 후 스트림 안전성**: dispose 이후 `authStateChanges` 스트림에 이벤트 추가 시 `StateError` 방지
+
 ## [0.8.2] - 2026-03-22
 
 ### Fixed
