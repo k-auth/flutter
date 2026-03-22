@@ -14,6 +14,9 @@ class MockAuthProvider implements BaseAuthProvider {
   AuthResult? unlinkResult;
   AuthResult? refreshTokenResult;
 
+  /// signIn 시 예외를 던지도록 설정
+  Object? signInException;
+
   /// 지연 시간 (네트워크 지연 시뮬레이션)
   Duration? delay;
 
@@ -63,6 +66,7 @@ class MockAuthProvider implements BaseAuthProvider {
   Future<AuthResult> signIn() async {
     if (delay != null) await Future.delayed(delay!);
     signInCalled = true;
+    if (signInException != null) throw signInException!;
     return signInResult ??
         AuthResult.success(
           provider: provider,

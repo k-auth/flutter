@@ -219,6 +219,15 @@ void main() {
       final user = KAuthUser.fromGoogle(data);
       expect(user.id, 'PREFERRED_ID');
     });
+
+    test('id와 sub가 둘 다 없으면 빈 문자열', () {
+      final data = <String, dynamic>{
+        'email': 'test@google.com',
+      };
+
+      final user = KAuthUser.fromGoogle(data);
+      expect(user.id, '');
+    });
   });
 
   // ============================================
@@ -288,6 +297,15 @@ void main() {
 
       final user = KAuthUser.fromApple(data);
       expect(user.id, 'PREFERRED_ID');
+    });
+
+    test('userIdentifier와 sub가 둘 다 없으면 빈 문자열', () {
+      final data = <String, dynamic>{
+        'email': 'test@apple.com',
+      };
+
+      final user = KAuthUser.fromApple(data);
+      expect(user.id, '');
     });
   });
 

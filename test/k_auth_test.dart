@@ -15,6 +15,9 @@ class MockAuthProvider implements BaseAuthProvider {
   AuthResult? unlinkResult;
   AuthResult? refreshTokenResult;
 
+  /// signIn 시 예외를 던지도록 설정
+  Object? signInException;
+
   MockAuthProvider(this.provider);
 
   @override
@@ -25,6 +28,7 @@ class MockAuthProvider implements BaseAuthProvider {
   @override
   Future<AuthResult> signIn() async {
     signInCalled = true;
+    if (signInException != null) throw signInException!;
     return signInResult ??
         AuthResult.success(
           provider: provider,
@@ -1060,6 +1064,21 @@ void main() {
       expect(kAuth.isInitialized, false);
       expect(kAuth.isSignedIn, false);
       expect(kAuth.currentUser, isNull);
+    });
+
+    test('Provider가 예외를 던져도 signIn lock이 해제된다', () async {
+      mockKakao.signInException = Exception('SDK 크래시');
+      kAuth.setProviderForTesting(AuthProvider.kakao, mockKakao);
+
+      // 첫 번째 signIn - 예외 발생하지만 에러 결과 반환
+      final result = await kAuth.signIn(AuthProvider.kakao);
+      expect(result.success, false);
+      expect(result.errorCode, ErrorCodes.loginFailed);
+
+      // 두 번째 signIn - lock이 해제되어 정상 호출 가능
+      mockKakao.signInException = null;
+      final result2 = await kAuth.signIn(AuthProvider.kakao);
+      expect(result2.success, true);
     });
   });
 

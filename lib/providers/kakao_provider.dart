@@ -114,6 +114,8 @@ class KakaoProvider implements BaseAuthProvider {
     } on kakao.KakaoAuthException catch (e) {
       return ErrorMapper.toFailure(
           AuthProvider.kakao, ErrorMapper.kakaoAuth(e));
+    } on kakao.KakaoApiException catch (e) {
+      return ErrorMapper.toFailure(AuthProvider.kakao, ErrorMapper.kakaoApi(e));
     } catch (e) {
       return ErrorMapper.handleException(
         AuthProvider.kakao,

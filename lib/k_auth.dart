@@ -235,6 +235,7 @@ class KAuth with WidgetsBindingObserver {
   final Map<AuthProvider, BaseAuthProvider> _providers = {};
 
   bool _initialized = false;
+  bool _disposed = false;
   AuthResult? _lastResult;
   String? _serverToken;
   Completer<AuthResult>? _signInLock;
@@ -242,6 +243,11 @@ class KAuth with WidgetsBindingObserver {
 
   /// 인증 상태 변화 스트림 컨트롤러
   final _authStateController = StreamController<KAuthUser?>.broadcast();
+
+  /// dispose 후 안전하게 스트림 이벤트 전송
+  void _emitAuthState(KAuthUser? user) {
+    if (!_disposed) _authStateController.add(user);
+  }
 
   /// KAuth 인스턴스 생성
   ///
@@ -643,7 +649,7 @@ class KAuth with WidgetsBindingObserver {
         expiresAt: session.expiresAt,
       );
       _serverToken = session.serverToken;
-      _authStateController.add(session.user);
+      _emitAuthState(session.user);
 
       KAuthLogger.info(
         '세션 복원 완료',
@@ -785,70 +791,82 @@ class KAuth with WidgetsBindingObserver {
 
     final stopwatch = Stopwatch()..start();
 
-    // Provider signIn 호출 (다형성 활용)
-    final result = await providerImpl.signIn();
+    try {
+      // Provider signIn 호출 (다형성 활용)
+      final result = await providerImpl.signIn();
 
-    stopwatch.stop();
+      stopwatch.stop();
 
-    if (result.success && result.user != null) {
-      _lastResult = result;
-      _authStateController.add(result.user);
+      if (result.success && result.user != null) {
+        _lastResult = result;
+        _emitAuthState(result.user);
 
-      // 로그인 콜백 호출
-      if (onSignIn != null) {
-        try {
-          final tokens = AuthTokens(
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
-            idToken: result.idToken,
-            expiresAt: result.expiresAt,
-          );
+        // 로그인 콜백 호출
+        if (onSignIn != null) {
+          try {
+            final tokens = AuthTokens(
+              accessToken: result.accessToken,
+              refreshToken: result.refreshToken,
+              idToken: result.idToken,
+              expiresAt: result.expiresAt,
+            );
 
-          _serverToken = await onSignIn!(provider, tokens, result.user!);
+            _serverToken = await onSignIn!(provider, tokens, result.user!);
 
-          KAuthLogger.debug(
-            '로그인 콜백 완료',
-            provider: provider.name,
-            data: {'hasServerToken': _serverToken != null},
-          );
-        } catch (e) {
-          KAuthLogger.error(
-            '로그인 콜백 실패',
-            provider: provider.name,
-            error: e,
-          );
+            KAuthLogger.debug(
+              '로그인 콜백 완료',
+              provider: provider.name,
+              data: {'hasServerToken': _serverToken != null},
+            );
+          } catch (e) {
+            KAuthLogger.error(
+              '로그인 콜백 실패',
+              provider: provider.name,
+              error: e,
+            );
+          }
         }
+
+        // 세션 저장
+        await _saveSession(result);
+
+        KAuthLogger.info(
+          '로그인 성공',
+          provider: provider.name,
+          data: {
+            'userId': result.user?.id,
+            'hasEmail': result.user?.email != null,
+            'duration': '${stopwatch.elapsedMilliseconds}ms',
+          },
+        );
+      } else if (!result.success) {
+        KAuthLogger.warning(
+          '로그인 실패',
+          provider: provider.name,
+          data: {
+            'errorCode': result.errorCode,
+            'errorMessage': result.errorMessage,
+            'duration': '${stopwatch.elapsedMilliseconds}ms',
+          },
+        );
       }
 
-      // 세션 저장
-      await _saveSession(result);
+      // 동시 로그인 lock 해제
+      _signInLock?.complete(result);
+      _signInLock = null;
 
-      KAuthLogger.info(
-        '로그인 성공',
-        provider: provider.name,
-        data: {
-          'userId': result.user?.id,
-          'hasEmail': result.user?.email != null,
-          'duration': '${stopwatch.elapsedMilliseconds}ms',
-        },
+      return result;
+    } catch (e) {
+      // 예외 발생 시에도 lock 해제 보장
+      final errorResult = AuthResult.failure(
+        provider: provider,
+        errorMessage: '로그인 중 예기치 않은 오류가 발생했습니다.',
+        errorCode: ErrorCodes.loginFailed,
       );
-    } else if (!result.success) {
-      KAuthLogger.warning(
-        '로그인 실패',
-        provider: provider.name,
-        data: {
-          'errorCode': result.errorCode,
-          'errorMessage': result.errorMessage,
-          'duration': '${stopwatch.elapsedMilliseconds}ms',
-        },
-      );
+      _signInLock?.complete(errorResult);
+      _signInLock = null;
+      return errorResult;
     }
-
-    // 동시 로그인 lock 해제
-    _signInLock?.complete(result);
-    _signInLock = null;
-
-    return result;
   }
 
   /// 카카오 로그인
@@ -935,7 +953,7 @@ class KAuth with WidgetsBindingObserver {
 
       _lastResult = null;
       _serverToken = null;
-      _authStateController.add(null);
+      _emitAuthState(null);
 
       // 세션 삭제
       await clearSession();
@@ -976,7 +994,7 @@ class KAuth with WidgetsBindingObserver {
 
     _lastResult = null;
     _serverToken = null;
-    _authStateController.add(null);
+    _emitAuthState(null);
 
     // 세션 삭제
     await clearSession();
@@ -1022,7 +1040,7 @@ class KAuth with WidgetsBindingObserver {
       if (_lastResult?.provider == provider) {
         _lastResult = null;
         _serverToken = null;
-        _authStateController.add(null);
+        _emitAuthState(null);
         await clearSession();
       }
     } else {
@@ -1105,7 +1123,7 @@ class KAuth with WidgetsBindingObserver {
 
     if (result.success && result.user != null) {
       _lastResult = result;
-      _authStateController.add(result.user);
+      _emitAuthState(result.user);
 
       // 세션 저장
       await _saveSession(result);
@@ -1135,6 +1153,7 @@ class KAuth with WidgetsBindingObserver {
   /// }
   /// ```
   void dispose() {
+    _disposed = true;
     if (autoRefresh) {
       WidgetsBinding.instance.removeObserver(this);
     }
@@ -1172,6 +1191,7 @@ class KAuth with WidgetsBindingObserver {
   void resetForTesting() {
     _providers.clear();
     _initialized = false;
+    _disposed = false;
     _lastResult = null;
     _serverToken = null;
   }

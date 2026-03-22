@@ -108,7 +108,7 @@ class KAuthUser {
   /// Google 응답에서 KAuthUser 생성
   factory KAuthUser.fromGoogle(Map<String, dynamic> data) {
     return KAuthUser(
-      id: data['id'] as String? ?? data['sub'] as String,
+      id: data['id'] as String? ?? data['sub'] as String? ?? '',
       provider: AuthProvider.google,
       name: data['name'] as String? ?? data['displayName'] as String?,
       email: data['email'] as String?,
@@ -129,7 +129,7 @@ class KAuthUser {
     }
 
     return KAuthUser(
-      id: data['userIdentifier'] as String? ?? data['sub'] as String,
+      id: data['userIdentifier'] as String? ?? data['sub'] as String? ?? '',
       provider: AuthProvider.apple,
       name: name,
       email: data['email'] as String?,
