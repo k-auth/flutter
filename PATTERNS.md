@@ -24,8 +24,8 @@ if (result.success) print('환영합니다, ${kAuth.name}!');
 | [#1 가장 간단한 로그인](#패턴-1-가장-간단한-로그인) | 빠른 프로토타입 | ⭐ |
 | [#2 백엔드 연동](#패턴-2-백엔드-연동) | JWT 토큰 발급 | ⭐⭐ |
 | [#3 자동 로그인](#패턴-3-자동-로그인) | 세션 복원 | ⭐ |
-| [#4 화면 전환](#패턴-4-화면-전환) | 로그인/홈 자동 전환 | ⭐⭐ |
-| [#5 에러 처리](#패턴-5-에러-처리) | 5가지 방법 | ⭐ |
+| [#4 화면 전환](#패턴-4-화면-전환) | 로그인/홈 자동 전환 + TokenBanner | ⭐⭐ |
+| [#5 에러 처리](#패턴-5-에러-처리) | 7가지 방법 (sealed class 포함) | ⭐ |
 | [#6 버튼 위젯](#패턴-6-버튼-위젯-사용) | 공식 디자인 버튼 | ⭐ |
 | [#7 토큰 자동 갱신](#패턴-7-토큰-자동-갱신) | 앱 포그라운드 복귀 시 | ⭐ |
 | [안티패턴](#안티패턴) | 하지 말아야 할 것 | - |
@@ -251,6 +251,38 @@ class MyApp extends StatelessWidget {
 }
 ```
 
+### 토큰 만료 알림 포함 (v0.8.0+)
+
+```dart
+KAuthBuilder(
+  stream: kAuth.authStateChanges,
+  signedIn: (user) => HomeScreen(user: user),
+  signedOut: () => LoginScreen(),
+  // 토큰 만료 임박 시 배너 표시
+  expiring: () => TokenBanner(
+    onRefresh: () => kAuth.refreshToken(),
+    message: '세션이 곧 만료됩니다',     // 기본값
+    buttonText: '갱신',                  // 기본값
+  ),
+  isExpiring: kAuth.isExpiringSoon,       // 기본 5분 전
+
+  // 커스텀 만료 임계값 (10분 전부터 알림)
+  // isExpiring: () => kAuth.isExpiringSoon(const Duration(minutes: 10)),
+)
+```
+
+**TokenBanner 커스터마이징:**
+
+```dart
+TokenBanner(
+  onRefresh: () => kAuth.refreshToken(),
+  message: '인증이 곧 만료됩니다. 갱신해주세요.',
+  buttonText: '지금 갱신',
+  backgroundColor: Colors.amber.shade100,
+  textColor: Colors.amber.shade900,
+)
+```
+
 ### 기존 방식: StreamBuilder 직접 사용
 
 ```dart
@@ -434,6 +466,53 @@ result.fold(
 | `isTokenExpired` | 토큰 만료 |
 | `canRetry` | 재시도 가능 (네트워크/타임아웃) |
 | `shouldIgnore` | 무시해도 됨 (취소) |
+
+### 방법 6: Sealed Class 패턴 매칭 (v0.8.0+ 권장)
+
+```dart
+final result = await kAuth.signIn(AuthProvider.kakao);
+
+result.onFailure((failure) {
+  switch (failure) {
+    case CancelledError():
+      return;  // 무시
+    case NetworkError():
+      showRetryButton();
+    case TokenError():
+      navigateToLogin();
+    case ConfigError():
+      showSetupGuide();
+    case AuthError():
+      showError(failure.displayMessage);
+  }
+});
+```
+
+**KAuthFailure 서브타입:**
+| 타입 | 설명 | 주요 속성 |
+|------|------|----------|
+| `CancelledError` | 사용자 취소 | `shouldIgnore: true` |
+| `NetworkError` | 네트워크/타임아웃 | `canRetry: true`, `isTimeout` |
+| `TokenError` | 토큰 만료/갱신 실패 | `requiresReauth: true`, `isExpired` |
+| `ConfigError` | Provider 설정 오류 | - |
+| `AuthError` | 기타 인증 오류 | - |
+
+### 방법 7: ErrorSeverity 기반 처리 (v0.8.0+)
+
+```dart
+result.onFailure((failure) {
+  switch (failure.severity) {
+    case ErrorSeverity.ignorable:
+      return;  // 사용자 취소 등
+    case ErrorSeverity.retryable:
+      showRetryDialog();  // 네트워크 오류
+    case ErrorSeverity.authRequired:
+      navigateToLogin();  // 재로그인 필요
+    case ErrorSeverity.fixRequired:
+      showErrorDialog(failure.message);  // 설정 오류 등
+  }
+});
+```
 
 ---
 
