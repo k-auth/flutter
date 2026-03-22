@@ -162,15 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 providers: kAuth.configuredProviders,
                 onPressed: _signIn,
                 spacing: 12,
-                // 로딩 상태 표시
-                loadingStates: {
-                  for (final p in AuthProvider.values) p: _loadingProvider == p,
-                },
-                // 다른 버튼 비활성화
-                disabledStates: {
-                  for (final p in AuthProvider.values)
-                    p: _loadingProvider != null && _loadingProvider != p,
-                },
+                loading: _loadingProvider,
               ),
 
               const Spacer(flex: 3),

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-03-22
+
+### Fixed
+
+- **CLI 버전 표시 수정**: `dart run k_auth version`이 `0.5.6`으로 하드코딩되어 있던 문제 수정
+  - pubspec.yaml에서 동적으로 버전을 읽어오도록 변경
+
+### Changed
+
+- **LoginButtonGroup deprecated 어노테이션 추가**: `loadingStates`/`disabledStates`에 `@Deprecated` 어노테이션 추가
+  - `loading` 파라미터 사용 권장
+- **Example 앱 현행화**: deprecated API(`loadingStates`/`disabledStates`) → `loading` 파라미터로 교체
+- **Example SDK 제약 정렬**: example/pubspec.yaml의 SDK 제약을 메인 패키지와 일치시킴 (`^3.4.0`/`>=3.22.0`)
+
+### Tests
+
+- **MockKAuth 테스트 보강** (+16개 테스트)
+  - 호출 카운터: `signInCount`, `signInCountFor`, `signOutCount`, `refreshCount`, `unlinkCount`, `resetCounters`
+  - 재시도 시뮬레이션: `failThenSucceed` (N번 실패 후 성공, 커스텀 실패 타입, 카운터 연동)
+  - 토큰 만료: `expireAfter`, `expireNow`, `expiresAt`
+  - 데모 팩토리: `MockKAuth.demo()` (기본/커스텀 사용자, 로그아웃 상태)
+
 ## [0.8.1] - 2026-01-10
 
 ### Added

@@ -52,8 +52,12 @@ class LoginButtonGroup extends StatelessWidget {
   /// 해당 Provider 버튼만 로딩 표시되고, 나머지는 비활성화됩니다.
   final AuthProvider? loading;
 
-  /// @Deprecated 대신 [loading]을 사용하세요.
+  /// [loading] 파라미터를 사용하세요.
+  @Deprecated('loading 파라미터를 사용하세요. loadingStates는 다음 메이저 버전에서 제거됩니다.')
   final Map<AuthProvider, bool> loadingStates;
+
+  /// [loading] 파라미터를 사용하면 자동으로 비활성화됩니다.
+  @Deprecated('loading 파라미터를 사용하세요. disabledStates는 다음 메이저 버전에서 제거됩니다.')
   final Map<AuthProvider, bool> disabledStates;
 
   const LoginButtonGroup({

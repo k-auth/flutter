@@ -331,6 +331,179 @@ void main() {
       });
     });
 
+    group('호출 카운터', () {
+      test('signInCount 및 signInCountFor', () async {
+        await mockKAuth.signIn(AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.google);
+
+        expect(mockKAuth.signInCount, 3);
+        expect(mockKAuth.signInCountFor(AuthProvider.kakao), 2);
+        expect(mockKAuth.signInCountFor(AuthProvider.google), 1);
+        expect(mockKAuth.signInCountFor(AuthProvider.naver), 0);
+      });
+
+      test('signOutCount 및 signOutCountFor', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+
+        await mockKAuth.signOut();
+        await mockKAuth.signOut(AuthProvider.naver);
+
+        expect(mockKAuth.signOutCount, 2);
+      });
+
+      test('refreshCount', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+
+        await mockKAuth.refreshToken();
+        await mockKAuth.refreshToken();
+
+        expect(mockKAuth.refreshCount, 2);
+      });
+
+      test('unlinkCount', () async {
+        await mockKAuth.unlink(AuthProvider.kakao);
+        await mockKAuth.unlink(AuthProvider.naver);
+
+        expect(mockKAuth.unlinkCount, 2);
+      });
+
+      test('resetCounters', () async {
+        await mockKAuth.signIn(AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.google);
+        expect(mockKAuth.signInCount, 2);
+
+        mockKAuth.resetCounters();
+
+        expect(mockKAuth.signInCount, 0);
+        expect(mockKAuth.signInCountFor(AuthProvider.kakao), 0);
+        expect(mockKAuth.signOutCount, 0);
+        expect(mockKAuth.refreshCount, 0);
+        expect(mockKAuth.unlinkCount, 0);
+      });
+    });
+
+    group('failThenSucceed', () {
+      test('N번 실패 후 성공', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.failThenSucceed(times: 2);
+
+        final result1 = await mockKAuth.signIn(AuthProvider.kakao);
+        expect(result1.success, false);
+
+        final result2 = await mockKAuth.signIn(AuthProvider.kakao);
+        expect(result2.success, false);
+
+        final result3 = await mockKAuth.signIn(AuthProvider.kakao);
+        expect(result3.success, true);
+      });
+
+      test('커스텀 실패 타입 지정', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.failThenSucceed(
+          times: 1,
+          failure: const TokenError(
+            code: 'TOKEN_EXPIRED',
+            message: '토큰 만료',
+          ),
+        );
+
+        final result1 = await mockKAuth.signIn(AuthProvider.kakao);
+        expect(result1.success, false);
+        expect(result1.errorCode, 'TOKEN_EXPIRED');
+
+        final result2 = await mockKAuth.signIn(AuthProvider.kakao);
+        expect(result2.success, true);
+      });
+
+      test('실패 중에도 호출 카운터 증가', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        mockKAuth.failThenSucceed(times: 2);
+
+        await mockKAuth.signIn(AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+
+        expect(mockKAuth.signInCount, 3);
+        expect(mockKAuth.signInCountFor(AuthProvider.kakao), 3);
+      });
+    });
+
+    group('토큰 만료 시뮬레이션', () {
+      test('expireAfter', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+
+        mockKAuth.expireAfter(const Duration(hours: 1));
+        expect(mockKAuth.isExpired, false);
+        expect(mockKAuth.isExpiringSoon(const Duration(hours: 2)), true);
+      });
+
+      test('expireNow', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+        expect(mockKAuth.isExpired, false);
+
+        mockKAuth.expireNow();
+        expect(mockKAuth.isExpired, true);
+        expect(mockKAuth.expiresIn, Duration.zero);
+      });
+
+      test('expiresAt 반환', () async {
+        mockKAuth.mockUser =
+            KAuthUser(id: 'user', provider: AuthProvider.kakao);
+        await mockKAuth.signIn(AuthProvider.kakao);
+
+        expect(mockKAuth.expiresAt, isNotNull);
+      });
+    });
+
+    group('demo factory', () {
+      test('기본 데모 사용자로 생성', () {
+        final mock = MockKAuth.demo();
+
+        expect(mock.isInitialized, true);
+        expect(mock.isSignedIn, true);
+        expect(mock.currentUser?.id, 'demo_user');
+        expect(mock.currentUser?.name, '데모 사용자');
+        expect(mock.currentUser?.email, 'demo@example.com');
+
+        mock.dispose();
+      });
+
+      test('커스텀 사용자로 생성', () {
+        final user = KAuthUser(
+          id: 'custom_demo',
+          provider: AuthProvider.google,
+          name: '커스텀 사용자',
+        );
+        final mock = MockKAuth.demo(user: user);
+
+        expect(mock.currentUser?.id, 'custom_demo');
+        expect(mock.currentUser?.name, '커스텀 사용자');
+
+        mock.dispose();
+      });
+
+      test('로그아웃 상태로 시작', () {
+        final mock = MockKAuth.demo(signedIn: false);
+
+        expect(mock.isInitialized, true);
+        expect(mock.isSignedIn, false);
+
+        mock.dispose();
+      });
+    });
+
     group('isConfigured', () {
       test('기본값은 모든 Provider 설정됨', () {
         expect(mockKAuth.isConfigured(AuthProvider.kakao), true);

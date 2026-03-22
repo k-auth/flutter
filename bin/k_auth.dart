@@ -446,9 +446,20 @@ void _printHelp() {
 }
 
 void _printVersion() {
+  final version = _getVersion();
   print('');
-  print('  $_bold$_cyan K-Auth$_reset ${_dim}v$_reset${_bold}0.5.6$_reset');
+  print('  $_bold$_cyan K-Auth$_reset ${_dim}v$_reset$_bold$version$_reset');
   print('');
+}
+
+String _getVersion() {
+  final content = _readFile('pubspec.yaml');
+  if (content != null) {
+    final match =
+        RegExp(r'^version:\s*(.+)$', multiLine: true).firstMatch(content);
+    if (match != null) return match.group(1)!.trim();
+  }
+  return '0.8.2'; // fallback
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
