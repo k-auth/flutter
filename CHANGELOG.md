@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-03-22
+
+### Changed
+
+- **의존성 업데이트**: flutter_svg 2.2.4, google_sign_in_ios 6.3.0 등 28개 패키지 최신화
+
+### Docs
+
+- **PATTERNS.md 보강**
+  - 패턴 4: `TokenBanner` 위젯 사용 예제 및 커스터마이징 가이드 추가
+  - 패턴 5: sealed class 패턴 매칭 (방법 6) 및 `ErrorSeverity` 기반 처리 (방법 7) 추가
+  - 목차 업데이트
+
 ## [0.8.3] - 2026-03-22
 
 ### Fixed
