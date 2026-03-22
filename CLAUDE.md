@@ -51,7 +51,7 @@ lib/
     ├── login_buttons.dart   # 공식 디자인 버튼 위젯
     └── k_auth_builder.dart  # 인증 상태 기반 화면 전환 + TokenBanner
 
-docs/
+doc/
 ├── SETUP.md                 # iOS/Android 플랫폼 설정 가이드
 └── TROUBLESHOOTING.md       # 문제 해결 가이드
 
@@ -415,8 +415,8 @@ AI 코드 생성 시 참고할 파일들:
 - **PATTERNS.md** - 모든 주요 패턴과 예제 (AI 전용)
 - **example/lib/main.dart** - 프로덕션 예제 (Demo 모드 포함)
 - **.vscode/k_auth.code-snippets** - VSCode 스니펫
-- **docs/SETUP.md** - 플랫폼별 설정 가이드
-- **docs/TROUBLESHOOTING.md** - 문제 해결 가이드
+- **doc/SETUP.md** - 플랫폼별 설정 가이드
+- **doc/TROUBLESHOOTING.md** - 문제 해결 가이드
 
 ### 주의사항
 

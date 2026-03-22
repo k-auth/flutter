@@ -22,8 +22,8 @@
   <a href="#설치">설치</a> •
   <a href="#빠른-시작">빠른 시작</a> •
   <a href="#provider-설정">Provider 설정</a> •
-  <a href="docs/SETUP.md">플랫폼 설정</a> •
-  <a href="docs/TROUBLESHOOTING.md">트러블슈팅</a>
+  <a href="doc/SETUP.md">플랫폼 설정</a> •
+  <a href="doc/TROUBLESHOOTING.md">트러블슈팅</a>
 </p>
 
 <p align="center">
@@ -245,7 +245,7 @@ GoogleConfig(
 AppleConfig()  // 별도 설정 불필요
 ```
 
-> **플랫폼별 상세 설정**: [docs/SETUP.md](docs/SETUP.md)
+> **플랫폼별 상세 설정**: [doc/SETUP.md](doc/SETUP.md)
 
 ---
 
@@ -478,8 +478,8 @@ flutter run -t widgetbook/main.dart -d chrome
 | 문서 | 설명 |
 |------|------|
 | [PATTERNS.md](PATTERNS.md) | AI 코드 생성용 패턴 가이드 |
-| [docs/SETUP.md](docs/SETUP.md) | 플랫폼별 상세 설정 |
-| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 문제 해결 가이드 |
+| [doc/SETUP.md](doc/SETUP.md) | 플랫폼별 상세 설정 |
+| [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) | 문제 해결 가이드 |
 | [CHANGELOG.md](CHANGELOG.md) | 버전별 변경사항 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 기여 가이드 |
 

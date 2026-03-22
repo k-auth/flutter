@@ -51,8 +51,8 @@ result.fold(
 - [README](https://github.com/k-auth/flutter#readme): Installation and usage guide
 - [API Reference](https://pub.dev/documentation/k_auth/latest/): Full API documentation
 - [PATTERNS.md](https://github.com/k-auth/flutter/blob/main/PATTERNS.md): Code patterns for AI tools
-- [Platform Setup](https://github.com/k-auth/flutter/blob/main/docs/SETUP.md): iOS/Android configuration
-- [Troubleshooting](https://github.com/k-auth/flutter/blob/main/docs/TROUBLESHOOTING.md): Common issues and solutions
+- [Platform Setup](https://github.com/k-auth/flutter/blob/main/doc/SETUP.md): iOS/Android configuration
+- [Troubleshooting](https://github.com/k-auth/flutter/blob/main/doc/TROUBLESHOOTING.md): Common issues and solutions
 
 ## Main Classes
 
